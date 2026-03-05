@@ -39,6 +39,7 @@ const ServiceList = () => {
           />
         );
       },
+      
       enableSorting: false,
     },
     {

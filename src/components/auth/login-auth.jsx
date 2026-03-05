@@ -178,7 +178,6 @@ export default function AuthUI() {
               className="h-9 object-contain"
             />
           </motion.div>
-
           <LoginForm
             email={email}
             setEmail={setEmail}
