@@ -1,9 +1,12 @@
 import ApiErrorPage from "@/components/api-error/api-error";
 import DataTable from "@/components/common/data-table";
+import ImageCell from "@/components/common/ImageCell";
 import LoadingBar from "@/components/loader/loading-bar";
 import { SERVICE_API } from "@/constants/apiConstants";
 import { useGetApiMutation } from "@/hooks/useGetApiMutation";
+import { getImageBaseUrl, getNoImageUrl } from "@/utils/imageUtils";
 import { Edit } from "lucide-react";
+import ToggleStatus from "@/components/toogle/status-toogle";
 
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -19,51 +22,57 @@ const ServiceList = () => {
     url: SERVICE_API.list,
     queryKey: ["service-list"],
   });
-  console.log(servicedata?.data.data);
+
+  const IMAGE_FOR = "Service";
+  const companyBaseUrl = getImageBaseUrl(servicedata?.image_url, IMAGE_FOR);
+  const noImageUrl = getNoImageUrl(servicedata?.image_url);
 
   const columns = [
     {
-      header: "M Id",
-      accessorKey: "m_id",
-    },
-    {
-      header: "Name",
-      accessorKey: "name",
+      header: "Logo",
+      accessorKey: "service_logo",
+      cell: ({ row }) => {
+        const fileName = row.original.service_logo;
+        const src = fileName ? `${companyBaseUrl}${fileName}` : noImageUrl;
+        return <ImageCell src={src} fallback={noImageUrl} alt="Service Logo" />;
+      },
       enableSorting: false,
     },
     {
-      header: "Mobile",
-      accessorKey: "mobile",
-      enableSorting: false,
+      header: "Service Name",
+      accessorKey: "service_name",
     },
-    {
-      header: "Area",
-      accessorKey: "area",
-      enableSorting: false,
-    },
-    {
-      header: "Services",
-      accessorKey: "services_name",
-      enableSorting: false,
-    },
-    {
-      header: "Hide Services",
-      accessorKey: "hide_services_name",
-      enableSorting: false,
-    },
-
+    // {
+    //   header: "Description",
+    //   accessorKey: "service_description",
+    //   enableSorting: false,
+    //   cell: ({ row }) => (
+    //     <span
+    //       className="line-clamp-2 max-w-[200px]"
+    //       title={row.original.service_description}
+    //     >
+    //       {row.original.service_description || "-"}
+    //     </span>
+    //   ),
+    // },
     {
       header: "Status",
-      accessorKey: "status",
+      accessorKey: "service_status",
       cell: ({ row }) => (
         <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
-            row.original.status === "Active"
+          className={`w-fit px-3 rounded-full text-xs font-medium text-center flex justify-center items-center ${
+            row.original.service_status === "Active"
               ? "bg-green-100 text-green-800"
               : "bg-red-100 text-red-800"
           }`}
         >
-          {row.original.status}
+          <ToggleStatus
+            initialStatus={row.original.service_status}
+            apiUrl={SERVICE_API.updateStatus(row.original.id)}
+            payloadKey="service_status"
+            onSuccess={refetch}
+            method="patch"
+          />
         </span>
       ),
     },
@@ -76,21 +85,10 @@ const ServiceList = () => {
             size="icon"
             variant="outline"
             onClick={() => {
-              navigate(`/client-list/edit/${row.original.id}`);
+              navigate(`/service-list/edit/${row.original.id}`);
             }}
           >
             <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            size="icon"
-            variant="outline"
-            onClick={() => {
-              navigate(`/client-list/create-relation/`, {
-                state: { m_id: row.original.m_id },
-              });
-            }}
-          >
-            <p className="h-4 w-4 flex justify-center">Add</p>
           </Button>
         </div>
       ),
@@ -103,7 +101,7 @@ const ServiceList = () => {
   return (
     <>
       <DataTable
-        data={servicedata}
+        data={servicedata?.data?.data || servicedata?.data || []}
         columns={columns}
         pageSize={50}
         searchPlaceholder="Search Service..."
