@@ -29,7 +29,7 @@ import AuthRoute from "./auth-route";
 import ProtectedRoute from "./protected-route";
 import StudenScreenShot from "@/app/student/student-screenshot";
 import NotificationList from "@/app/notification/notifycation-list";
-import Dashboard from "@/app/home/home";
+import Dashboard from "@/app/dashboard/home";
 import ClientList from "@/app/member/client-list";
 import CreateClient from "@/app/member/create-client";
 import RequestList from "@/app/service-request/request-list";

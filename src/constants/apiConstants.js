@@ -7,6 +7,13 @@ export const PANEL_CHECK = {
 };
 
 ///new
+export const DASHBOARD_API = {
+  list: "/dashboard",
+  create: "/service",
+  byId: (id) => `/service/${id}`,
+  updateById: (id) => `/service/${id}?_method=PUT`,
+  updateStatus: (id) => `/services/${id}/status`,
+};
 
 export const SERVICE_API = {
   list: "/service",

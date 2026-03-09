@@ -13,6 +13,14 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import ServiceSubForm from "./service-sub-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const CreateService = () => {
   const { trigger, loading: isSubmitting } = useApiMutation();
@@ -23,6 +31,7 @@ const CreateService = () => {
     service_name: "",
     service_description: "",
     service_other: "",
+    service_status: "Active",
     service_logo: null,
   });
 
@@ -57,7 +66,6 @@ const CreateService = () => {
     setSubs((prev) => [
       ...prev,
       {
-        id: Date.now(),
         service_sub_link: "",
         service_sub_banner: null,
         preview_banner: "",
@@ -65,22 +73,24 @@ const CreateService = () => {
     ]);
   };
 
-  const handleRemoveSub = (id) => {
-    setSubs((prev) => prev.filter((sub) => sub.id !== id));
+  const handleRemoveSub = (index) => {
+    setSubs((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubChange = (id, fieldName, value) => {
+  const handleSubChange = (index, fieldName, value) => {
     setSubs((prev) =>
-      prev.map((sub) => (sub.id === id ? { ...sub, [fieldName]: value } : sub)),
+      prev.map((sub, i) =>
+        i === index ? { ...sub, [fieldName]: value } : sub,
+      ),
     );
   };
 
-  const handleSubImageChange = (id, file) => {
+  const handleSubImageChange = (index, file) => {
     if (file) {
       const previewUrl = URL.createObjectURL(file);
       setSubs((prev) =>
-        prev.map((sub) =>
-          sub.id === id
+        prev.map((sub, i) =>
+          i === index
             ? { ...sub, service_sub_banner: file, preview_banner: previewUrl }
             : sub,
         ),
@@ -88,10 +98,10 @@ const CreateService = () => {
     }
   };
 
-  const handleRemoveSubImage = (id) => {
+  const handleRemoveSubImage = (index) => {
     setSubs((prev) =>
-      prev.map((sub) =>
-        sub.id === id
+      prev.map((sub, i) =>
+        i === index
           ? { ...sub, service_sub_banner: null, preview_banner: "" }
           : sub,
       ),
@@ -115,6 +125,7 @@ const CreateService = () => {
 
     const formDataObj = new FormData();
     formDataObj.append("service_name", formData.service_name);
+    formDataObj.append("service_status", formData.service_status);
     if (formData.service_description)
       formDataObj.append("service_description", formData.service_description);
     if (formData.service_other)
@@ -130,6 +141,7 @@ const CreateService = () => {
         `subs[${index}][service_sub_link]`,
         sub.service_sub_link,
       );
+      formDataObj.append(`subs[${index}][service_sub_status]`, "Active");
       if (sub.service_sub_banner instanceof File) {
         formDataObj.append(
           `subs[${index}][service_sub_banner]`,
@@ -196,16 +208,47 @@ const CreateService = () => {
               </div>
 
               <div className="space-y-2">
+                <Label className="flex">Status</Label>
+                <Select
+                  value={formData.service_status}
+                  onValueChange={(value) =>
+                    handleInputChange({
+                      target: { name: "service_status", value },
+                    })
+                  }
+                >
+                  <SelectTrigger
+                    className={`h-10 w-full ${
+                      formData.service_status === "Active"
+                        ? "bg-green-100 text-green-700 border-green-200"
+                        : "bg-red-100 text-red-700 border-red-200"
+                    }`}
+                  >
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Active" className="text-green-700">
+                      Active
+                    </SelectItem>
+                    <SelectItem value="Inactive" className="text-red-700">
+                      Inactive
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
                 <Label className="flex">Service Other</Label>
-                <Input
+                <Textarea
                   name="service_other"
                   value={formData.service_other}
                   onChange={handleInputChange}
                   placeholder="Enter Other details"
+                  rows={3}
                 />
               </div>
 
-              <div className="space-y-2 md:col-span-2">
+              <div className="space-y-2">
                 <Label className="flex">Service Description</Label>
                 <Textarea
                   name="service_description"
@@ -233,80 +276,15 @@ const CreateService = () => {
               </div>
             </div>
 
-            <div className="mt-4 border-t pt-4">
-              <div className="flex items-center justify-between mb-4">
-                <Label className="text-lg font-semibold">Sub Services</Label>
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={handleAddSub}
-                  className="gap-2"
-                >
-                  <Plus className="h-4 w-4" /> Add Sub Service
-                </Button>
-              </div>
-
-              {subs.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  No sub services added yet.
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {subs.map((sub, index) => (
-                    <div
-                      key={sub.id}
-                      className="p-4 border rounded-md relative bg-gray-50"
-                    >
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2 h-8 w-8"
-                        onClick={() => handleRemoveSub(sub.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-
-                      <p className="font-medium text-sm mb-3 text-gray-700">
-                        Sub Service #{index + 1}
-                      </p>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Sub Service Link</Label>
-                          <Input
-                            placeholder="Enter Link (e.g., https://...)"
-                            value={sub.service_sub_link}
-                            onChange={(e) =>
-                              handleSubChange(
-                                sub.id,
-                                "service_sub_link",
-                                e.target.value,
-                              )
-                            }
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <ImageUpload
-                            id={`service_sub_banner_${sub.id}`}
-                            label="Sub Service Banner"
-                            previewImage={sub.preview_banner}
-                            onFileChange={(e) =>
-                              handleSubImageChange(sub.id, e.target.files?.[0])
-                            }
-                            onRemove={() => handleRemoveSubImage(sub.id)}
-                            format="WEBP"
-                            maxSize={5}
-                            allowedExtensions={["webp", "png", "jpg", "jpeg"]}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <ServiceSubForm
+              subs={subs}
+              isEdit={false}
+              handleAddSub={handleAddSub}
+              handleRemoveSub={handleRemoveSub}
+              handleSubChange={handleSubChange}
+              handleSubImageChange={handleSubImageChange}
+              handleRemoveSubImage={handleRemoveSubImage}
+            />
 
             <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
               <Button
