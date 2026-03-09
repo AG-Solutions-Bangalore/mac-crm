@@ -6,15 +6,21 @@ export const PANEL_CHECK = {
   getEnvStatus: "/panel-fetch-dotenv",
 };
 
-
-
-
 ///new
+export const DASHBOARD_API = {
+  list: "/dashboard",
+  create: "/service",
+  byId: (id) => `/service/${id}`,
+  updateById: (id) => `/service/${id}?_method=PUT`,
+  updateStatus: (id) => `/services/${id}/status`,
+};
 
 export const SERVICE_API = {
   list: "/service",
-  // byId: (id) => `/side-popup/${id}`,
-  // updateById: (id) => `/side-popup/${id}`,
+  create: "/service",
+  byId: (id) => `/service/${id}`,
+  updateById: (id) => `/service/${id}?_method=PUT`,
+  updateStatus: (id) => `/services/${id}/status`,
 };
 
 export const NOTIFICATION_API = {
@@ -39,10 +45,8 @@ export const REQUEST_API = {
 
 export const ACTIVE_SERVICE_API = {
   list: "activeServices",
-}
+};
 // old
-
-
 
 export const SIDE_POPUP_API = {
   list: "/side-popup",
@@ -119,7 +123,7 @@ export const LETUREYOUTUBE_API = {
 export const LETUREYOUTUBEPLAYLIST_API = {
   list: "/lecture-youtube-playlist",
   byId: (id) => `/lecture-youtube-playlist/${id}`,
-  activelist:"/lecture-youtube-playlists"
+  activelist: "/lecture-youtube-playlists",
 };
 
 export const COURSE_API = {

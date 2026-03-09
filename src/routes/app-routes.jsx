@@ -29,11 +29,13 @@ import AuthRoute from "./auth-route";
 import ProtectedRoute from "./protected-route";
 import StudenScreenShot from "@/app/student/student-screenshot";
 import NotificationList from "@/app/notification/notifycation-list";
-import Dashboard from "@/app/home/home";
+import Dashboard from "@/app/dashboard/home";
 import ClientList from "@/app/member/client-list";
 import CreateClient from "@/app/member/create-client";
 import RequestList from "@/app/service-request/request-list";
 import ServiceList from "@/app/service/service-list";
+import CreateService from "@/app/service/create-service";
+import UpdateService from "@/app/service/update-service";
 
 function AppRoutes() {
   return (
@@ -67,6 +69,22 @@ function AppRoutes() {
             element={
               <Suspense fallback={<LoadingBar />}>
                 <ServiceList />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/service-list/create"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <CreateService />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/service-list/edit/:id"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <UpdateService />
               </Suspense>
             }
           />

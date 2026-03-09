@@ -58,7 +58,7 @@ const RequestList = () => {
       header: "Action",
       accessorKey: "services_request_status",
       cell: ({ row }) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium `}>
+        <span>
           <ToggleAction
             initialStatus={row.original.services_request_status}
             apiUrl={REQUEST_API.updateStatus(row.original.id)}

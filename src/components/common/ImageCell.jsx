@@ -14,7 +14,7 @@ const ImageCell = ({
   }, [src, fallback]);
 
   const [imgSrc, setImgSrc] = useState(cacheBustedSrc);
-  console.log(imgSrc, "imgSrc");
+  // console.log(imgSrc, "imgSrc");
   useEffect(() => {
     setImgSrc(cacheBustedSrc);
   }, [cacheBustedSrc]);
