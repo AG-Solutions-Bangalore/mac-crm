@@ -3,6 +3,7 @@ import Page from "../layout/page";
 import { useGetApiMutation } from "@/hooks/useGetApiMutation";
 import { DASHBOARD_API } from "@/constants/apiConstants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -15,6 +16,8 @@ import { Users, Briefcase, Clock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
   const {
     data: DData,
     isLoading,
@@ -45,8 +48,11 @@ const Dashboard = () => {
           <div className="text-red-500">Failed to load dashboard data.</div>
         ) : (
           <>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <Card>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 ">
+              <Card
+                onClick={() => navigate("/client-list")}
+                className="hover:scale-105 duration-300 cursor-pointer"
+              >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-md font-medium">
                     Total Users
@@ -59,7 +65,10 @@ const Dashboard = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card
+                onClick={() => navigate("/service-list")}
+                className="hover:scale-105 duration-300 cursor-pointer"
+              >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-md font-medium">
                     Total Services
@@ -72,7 +81,10 @@ const Dashboard = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card>
+              <Card
+                onClick={() => navigate("/service-request")}
+                className="hover:scale-105 duration-300 cursor-pointer"
+              >
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-md font-medium">
                     Pending Requests
@@ -114,7 +126,7 @@ const Dashboard = () => {
                               <TableCell>{request.mobile}</TableCell>
                               <TableCell>{request.service_name}</TableCell>
                               <TableCell>
-                                {request.services_request_date}
+                                {new Date(request.services_request_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' })}
                               </TableCell>
                               <TableCell>
                                 <span

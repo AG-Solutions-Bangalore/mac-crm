@@ -1,4 +1,5 @@
 import Login from "@/app/auth/login";
+import ForgotPassword from "@/components/forgot-password/forgot-password";
 import BlogList from "@/app/blog/blog-list";
 import CreateBlog from "@/app/blog/create-blog";
 import NotFound from "@/app/errors/not-found";
@@ -43,14 +44,14 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<AuthRoute />}>
           <Route path="/" element={<Login />} />
-          {/* <Route
+          <Route
             path="/forgot-password"
             element={
               <Suspense fallback={<LoadingBar />}>
                 <ForgotPassword />
               </Suspense>
             }
-          /> */}
+          />
           <Route path="/maintenance" element={<Maintenance />} />
         </Route>
 

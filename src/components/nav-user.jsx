@@ -16,9 +16,13 @@ import Logout from "./auth/log-out";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Lock } from "lucide-react";
+import ChangePasswordDialog from "./auth/change-password-dialog";
 
 export function NavUser({ user }) {
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [changePasswordDialogOpen, setChangePasswordDialogOpen] =
+    useState(false);
 
   const sidebarOpen = useSelector((state) => state.ui.sidebarOpen);
 
@@ -30,9 +34,8 @@ export function NavUser({ user }) {
     .join("")
     .toUpperCase();
 
-  
   const showUpdateBadge = useSelector(
-    (state) => state.version?.showUpdateDialog
+    (state) => state.version?.showUpdateDialog,
   );
   const [openDialog, setOpenDialog] = useState(false);
   const [showDot, setShowDot] = useState(false);
@@ -89,10 +92,20 @@ export function NavUser({ user }) {
                 </div>
               )}
 
-              <LogOut
-                onClick={() => setLogoutDialogOpen(true)}
-                className="ml-auto size-4 hover:text-red-600 hover:scale-125 transition-transform"
-              />
+              <div className="ml-auto flex items-center gap-2">
+                <abbr title="Change Password">
+                  <Lock
+                    onClick={() => setChangePasswordDialogOpen(true)}
+                    className="size-4 hover:text-blue-600 hover:scale-125 transition-transform cursor-pointer"
+                  />
+                </abbr>
+                <abbr title="Logout">
+                  <LogOut
+                    onClick={() => setLogoutDialogOpen(true)}
+                    className="size-4 hover:text-red-600 hover:scale-125 transition-transform cursor-pointer"
+                  />
+                </abbr>
+              </div>
             </SidebarMenuButton>
           ) : (
             <motion.div
@@ -103,7 +116,7 @@ export function NavUser({ user }) {
                 "relative transition-all duration-300 p-2 rounded-lg cursor-pointer hover:shadow-md",
                 sidebarOpen
                   ? "bg-gradient-to-r from-purple-500 to-pink-500"
-                  : "bg-gradient-to-r from-purple-500 to-pink-500 w-10 h-10 flex items-center justify-center"
+                  : "bg-gradient-to-r from-purple-500 to-pink-500 w-10 h-10 flex items-center justify-center",
               )}
               onClick={() => setOpenDialog(true)}
             >
@@ -140,6 +153,10 @@ export function NavUser({ user }) {
         setOpen={setLogoutDialogOpen}
         onConfirm={handleLogout}
       />
+      <ChangePasswordDialog
+        open={changePasswordDialogOpen}
+        onOpenChange={setChangePasswordDialogOpen}
+      />
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent
           className="sm:max-w-xs p-4 gap-4"
@@ -172,7 +189,7 @@ export function NavUser({ user }) {
               size="sm"
               className={cn(
                 "flex-1",
-                updateMutation.isPending && "opacity-50 cursor-not-allowed"
+                updateMutation.isPending && "opacity-50 cursor-not-allowed",
               )}
               onClick={handleUpdate}
               disabled={updateMutation.isPending}
