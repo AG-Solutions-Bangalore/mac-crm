@@ -53,15 +53,18 @@ export function NavMain({ items, openItem, setOpenItem }) {
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Home</SidebarGroupLabel>
+      {/* <SidebarGroupLabel>Home</SidebarGroupLabel> */}
       <SidebarMenu>
         {items.map((item) => {
           const hasSubItems = item.items && item.items.length > 0;
           const isParentActive = hasSubItems
-            ? item.items.some((subItem) =>
-                location.pathname.startsWith(subItem.url)
+            ? item.items.some(
+                (subItem) =>
+                  location.pathname === subItem.url ||
+                  location.pathname.startsWith(subItem.url + "/")
               )
-            : location.pathname.startsWith(item.url);
+            : location.pathname === item.url ||
+              location.pathname.startsWith(item.url + "/");
 
           const isOpen = openItem === item.title || isParentActive;
 

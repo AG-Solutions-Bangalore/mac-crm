@@ -6,7 +6,7 @@ import { NOTIFICATION_API } from "@/constants/apiConstants";
 import { useGetApiMutation } from "@/hooks/useGetApiMutation";
 import { getImageBaseUrl, getNoImageUrl } from "@/utils/imageUtils";
 import { Edit } from "lucide-react";
-
+import moment from "moment";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import NotificationDialog from "./create-notification";
@@ -59,13 +59,10 @@ const NotificationList = () => {
       header: "Date",
       accessorKey: "notification_date",
       enableSorting: false,
-      cell: ({ row }) => {
-        const dateStr = row.original.notification_date;
-        if (!dateStr) return "-";
-        const [year, month, day] = dateStr.split("-");
-
-        return `${day.trim()} - ${month.trim()} - ${year.trim()}`;
-      },
+      cell: ({ row }) =>
+        row.original.notification_date
+          ? moment(row.original.notification_date).format("DD-MM-YYYY")
+          : "-",
     },
     {
       header: "Status",

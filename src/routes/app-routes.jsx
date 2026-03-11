@@ -37,6 +37,8 @@ import RequestList from "@/app/service-request/request-list";
 import ServiceList from "@/app/service/service-list";
 import CreateService from "@/app/service/create-service";
 import UpdateService from "@/app/service/update-service";
+import Client from "@/app/reports/Client";
+import Request_service from "@/app/reports/Request_service";
 
 function AppRoutes() {
   return (
@@ -140,6 +142,24 @@ function AppRoutes() {
             element={
               <Suspense fallback={<LoadingBar />}>
                 <NotificationList />
+              </Suspense>
+            }
+          />
+
+          {/* Reports */}
+          <Route
+            path="/client-report"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <Client />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/service-request-report"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <Request_service />
               </Suspense>
             }
           />

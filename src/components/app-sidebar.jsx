@@ -15,19 +15,22 @@ import {
   Command,
   GalleryVerticalEnd,
   Globe,
-  Image,
+  Users,
+  LayoutDashboard,
   LayoutGrid,
   Settings2,
+  FileText,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
+import { NavMainReport } from "./nav-main-report";
 
 const NAVIGATION_CONFIG = {
   COMMON: {
     DASHBOARD: {
       title: "Dashboard",
       url: "/dashboard",
-      icon: LayoutGrid,
+      icon: LayoutDashboard,
       isActive: false,
     },
     SERVICELIST: {
@@ -40,7 +43,7 @@ const NAVIGATION_CONFIG = {
     MEMBERLIST: {
       title: "Clients",
       url: "/client-list",
-      icon: Image,
+      icon: Users,
       isActive: false,
     },
     SERVICEREQUEST: {
@@ -58,6 +61,22 @@ const NAVIGATION_CONFIG = {
   },
 
   REPORTS: {
+    REPORT_MENU: {
+      title: "Reports",
+      url: "#",
+      icon: FileText,
+      isActive: false,
+      items: [
+        {
+          title: "Client Report",
+          url: "/client-report",
+        },
+        {
+          title: "Service Request",
+          url: "/service-request-report",
+        },
+      ],
+    },
     SETTINGS: {
       title: "Settings",
       url: "/settings",
@@ -77,7 +96,7 @@ const USER_ROLE_PERMISSIONS = {
       "NOTIFICATION",
       // "SETTINGS",
     ],
-    navMainReport: ["SUMMARY", "DOWNLOADS", "OTHER", "SETTINGS"],
+    navMainReport: ["REPORT_MENU"],
   },
 
   2: {
@@ -88,7 +107,7 @@ const USER_ROLE_PERMISSIONS = {
       "SERVICEREQUEST",
       "NOTIFICATION",
     ],
-    navMainReport: ["SUMMARY", "DOWNLOADS", "OTHER", "SETTINGS"],
+    navMainReport: ["REPORT_MENU"],
   },
 
   3: {
@@ -99,7 +118,7 @@ const USER_ROLE_PERMISSIONS = {
       "SERVICEREQUEST",
       "NOTIFICATION",
     ],
-    navMainReport: ["SUMMARY", "DOWNLOADS", "OTHER", "SETTINGS"],
+    navMainReport: ["REPORT_MENU"],
   },
 
   4: {
@@ -110,7 +129,7 @@ const USER_ROLE_PERMISSIONS = {
       "SERVICEREQUEST",
       "NOTIFICATION",
     ],
-    navMainReport: ["SUMMARY", "DOWNLOADS", "OTHER", "SETTINGS"],
+    navMainReport: ["REPORT_MENU"],
   },
 };
 
@@ -150,12 +169,12 @@ const useNavigationData = (userType) => {
       // { MASTER_SETTINGS_LIMITED: LIMITED_MASTER_SETTINGS }
     );
 
-    // const navMainReport = buildNavItems(
-    //   permissions.navMainReport,
-    //   NAVIGATION_CONFIG.REPORTS
-    // );
+    const navMainReport = buildNavItems(
+      permissions.navMainReport,
+      NAVIGATION_CONFIG.REPORTS,
+    );
 
-    return { navMain };
+    return { navMain, navMainReport };
   }, [userType]);
 };
 
@@ -202,11 +221,11 @@ export function AppSidebar({ ...props }) {
           openItem={openItem}
           setOpenItem={setOpenItem}
         />
-        {/* <NavMainReport
+        <NavMainReport
           items={initialData.navMainReport}
           openItem={openItem}
           setOpenItem={setOpenItem}
-        /> */}
+        />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={initialData.user} />

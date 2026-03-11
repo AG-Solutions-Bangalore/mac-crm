@@ -31,7 +31,7 @@ export function NavMainReport({ items, openItem, setOpenItem }) {
   const location = useLocation();
 
   const handleLinkClick = (e, hasSubItems = false, isSubItem = false) => {
-     const sidebarContent = document.querySelector(".sidebar-content");
+    const sidebarContent = document.querySelector(".sidebar-content");
     if (sidebarContent) {
       sessionStorage.setItem("sidebarScrollPosition", sidebarContent.scrollTop);
     }
@@ -50,16 +50,19 @@ export function NavMainReport({ items, openItem, setOpenItem }) {
   if (!items || items.length === 0) return null;
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>Report</SidebarGroupLabel>
+    <SidebarGroup className="-mt-[20px]">
+      {/* <SidebarGroupLabel>Report</SidebarGroupLabel> */}
       <SidebarMenu>
         {items.map((item) => {
           const hasSubItems = item.items && item.items.length > 0;
           const isParentActive = hasSubItems
-            ? item.items.some((subItem) =>
-                location.pathname.startsWith(subItem.url)
+            ? item.items.some(
+                (subItem) =>
+                  location.pathname === subItem.url ||
+                  location.pathname.startsWith(subItem.url + "/"),
               )
-            : location.pathname.startsWith(item.url);
+            : location.pathname === item.url ||
+              location.pathname.startsWith(item.url + "/");
 
           const isOpen = openItem === item.title || isParentActive;
 
@@ -123,17 +126,15 @@ export function NavMainReport({ items, openItem, setOpenItem }) {
                 >
                   <SidebarMenuSub className="border-l border-[var(--color-border)] dark:border-[var(--color-border-dark)] ml-4 pl-2">
                     {item.items?.map((subItem) => {
-                      const isSubItemActive = location.pathname.startsWith(
-                        subItem.url
-                      );
+                      const isSubItemActive =
+                        location.pathname === subItem.url ||
+                        location.pathname.startsWith(subItem.url + "/");
                       return (
                         <SidebarMenuSubItem key={subItem.title}>
                           <SidebarMenuSubButton asChild>
                             <Link
                               to={subItem.url}
-                              onClick={
-                                (e) => handleLinkClick(e, false, true) 
-                              }
+                              onClick={(e) => handleLinkClick(e, false, true)}
                             >
                               <motion.div
                                 whileHover={{ scale: 1.05 }}
