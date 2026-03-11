@@ -66,21 +66,25 @@ const ToggleAction = ({
       {loading && <RefreshCcw className="h-4 w-4 animate-spin text-blue-500" />}
 
       <Select
-        value={status}
+        // value={status}
         onValueChange={(value) => handleToggle(value)}
         disabled={loading}
       >
-        <SelectTrigger
-          className={`h-8 w-[150px] text-sm rounded-xl border ${statusStyle}`}
-        >
-          <SelectValue placeholder="Select Status" />
-        </SelectTrigger>
+        {status === "Pending" ? (
+          <SelectTrigger
+            className={`h-8 w-[150px] text-sm rounded-xl border hover:scale-[1.04] transition-all duration-200 ${statusStyle}`}
+          >
+            <SelectValue placeholder={status} />
+          </SelectTrigger>
+        ) : (
+          <div
+            className={`h-8 w-[150px] text-sm rounded-xl border flex px-3 justify-start items-center ${statusStyle}`}
+          >
+            {status}
+          </div>
+        )}
 
         <SelectContent>
-          <SelectItem value="Pending" className="text-yellow-700">
-            Pending
-          </SelectItem>
-
           <SelectItem value="Approved" className="text-green-700">
             Approved
           </SelectItem>

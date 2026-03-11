@@ -10,17 +10,19 @@ import ToggleStatus from "@/components/toogle/status-toogle";
 
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 const ServiceList = () => {
   const navigate = useNavigate();
+  const [page, setPage] = useState(1);
   const {
     data: servicedata,
     isLoading,
     isError,
     refetch,
   } = useGetApiMutation({
-    url: SERVICE_API.list,
-    queryKey: ["service-list"],
+    url: `${SERVICE_API.list}?page=${page}`,
+    queryKey: ["service-list", page],
   });
 
   const IMAGE_FOR = "Service";
@@ -95,15 +97,21 @@ const ServiceList = () => {
       enableSorting: false,
     },
   ];
+  const paginationData = servicedata?.data;
+
   if (isLoading) return <LoadingBar />;
   if (isError) return <ApiErrorPage onRetry={refetch} />;
-
+  console.log(paginationData?.total);
   return (
     <>
       <DataTable
         data={servicedata?.data?.data || servicedata?.data || []}
         columns={columns}
-        pageSize={50}
+        backendPagination
+        page={paginationData?.current_page}
+        totalPages={paginationData?.last_page}
+        onPageChange={(p) => setPage(p)}
+        totalRecords={paginationData?.total}
         searchPlaceholder="Search Service..."
         addButton={{
           onClick: () => {

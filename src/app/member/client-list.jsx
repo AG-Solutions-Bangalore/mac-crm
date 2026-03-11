@@ -40,16 +40,31 @@ const ClientList = () => {
       header: "Area",
       accessorKey: "area",
       enableSorting: false,
+      cell: ({ row }) => <span>{row.original.area || "-"}</span>,
+    },
+    {
+      header: "R ID",
+      accessorKey: "r_id",
+      enableSorting: false,
+      cell: ({ row }) => <span>{row.original.r_id || "-"}</span>,
+    },
+    {
+      header: "Relation",
+      accessorKey: "relation",
+      enableSorting: false,
+      cell: ({ row }) => <span>{row.original.relation || "-"}</span>,
     },
     {
       header: "Services",
       accessorKey: "services_name",
       enableSorting: false,
+      cell: ({ row }) => <span>{row.original.services_name || "-"}</span>,
     },
     {
       header: "Hide Services",
       accessorKey: "hide_services_name",
       enableSorting: false,
+      cell: ({ row }) => <span>{row.original.hide_services_name || "-"}</span>,
     },
 
     {

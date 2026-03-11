@@ -34,6 +34,7 @@ export const CLIENT_API = {
   list: "/member",
   byId: (id) => `/member/${id}`,
   updateById: (id) => `/member/${id}`,
+  report: "/client-report",
 };
 
 export const REQUEST_API = {
@@ -41,11 +42,14 @@ export const REQUEST_API = {
   byId: (id) => `/service-request/${id}`,
   updateById: (id) => `/service-request/${id}`,
   updateStatus: (id) => `/service-requests/${id}/status`,
+  report: "/service-request-report",
 };
 
 export const ACTIVE_SERVICE_API = {
   list: "activeServices",
 };
+
+
 // old
 
 export const SIDE_POPUP_API = {
