@@ -69,13 +69,13 @@ export default function ChangePasswordDialog({ open, onOpenChange }) {
       return;
     }
 
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])/;
-    if (!passwordRegex.test(formData.newPassword)) {
-      toast.error(
-        "New password must contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
-      );
-      return;
-    }
+    // const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])/;
+    // if (!passwordRegex.test(formData.newPassword)) {
+    //   toast.error(
+    //     "New password must contain at least one lowercase letter, one uppercase letter, one number, and one special character.",
+    //   );
+    //   return;
+    // }
 
     if (formData.newPassword !== formData.confirmPassword) {
       toast.error("New password and confirm password do not match.");

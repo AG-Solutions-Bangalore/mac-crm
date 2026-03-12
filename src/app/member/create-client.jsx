@@ -163,14 +163,6 @@ const CreateClient = ({ isEdit, isRelation = false }) => {
     if (name === "mobile" || name === "whatsapp")
       updatedValue = value.replace(/\D/g, "").slice(0, 10);
 
-    if (
-      name === "email" &&
-      value &&
-      !/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(value)
-    ) {
-      error = "Email must end with @gmail.com";
-    }
-
     setErrors((prev) => ({ ...prev, [name]: error }));
     setFormData((prev) => ({ ...prev, [name]: updatedValue }));
   };
@@ -178,11 +170,7 @@ const CreateClient = ({ isEdit, isRelation = false }) => {
   const validateForm = () => {
     let newErrors = {};
     if (!formData.name) newErrors.name = "Name is required";
-    if (
-      !formData.email ||
-      !/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(formData.email)
-    )
-      newErrors.email = "Valid @gmail.com required";
+    if (!formData.email) newErrors.email = "Email is required";
     if (!formData.mobile || formData.mobile.length !== 10)
       newErrors.mobile = "10 digit mobile required";
     if (selectedServices.length === 0)
@@ -330,12 +318,19 @@ const CreateClient = ({ isEdit, isRelation = false }) => {
                 <Label className="flex items-center gap-2">
                   <BookOpen className="h-3.5 w-4" /> Services <RedStar />
                 </Label>
+
                 <MemoizedSelect
                   isMulti
-                  options={serviceOptions}
+                  options={serviceOptions.filter(
+                    (service) =>
+                      !selectedHideServices?.some(
+                        (hidden) => hidden.value === service.value,
+                      ),
+                  )}
                   value={selectedServices}
                   onChange={setSelectedServices}
                 />
+
                 {errors.services && (
                   <p className="text-red-500 text-sm">{errors.services}</p>
                 )}
@@ -345,9 +340,15 @@ const CreateClient = ({ isEdit, isRelation = false }) => {
                 <Label className="flex items-center gap-2">
                   <BookOpen className="h-3.5 w-4" /> Hide Services
                 </Label>
+
                 <MemoizedSelect
                   isMulti
-                  options={serviceOptions}
+                  options={serviceOptions.filter(
+                    (service) =>
+                      !selectedServices?.some(
+                        (selected) => selected.value === service.value,
+                      ),
+                  )}
                   value={selectedHideServices}
                   onChange={setSelectedHideServices}
                 />

@@ -14,7 +14,7 @@ import {
   Blocks,
   Building2,
   Command,
-  Globe,
+  Bell,
   Users,
   LayoutDashboard,
   LayoutGrid,
@@ -55,7 +55,7 @@ const NAVIGATION_CONFIG = {
     NOTIFICATION: {
       title: "Notification",
       url: "/notification-list",
-      icon: Globe,
+      icon: Bell,
       isActive: false,
     },
   },

@@ -74,8 +74,18 @@ const NotificationDialog = ({ open, onClose, Id }) => {
 
   const validate = () => {
     const err = {};
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDate = formData.notification_date
+      ? new Date(formData.notification_date)
+      : null;
+
     if (!formData.notification_heading) err.notification_heading = "Required";
-    if (!formData.notification_date) err.notification_date = "Required";
+    if (!formData.notification_date) {
+      err.notification_date = "Required";
+    } else if (selectedDate && selectedDate < today) {
+      err.notification_date = "Date cannot be in the past";
+    }
     if (!preview.notification_image) err.notification_image = "Required";
 
     setErrors(err);
@@ -130,6 +140,9 @@ const NotificationDialog = ({ open, onClose, Id }) => {
     setFormData({ ...formData, [fieldName]: null });
     setPreview({ ...preview, [fieldName]: "" });
   };
+
+  const todayStr = new Date().toLocaleDateString("en-CA");
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl" aria-describedby={undefined}>
@@ -163,6 +176,7 @@ const NotificationDialog = ({ open, onClose, Id }) => {
               name="notification_date"
               value={formData.notification_date}
               onChange={handleChange}
+              min={todayStr}
             />
             <div className="flex justify-between">
               {errors.notification_date && (
