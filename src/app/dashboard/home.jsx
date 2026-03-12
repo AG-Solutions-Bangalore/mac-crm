@@ -36,6 +36,7 @@ const Dashboard = () => {
   } = useGetApiMutation({
     url: DASHBOARD_API.list,
     queryKey: ["dashboard-list"],
+    staleTime: 0,
   });
 
   const dashboardData = DData?.data || {};
