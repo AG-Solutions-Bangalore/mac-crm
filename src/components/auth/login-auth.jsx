@@ -8,10 +8,13 @@ import { useDispatch, useSelector } from "react-redux";
 import LoginForm from "./login-form";
 import { toast } from "sonner";
 import Carousel from "./carousel";
+import hero1 from "../../assets/hero1.png";
+import hero2 from "../../assets/hero2.jpeg";
+import hero3 from "../../assets/hero3.png";
 
 const slides = [
   {
-    image: "src/assets/hero1.png",
+    image: hero1,
     title: "Our Smart Solutions",
     description:
       "Our Smart Home Devices open up a world of endless possibilities. Dive into the extraordinary, where control and customization know no bounds.",
@@ -19,7 +22,7 @@ const slides = [
     statLabel: "Clients",
   },
   {
-    image: "src/assets/hero2.jpeg",
+    image: hero2,
     title: "Home Security Camera System",
     description:
       "Unlock the power of seamless control and vigilant monitoring with our Home Security System in Bangalore. Gain peace of mind knowing that your home is secure no matter where you are.",
@@ -27,7 +30,7 @@ const slides = [
     statLabel: "Premium Security",
   },
   {
-    image: "src/assets/hero3.png",
+    image: hero3,
     title: "Our LED Solutions",
     description:
       "MAKc Automation's Smart LED lights for Home and innovative lighting solutions. Our commitment to providing exceptional lighting goes beyond mere illumination.",
