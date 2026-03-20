@@ -14,13 +14,6 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import ServiceSubForm from "./service-sub-form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 const CreateService = () => {
   const { trigger, loading: isSubmitting } = useApiMutation();
@@ -29,6 +22,7 @@ const CreateService = () => {
 
   const [formData, setFormData] = useState({
     service_name: "",
+    service_url: "",
     service_description: "",
     service_other: "",
     service_logo: null,
@@ -164,6 +158,8 @@ const CreateService = () => {
 
     const formDataObj = new FormData();
     formDataObj.append("service_name", formData.service_name);
+    if (formData.service_url)
+      formDataObj.append("service_url", formData.service_url);
     if (formData.service_description)
       formDataObj.append("service_description", formData.service_description);
     if (formData.service_other)
@@ -242,6 +238,17 @@ const CreateService = () => {
                 {errors.service_name && (
                   <p className="text-red-500 text-sm">{errors.service_name}</p>
                 )}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="flex">Service URL</Label>
+                <Input
+                  name="service_url"
+                  value={formData.service_url}
+                  onChange={handleInputChange}
+                  className={errorBorder("service_url")}
+                  placeholder="Enter Service URL"
+                />
               </div>
 
               <div className="space-y-2">

@@ -47,6 +47,13 @@ export const REQUEST_API = {
   report: "/service-request-report",
 };
 
+export const COMPLAINT_API = {
+  list: "/complaint",
+  byId: (id) => `/complaint/${id}`,
+  updateById: (id) => `/complaint/${id}`,
+  updateStatus: (id) => `/complaints/${id}/status`,
+};
+
 export const ACTIVE_SERVICE_API = {
   list: "activeServices",
 };

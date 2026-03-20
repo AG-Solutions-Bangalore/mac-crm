@@ -20,6 +20,7 @@ import {
   LayoutGrid,
   Settings2,
   FileText,
+  AlertCircle,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
@@ -50,6 +51,12 @@ const NAVIGATION_CONFIG = {
       title: "Service Request",
       url: "/service-request",
       icon: Building2,
+      isActive: false,
+    },
+    COMPLAINT: {
+      title: "Complaint",
+      url: "/complaint-list",
+      icon: AlertCircle,
       isActive: false,
     },
     NOTIFICATION: {
@@ -93,6 +100,7 @@ const USER_ROLE_PERMISSIONS = {
       "SERVICELIST",
       "MEMBERLIST",
       "SERVICEREQUEST",
+      "COMPLAINT",
       "NOTIFICATION",
       // "SETTINGS",
     ],
@@ -105,6 +113,7 @@ const USER_ROLE_PERMISSIONS = {
       "SERVICELIST",
       "MEMBERLIST",
       "SERVICEREQUEST",
+      "COMPLAINT",
       "NOTIFICATION",
     ],
     navMainReport: ["REPORT_MENU"],
@@ -116,6 +125,7 @@ const USER_ROLE_PERMISSIONS = {
       "SERVICELIST",
       "MEMBERLIST",
       "SERVICEREQUEST",
+      "COMPLAINT",
       "NOTIFICATION",
     ],
     navMainReport: ["REPORT_MENU"],
@@ -127,6 +137,7 @@ const USER_ROLE_PERMISSIONS = {
       "SERVICELIST",
       "MEMBERLIST",
       "SERVICEREQUEST",
+      "COMPLAINT",
       "NOTIFICATION",
     ],
     navMainReport: ["REPORT_MENU"],

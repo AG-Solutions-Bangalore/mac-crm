@@ -33,6 +33,7 @@ const UpdateService = () => {
 
   const [formData, setFormData] = useState({
     service_name: "",
+    service_url: "",
     service_description: "",
     service_other: "",
     service_status: "Active",
@@ -58,6 +59,7 @@ const UpdateService = () => {
       if (data) {
         setFormData({
           service_name: data.service_name || "",
+          service_url: data.service_url || "",
           service_description: data.service_description || "",
           service_other: data.service_other || "",
           service_status: data.service_status || "Active",
@@ -87,6 +89,7 @@ const UpdateService = () => {
           setInitialState({
             formData: {
               service_name: data.service_name || "",
+              service_url: data.service_url || "",
               service_description: data.service_description || "",
               service_other: data.service_other || "",
               service_status: data.service_status || "Active",
@@ -205,8 +208,12 @@ const UpdateService = () => {
     if (!initialState) return false;
 
     // Check main form fields
-    if (formData.service_name !== initialState.formData.service_name) return true;
-    if (formData.service_description !== initialState.formData.service_description)
+    if (formData.service_name !== initialState.formData.service_name)
+      return true;
+    if (formData.service_url !== initialState.formData.service_url) return true;
+    if (
+      formData.service_description !== initialState.formData.service_description
+    )
       return true;
     if (formData.service_other !== initialState.formData.service_other)
       return true;
@@ -277,6 +284,7 @@ const UpdateService = () => {
 
     // 1. Standard Fields
     formDataObj.append("service_name", formData.service_name);
+    formDataObj.append("service_url", formData.service_url);
     formDataObj.append("service_status", formData.service_status);
 
     if (formData.service_description)
@@ -349,7 +357,7 @@ const UpdateService = () => {
             onSubmit={handleSubmit}
             className="flex flex-col gap-5"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label className="flex">
                   Service Name <RedStar />
@@ -364,6 +372,16 @@ const UpdateService = () => {
                 {errors.service_name && (
                   <p className="text-red-500 text-sm">{errors.service_name}</p>
                 )}
+              </div>
+              <div className="space-y-2">
+                <Label className="flex">Service URL</Label>
+                <Input
+                  name="service_url"
+                  value={formData.service_url}
+                  onChange={handleInputChange}
+                  className={errorBorder("service_url")}
+                  placeholder="Enter Service URL"
+                />
               </div>
               <div className="space-y-2">
                 <Label className="flex">Status</Label>
@@ -394,7 +412,8 @@ const UpdateService = () => {
                   </SelectContent>
                 </Select>
               </div>
-
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="flex">Service Other</Label>
                 <Textarea
