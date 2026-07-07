@@ -1,0 +1,439 @@
+import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
+import {
+  BookOpen,
+  Loader2,
+  User,
+  Mail,
+  Phone,
+  FormInput,
+  GitBranch,
+  Locate,
+  ArrowLeft,
+  Save,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import PageHeader from "@/components/common/page-header";
+import RedStar from "@/components/RedStar";
+import LoadingBar from "@/components/loader/loading-bar";
+import MemoizedSelect from "@/components/common/memoized-select";
+import { toast } from "sonner";
+import { useActiveServicesQuery } from "@/modules/service/hooks/useService";
+import { useClientQuery, useCreateClientMutation, useUpdateClientMutation } from "../hooks/useClient";
+
+const ClientFormPage = ({ isEdit, isRelation = false }) => {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const location = useLocation();
+  const m_id_from_state = location.state?.m_id;
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    mobile: "",
+    whatsapp: "",
+    area: "",
+    description: "",
+    relation: "",
+    status: "Active",
+    m_id: null,
+    r_id: null,
+  });
+
+  const [initialData, setInitialData] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [selectedServices, setSelectedServices] = useState([]);
+  const [selectedHideServices, setSelectedHideServices] = useState([]);
+
+  // TanStack Queries & Mutations
+  const { data: fetchedData, isLoading: isFetching, isError } = useClientQuery(id, isEdit);
+  const { data: activeServicesData, isLoading: isActiveServicesLoading } = useActiveServicesQuery();
+  const createClientMutation = useCreateClientMutation();
+  const updateClientMutation = useUpdateClientMutation();
+
+  const isSubmitting = createClientMutation.isPending || updateClientMutation.isPending;
+
+  const serviceOptions = useMemo(() => {
+    return (activeServicesData?.data || []).map((service) => ({
+      value: String(service.id),
+      label: service.service_name,
+    }));
+  }, [activeServicesData]);
+
+  useEffect(() => {
+    if (isEdit && fetchedData?.data && serviceOptions.length > 0) {
+      const data = fetchedData.data;
+
+      const fetchedForm = {
+        name: data?.name || "",
+        email: data?.email || "",
+        mobile: data?.mobile || "",
+        whatsapp: data?.whatsapp || "",
+        area: data?.area || "",
+        description: data?.description || "",
+        relation: data?.relation || "",
+        status: data?.status || "Active",
+        m_id: data?.m_id,
+        r_id: data?.r_id,
+      };
+
+      setFormData(fetchedForm);
+
+      let fetchedServices = [];
+      if (data?.services) {
+        const servicesArray = data.services.split(",");
+        fetchedServices = servicesArray.map((s) => ({
+          value: s,
+          label:
+            serviceOptions.find((opt) => opt.value === s)?.label ||
+            `Service ${s}`,
+        }));
+        setSelectedServices(fetchedServices);
+      }
+
+      let fetchedHideServices = [];
+      if (data?.hide_services) {
+        const hideArray = data.hide_services.split(",");
+        fetchedHideServices = hideArray.map((s) => ({
+          value: s,
+          label:
+            serviceOptions.find((opt) => opt.value === s)?.label ||
+            `Service ${s}`,
+        }));
+        setSelectedHideServices(fetchedHideServices);
+      }
+
+      setInitialData({
+        ...fetchedForm,
+        services: fetchedServices,
+        hide_services: fetchedHideServices,
+      });
+    }
+  }, [isEdit, fetchedData, serviceOptions]);
+
+  const isFormUnchanged = () => {
+    if (!isEdit || !initialData) return false;
+
+    const isBaseChanged = Object.keys(formData).some(
+      (key) => formData[key] !== initialData[key],
+    );
+
+    const isServicesChanged =
+      JSON.stringify(selectedServices) !== JSON.stringify(initialData.services);
+    const isHideServicesChanged =
+      JSON.stringify(selectedHideServices) !==
+      JSON.stringify(initialData.hide_services);
+
+    return !isBaseChanged && !isServicesChanged && !isHideServicesChanged;
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    let updatedValue = value;
+
+    if (name === "name") updatedValue = value.replace(/[^a-zA-Z\s]/g, "");
+    if (name === "mobile" || name === "whatsapp")
+      updatedValue = value.replace(/\D/g, "").slice(0, 10);
+
+    setErrors((prev) => ({ ...prev, [name]: "" }));
+    setFormData((prev) => ({ ...prev, [name]: updatedValue }));
+  };
+
+  const validateForm = () => {
+    let newErrors = {};
+    if (!formData.name) newErrors.name = "Name is required";
+    if (!formData.email) newErrors.email = "Email is required";
+    if (!formData.mobile || formData.mobile.length !== 10)
+      newErrors.mobile = "10 digit mobile required";
+    if (selectedServices.length === 0)
+      newErrors.services = "Select at least one service";
+
+    const showRelation =
+      isRelation || (formData.m_id !== formData.r_id && formData.m_id !== null);
+    if (showRelation && !formData.relation)
+      newErrors.relation = "Relation is required";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    const formDataObj = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+      if (value !== null) formDataObj.append(key, value);
+    });
+
+    if (isRelation && m_id_from_state) {
+      formDataObj.append("r_id", m_id_from_state);
+    }
+
+    formDataObj.append(
+      "services",
+      selectedServices.map((s) => s.value).join(","),
+    );
+    formDataObj.append(
+      "hide_services",
+      selectedHideServices.map((s) => s.value).join(","),
+    );
+
+    try {
+      if (isEdit) {
+        await updateClientMutation.mutateAsync({
+          id,
+          data: formDataObj,
+        });
+        toast.success("Client updated successfully");
+      } else {
+        await createClientMutation.mutateAsync(formDataObj);
+        toast.success("Client created successfully");
+      }
+      navigate("/client-list");
+    } catch (error) {
+      toast.error(error?.response?.data?.message || error.message || "Failed to save client");
+    }
+  };
+
+  const errorBorder = (field) =>
+    errors[field] ? "border-red-500 focus-visible:ring-red-500" : "";
+
+  if (isEdit && isFetching) return <LoadingBar />;
+  if (isEdit && isError) {
+    return (
+      <div className="p-5 text-center">
+        <p className="text-red-500 font-semibold">Failed to load client details.</p>
+        <Button onClick={() => navigate("/client-list")} className="mt-4">
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back to List
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-full mx-auto px-5">
+      <PageHeader
+        icon={User}
+        title={isEdit ? "Edit Client" : "Add New Client"}
+        description={isEdit ? "Update client details below" : "Register a new client profile"}
+        rightContent={
+          <Button variant="outline" onClick={() => navigate("/client-list")}>
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back
+          </Button>
+        }
+      />
+
+      <Card className="mt-4">
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              {/* Name */}
+              <div className="space-y-2">
+                <Label className="flex">
+                  <User className="h-3.5 w-5" /> Name <RedStar />
+                </Label>
+                <Input
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  className={errorBorder("name")}
+                  placeholder="Enter Name"
+                />
+                {errors.name && (
+                  <p className="text-red-500 text-sm">{errors.name}</p>
+                )}
+              </div>
+
+              {/* Email */}
+              <div className="space-y-2">
+                <Label className="flex">
+                  <Mail className="h-3.5 w-5" /> Email <RedStar />
+                </Label>
+                <Input
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className={errorBorder("email")}
+                  placeholder="Enter Email"
+                />
+                {errors.email && (
+                  <p className="text-red-500 text-sm">{errors.email}</p>
+                )}
+              </div>
+
+              {/* Mobile */}
+              <div className="space-y-2">
+                <Label className="flex">
+                  <Phone className="h-3.5 w-5" /> Mobile <RedStar />
+                </Label>
+                <Input
+                  name="mobile"
+                  value={formData.mobile}
+                  onChange={handleInputChange}
+                  className={errorBorder("mobile")}
+                  placeholder="Enter Mobile"
+                />
+                {errors.mobile && (
+                  <p className="text-red-500 text-sm">{errors.mobile}</p>
+                )}
+              </div>
+
+              {/* Whatsapp */}
+              <div className="space-y-2">
+                <Label className="flex">
+                  <Phone className="h-3.5 w-5" /> Whatsapp
+                </Label>
+                <Input
+                  name="whatsapp"
+                  value={formData.whatsapp}
+                  onChange={handleInputChange}
+                  placeholder="Enter Whatsapp"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Services select */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <BookOpen className="h-3.5 w-4" /> Services <RedStar />
+                </Label>
+                <MemoizedSelect
+                  isMulti
+                  options={serviceOptions.filter(
+                    (service) =>
+                      !selectedHideServices?.some(
+                        (hidden) => hidden.value === service.value,
+                      ),
+                  )}
+                  value={selectedServices}
+                  onChange={setSelectedServices}
+                />
+                {errors.services && (
+                  <p className="text-red-500 text-sm">{errors.services}</p>
+                )}
+              </div>
+
+              {/* Hide Services select */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <BookOpen className="h-3.5 w-4" /> Hide Services
+                </Label>
+                <MemoizedSelect
+                  isMulti
+                  options={serviceOptions.filter(
+                    (service) =>
+                      !selectedServices?.some(
+                        (selected) => selected.value === service.value,
+                      ),
+                  )}
+                  value={selectedHideServices}
+                  onChange={setSelectedHideServices}
+                />
+              </div>
+
+              {/* Area */}
+              <div className="space-y-2">
+                <Label className="flex">
+                  <Locate className="h-3.5 w-5" /> Area
+                </Label>
+                <Input
+                  name="area"
+                  value={formData.area}
+                  onChange={handleInputChange}
+                  placeholder="Enter Area"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* Description */}
+              <div className={`space-y-2 md:col-span-2 ${isEdit ? "md:col-span-2" : "md:col-span-3"}`}>
+                <Label className="flex">
+                  <FormInput className="h-3.5 w-5" /> Description
+                </Label>
+                <Textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  placeholder="Type Your Description Here..."
+                />
+              </div>
+
+              {/* Relation (if relation or child/sub profile) */}
+              {(isRelation ||
+                (formData.m_id !== formData.r_id &&
+                  formData.m_id !== null)) && (
+                <div className="space-y-2">
+                  <Label className="flex">
+                    <GitBranch className="h-3.5 w-5" /> Relation <RedStar />
+                  </Label>
+                  <Input
+                    name="relation"
+                    value={formData.relation}
+                    onChange={handleInputChange}
+                    className={errorBorder("relation")}
+                    placeholder="Enter Relation"
+                  />
+                  {errors.relation && (
+                    <p className="text-red-500 text-sm">{errors.relation}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Status */}
+              {isEdit && (
+                <div className="space-y-2">
+                  <Label className="flex">
+                    <GitBranch className="h-3.5 w-5" /> Status
+                  </Label>
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                    className="w-full border rounded-md h-10 px-3 focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              )}
+            </div>
+
+            <div className="md:col-span-2 flex justify-end gap-2 mt-4 pt-4 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate("/client-list")}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting || (isEdit && isFormUnchanged())}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" /> Save Client
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default ClientFormPage;

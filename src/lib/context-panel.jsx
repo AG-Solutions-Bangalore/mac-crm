@@ -1,5 +1,5 @@
 import LoadingBar from "@/components/loader/loading-bar";
-import { PANEL_CHECK } from "@/constants/apiConstants";
+import { systemApi } from "@/modules/system/api/systemApi";
 import { useApiMutation } from "@/hooks/useApiMutation";
 import { logout } from "@/store/auth/authSlice";
 import { setCompanyDetails, setCompanyImage } from "@/store/auth/companySlice";
@@ -22,7 +22,7 @@ const AppProvider = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const Logout = appLogout();
-  const { trigger, loading } = useApiMutation();
+  const [loading, setLoading] = useState(false);
 
   const reduxToken = useSelector((state) => state.auth.token);
   const token = getAuthToken(reduxToken);
@@ -39,12 +39,13 @@ const AppProvider = ({ children }) => {
   };
 
   const initializeApp = async () => {
+    setLoading(true);
     try {
       if (!secretKey || !validationKey) {
         throw new Error("Missing environment variables");
       }
 
-      const panelRes = await trigger({ url: PANEL_CHECK.getPanelStatus });
+      const panelRes = await systemApi.checkStatus();
       if (panelRes?.message !== "Success") {
         throw new Error("Panel check failed");
       }
@@ -66,7 +67,7 @@ const AppProvider = ({ children }) => {
         );
       }
 
-      const envRes = await trigger({ url: PANEL_CHECK.getEnvStatus });
+      const envRes = await systemApi.fetchDotenv();
       const computedHash = CryptoJS.MD5(validationKey).toString();
 
       if (envRes?.data !== computedHash) {
@@ -80,12 +81,14 @@ const AppProvider = ({ children }) => {
       setInitialized(true);
     } catch (error) {
       handleCriticalError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const pollPanelStatus = async () => {
     try {
-      const res = await trigger({ url: PANEL_CHECK.getPanelStatus });
+      const res = await systemApi.checkStatus();
       if (res?.message !== "Success") {
         throw new Error();
       }

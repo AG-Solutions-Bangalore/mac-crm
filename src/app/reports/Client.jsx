@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { Skeleton } from "@/components/ui/skeleton";
+import { motion, AnimatePresence } from "framer-motion";
 
 import {
   flexRender,
@@ -29,6 +30,17 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+
+const getServiceBadgeClass = (serviceName) => {
+  if (!serviceName) return "badge-default";
+  const service = serviceName.toLowerCase();
+  if (service.includes("switch")) return "badge-switches";
+  if (service.includes("door") || service.includes("automation")) return "badge-automation";
+  if (service.includes("network") || service.includes("wifi") || service.includes("internet")) return "badge-networking";
+  if (service.includes("light")) return "badge-lighting";
+  if (service.includes("secur") || service.includes("camera") || service.includes("cctv")) return "badge-security";
+  return "badge-default";
+};
 
 function Client() {
   const {
@@ -67,19 +79,29 @@ function Client() {
       header: "Service",
       accessorKey: "services_name",
       enableSorting: false,
+      cell: ({ row }) => {
+        const services = row.original.services_name;
+        if (!services) return <span>-</span>;
+        return (
+          <div className="flex flex-wrap gap-1">
+            {services.split(",").map((s) => {
+              const name = s.trim();
+              return (
+                <span key={name} className={`service-badge ${getServiceBadgeClass(name)}`}>
+                  {name}
+                </span>
+              );
+            })}
+          </div>
+        );
+      },
     },
     {
       header: "Status",
       accessorKey: "status",
       enableSorting: true,
       cell: ({ row }) => (
-        <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-            row.original.status === "Active"
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
-          }`}
-        >
+        <span className={`pill ${row.original.status === "Active" ? "pill-approved" : "pill-rejected"}`}>
           {row.original.status || "-"}
         </span>
       ),
@@ -206,14 +228,23 @@ function Client() {
 
                   <TableBody>
                     {table.getRowModel().rows.length ? (
-                      table.getRowModel().rows.map((row) => (
-                        <TableRow key={row.id}>
+                      table.getRowModel().rows.map((row, index) => (
+                        <TableRow
+                          key={row.id}
+                          className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                        >
                           {row.getVisibleCells().map((cell) => (
                             <TableCell key={cell.id}>
-                              {flexRender(
-                                cell.column.columnDef.cell,
-                                cell.getContext(),
-                              )}
+                              <motion.div
+                                initial={{ opacity: 0, y: 8, filter: "blur(3px)" }}
+                                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                                transition={{ duration: 0.22, delay: index * 0.008 }}
+                              >
+                                {flexRender(
+                                  cell.column.columnDef.cell,
+                                  cell.getContext(),
+                                )}
+                              </motion.div>
                             </TableCell>
                           ))}
                         </TableRow>

@@ -8,6 +8,7 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import {
   AudioWaveform,
@@ -21,6 +22,12 @@ import {
   Settings2,
   FileText,
   AlertCircle,
+  Layers,
+  Home,
+  Map,
+  Tag,
+  ListFilter,
+  Package,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
@@ -45,6 +52,54 @@ const NAVIGATION_CONFIG = {
       title: "Clients",
       url: "/client-list",
       icon: Users,
+      isActive: false,
+    },
+    BUYER: {
+      title: "Buyers",
+      url: "/buyer-list",
+      icon: Users,
+      isActive: false,
+    },
+    PROPERTY: {
+      title: "Properties",
+      url: "/property-list",
+      icon: Home,
+      isActive: false,
+    },
+    FLOOR: {
+      title: "Floors",
+      url: "/floor-list",
+      icon: Layers,
+      isActive: false,
+    },
+    AREA: {
+      title: "Areas",
+      url: "/area-list",
+      icon: Map,
+      isActive: false,
+    },
+    BRAND: {
+      title: "Brands",
+      url: "/brand-list",
+      icon: Tag,
+      isActive: false,
+    },
+    CATEGORY: {
+      title: "Categories",
+      url: "/category-list",
+      icon: ListFilter,
+      isActive: false,
+    },
+    PRODUCT: {
+      title: "Products",
+      url: "/product-list",
+      icon: Package,
+      isActive: false,
+    },
+    QUOTATION: {
+      title: "Quotations",
+      url: "/quotation-list",
+      icon: FileText,
       isActive: false,
     },
     SERVICEREQUEST: {
@@ -99,6 +154,14 @@ const USER_ROLE_PERMISSIONS = {
       "DASHBOARD",
       "SERVICELIST",
       "MEMBERLIST",
+      "BUYER",
+      "PROPERTY",
+      "FLOOR",
+      "AREA",
+      "BRAND",
+      "CATEGORY",
+      "PRODUCT",
+      "QUOTATION",
       "SERVICEREQUEST",
       "COMPLAINT",
       "NOTIFICATION",
@@ -112,6 +175,14 @@ const USER_ROLE_PERMISSIONS = {
       "DASHBOARD",
       "SERVICELIST",
       "MEMBERLIST",
+      "BUYER",
+      "PROPERTY",
+      "FLOOR",
+      "AREA",
+      "BRAND",
+      "CATEGORY",
+      "PRODUCT",
+      "QUOTATION",
       "SERVICEREQUEST",
       "COMPLAINT",
       "NOTIFICATION",
@@ -124,6 +195,14 @@ const USER_ROLE_PERMISSIONS = {
       "DASHBOARD",
       "SERVICELIST",
       "MEMBERLIST",
+      "BUYER",
+      "PROPERTY",
+      "FLOOR",
+      "AREA",
+      "BRAND",
+      "CATEGORY",
+      "PRODUCT",
+      "QUOTATION",
       "SERVICEREQUEST",
       "COMPLAINT",
       "NOTIFICATION",
@@ -136,6 +215,14 @@ const USER_ROLE_PERMISSIONS = {
       "DASHBOARD",
       "SERVICELIST",
       "MEMBERLIST",
+      "BUYER",
+      "PROPERTY",
+      "FLOOR",
+      "AREA",
+      "BRAND",
+      "CATEGORY",
+      "PRODUCT",
+      "QUOTATION",
       "SERVICEREQUEST",
       "COMPLAINT",
       "NOTIFICATION",
@@ -211,6 +298,9 @@ export function AppSidebar({ ...props }) {
   const [openItem, setOpenItem] = useState(null);
   const user = useSelector((state) => state.auth.user);
   const { navMain, navMainReport } = useNavigationData(user?.user_type);
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
+
   const initialData = {
     user: {
       name: user?.name || "User",
@@ -221,22 +311,75 @@ export function AppSidebar({ ...props }) {
     navMain,
     navMainReport,
   };
+
+  const dashboardItem = initialData.navMain.filter((item) => item.url === "/dashboard");
+  const masterItems = initialData.navMain.filter((item) => ["Service", "Clients", "Buyers", "Properties", "Floors", "Areas", "Brands", "Categories", "Products"].includes(item.title));
+  const operationsItems = initialData.navMain.filter((item) => ["Service Request", "Complaint", "Notification", "Quotations"].includes(item.title));
+  const reportItems = initialData.navMainReport.filter((item) => item.title === "Reports");
+  const systemItems = initialData.navMainReport.filter((item) => item.title === "Settings" || item.url === "/settings");
+
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
-        <TeamSwitcher teams={initialData.teams} />
+      <SidebarHeader className="border-b-0">
+        <div className="brand flex items-center gap-2 px-2 py-3">
+          <img src={makcLogo} alt="M" className="w-[30px] h-[30px] object-contain rounded shrink-0" />
+          {!isCollapsed && <div className="brand-name font-bold">MAKc</div>}
+        </div>
       </SidebarHeader>
-      <SidebarContent className="sidebar-content">
-        <NavMain
-          items={initialData.navMain}
-          openItem={openItem}
-          setOpenItem={setOpenItem}
-        />
-        <NavMainReport
-          items={initialData.navMainReport}
-          openItem={openItem}
-          setOpenItem={setOpenItem}
-        />
+      <SidebarContent className="sidebar-content px-2">
+        {dashboardItem.length > 0 && (
+          <div className="sidebar-group-dashboard">
+            <NavMain
+              items={dashboardItem}
+              openItem={openItem}
+              setOpenItem={setOpenItem}
+            />
+          </div>
+        )}
+        
+        {masterItems.length > 0 && (
+          <div className="sidebar-group-masters">
+            <div className="nav-sec">Masters</div>
+            <NavMain
+              items={masterItems}
+              openItem={openItem}
+              setOpenItem={setOpenItem}
+            />
+          </div>
+        )}
+
+        {operationsItems.length > 0 && (
+          <div className="sidebar-group-operations">
+            <div className="nav-sec">Operations</div>
+            <NavMain
+              items={operationsItems}
+              openItem={openItem}
+              setOpenItem={setOpenItem}
+            />
+          </div>
+        )}
+
+        {reportItems.length > 0 && (
+          <div className="sidebar-group-insights">
+            <div className="nav-sec">Insights</div>
+            <NavMainReport
+              items={reportItems}
+              openItem={openItem}
+              setOpenItem={setOpenItem}
+            />
+          </div>
+        )}
+
+        {systemItems.length > 0 && (
+          <div className="sidebar-group-system">
+            <div className="nav-sec">System</div>
+            <NavMain
+              items={systemItems}
+              openItem={openItem}
+              setOpenItem={setOpenItem}
+            />
+          </div>
+        )}
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={initialData.user} />

@@ -5,7 +5,6 @@ import {
 } from "@/components/ui/collapsible";
 import {
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -23,12 +22,55 @@ const itemVariants = {
   closed: { opacity: 0, height: 0, transition: { duration: 0.3 } },
 };
 
-const buttonVariants = {
-  hover: { scale: 1.05 },
-};
+function SubMenuItemsReport({ items, handleLinkClick, location }) {
+  const [hoveredSubItem, setHoveredSubItem] = React.useState(null);
+
+  return (
+    <div onMouseLeave={() => setHoveredSubItem(null)} className="flex flex-col gap-1 w-full">
+      {items?.map((subItem) => {
+        const isSubItemActive =
+          location.pathname === subItem.url ||
+          location.pathname.startsWith(subItem.url + "/");
+        return (
+          <SidebarMenuSubItem
+            key={subItem.title}
+            className="relative"
+            onMouseEnter={() => setHoveredSubItem(subItem.title)}
+          >
+            {hoveredSubItem === subItem.title && (
+              <motion.div
+                layoutId="sidebar-sub-hover-highlight"
+                className="sidebar-sub-hover-pill absolute inset-0 rounded-md pointer-events-none z-0"
+                transition={{
+                  type: "spring",
+                  stiffness: 350,
+                  damping: 30,
+                }}
+              />
+            )}
+            <SidebarMenuSubButton asChild className="relative z-10 w-full">
+              <Link
+                to={subItem.url}
+                onClick={(e) => handleLinkClick(e, false, true)}
+                className={`px-3 py-1.5 rounded-md transition-colors duration-200 w-full block ${
+                  isSubItemActive
+                    ? "sidebar-sub-active-item text-white"
+                    : "text-[#A9B4C4] hover:text-white"
+                }`}
+              >
+                {subItem.title}
+              </Link>
+            </SidebarMenuSubButton>
+          </SidebarMenuSubItem>
+        );
+      })}
+    </div>
+  );
+}
 
 export function NavMainReport({ items, openItem, setOpenItem }) {
   const location = useLocation();
+  const [hoveredItem, setHoveredItem] = React.useState(null);
 
   const handleLinkClick = (e, hasSubItems = false, isSubItem = false) => {
     const sidebarContent = document.querySelector(".sidebar-content");
@@ -41,7 +83,6 @@ export function NavMainReport({ items, openItem, setOpenItem }) {
   React.useEffect(() => {
     const sidebarContent = document.querySelector(".sidebar-content");
     const scrollPosition = sessionStorage.getItem("sidebarScrollPosition");
-
     if (sidebarContent && scrollPosition) {
       sidebarContent.scrollTop = parseInt(scrollPosition);
     }
@@ -50,16 +91,15 @@ export function NavMainReport({ items, openItem, setOpenItem }) {
   if (!items || items.length === 0) return null;
 
   return (
-    <SidebarGroup className="-mt-[20px]">
-      {/* <SidebarGroupLabel>Report</SidebarGroupLabel> */}
-      <SidebarMenu>
+    <SidebarGroup>
+      <SidebarMenu onMouseLeave={() => setHoveredItem(null)}>
         {items.map((item) => {
           const hasSubItems = item.items && item.items.length > 0;
           const isParentActive = hasSubItems
             ? item.items.some(
                 (subItem) =>
                   location.pathname === subItem.url ||
-                  location.pathname.startsWith(subItem.url + "/"),
+                  location.pathname.startsWith(subItem.url + "/")
               )
             : location.pathname === item.url ||
               location.pathname.startsWith(item.url + "/");
@@ -68,21 +108,38 @@ export function NavMainReport({ items, openItem, setOpenItem }) {
 
           if (!hasSubItems) {
             return (
-              <SidebarMenuItem key={item.title}>
-                <Link to={item.url} onClick={(e) => handleLinkClick(e, false)}>
-                  <motion.div variants={buttonVariants} whileHover="hover">
-                    <SidebarMenuButton
-                      tooltip={item.title}
-                      className={`rounded-md transition-colors duration-200 ${
-                        isParentActive
-                          ? "bg-[var(--color-light)] text-[var(--color)] dark:bg-[var(--color-dark)] dark:text-[var(--color-dark-text)]"
-                          : "hover:bg-gray-100 dark:hover:bg-gray-800"
-                      }`}
-                    >
-                      {item.icon && <item.icon className="w-5 h-5" />}
-                      <span className="ml-2">{item.title}</span>
-                    </SidebarMenuButton>
-                  </motion.div>
+              <SidebarMenuItem
+                key={item.title}
+                className="relative"
+                onMouseEnter={() => setHoveredItem(item.title)}
+              >
+                {hoveredItem === item.title && (
+                  <motion.div
+                    layoutId="sidebar-hover-highlight"
+                    className="sidebar-hover-pill absolute inset-0 rounded-md pointer-events-none z-0"
+                    transition={{
+                      type: "spring",
+                      stiffness: 350,
+                      damping: 30,
+                    }}
+                  />
+                )}
+                <Link
+                  to={item.url}
+                  onClick={(e) => handleLinkClick(e, false)}
+                  className="relative z-10 block"
+                >
+                  <SidebarMenuButton
+                    tooltip={item.title}
+                    className={`rounded-md transition-colors duration-200 ${
+                      isParentActive
+                        ? "sidebar-active-item text-white"
+                        : "text-[#A9B4C4] hover:text-white"
+                    }`}
+                  >
+                    {item.icon && <item.icon className="w-5 h-5" />}
+                    <span className="ml-2">{item.title}</span>
+                  </SidebarMenuButton>
                 </Link>
               </SidebarMenuItem>
             );
@@ -96,15 +153,29 @@ export function NavMainReport({ items, openItem, setOpenItem }) {
               onOpenChange={(open) => setOpenItem(open ? item.title : null)}
               className="group/collapsible"
             >
-              <SidebarMenuItem>
+              <SidebarMenuItem
+                className="relative"
+                onMouseEnter={() => setHoveredItem(item.title)}
+              >
+                {hoveredItem === item.title && (
+                  <motion.div
+                    layoutId="sidebar-hover-highlight"
+                    className="sidebar-hover-pill absolute top-0 left-0 right-0 h-[40px] rounded-md pointer-events-none z-0"
+                    transition={{
+                      type: "spring",
+                      stiffness: 350,
+                      damping: 30,
+                    }}
+                  />
+                )}
                 <CollapsibleTrigger asChild>
-                  <motion.div variants={buttonVariants} whileHover="hover">
+                  <div className="relative z-10">
                     <SidebarMenuButton
                       tooltip={item.title}
                       className={`rounded-md transition-colors duration-200 ${
                         isOpen
-                          ? "bg-[var(--color-light)] text-[var(--color)] dark:bg-[var(--color-dark)] dark:text-[var(--color-dark-text)]"
-                          : "hover:bg-gray-100 dark:hover:bg-gray-800"
+                          ? "sidebar-active-item text-white"
+                          : "text-[#A9B4C4] hover:text-white"
                       }`}
                     >
                       {item.icon && <item.icon className="w-5 h-5" />}
@@ -115,7 +186,7 @@ export function NavMainReport({ items, openItem, setOpenItem }) {
                         }`}
                       />
                     </SidebarMenuButton>
-                  </motion.div>
+                  </div>
                 </CollapsibleTrigger>
 
                 <CollapsibleContent
@@ -123,34 +194,14 @@ export function NavMainReport({ items, openItem, setOpenItem }) {
                   variants={itemVariants}
                   initial="closed"
                   animate={isOpen ? "open" : "closed"}
+                  className="relative z-10"
                 >
-                  <SidebarMenuSub className="border-l border-[var(--color-border)] dark:border-[var(--color-border-dark)] ml-4 pl-2">
-                    {item.items?.map((subItem) => {
-                      const isSubItemActive =
-                        location.pathname === subItem.url ||
-                        location.pathname.startsWith(subItem.url + "/");
-                      return (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild>
-                            <Link
-                              to={subItem.url}
-                              onClick={(e) => handleLinkClick(e, false, true)}
-                            >
-                              <motion.div
-                                whileHover={{ scale: 1.05 }}
-                                className={`px-3 py-2 rounded-md transition-colors duration-200 ${
-                                  isSubItemActive
-                                    ? "bg-[var(--color-light)] text-[var(--color)] w-full rounded-xl dark:bg-[var(--color-dark)] dark:text-[var(--color-dark-text)]"
-                                    : ""
-                                }`}
-                              >
-                                {subItem.title}
-                              </motion.div>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      );
-                    })}
+                  <SidebarMenuSub className="border-l border-[rgba(255,255,255,0.1)] ml-4 pl-2 mt-1 gap-1">
+                    <SubMenuItemsReport
+                      items={item.items}
+                      handleLinkClick={handleLinkClick}
+                      location={location}
+                    />
                   </SidebarMenuSub>
                 </CollapsibleContent>
               </SidebarMenuItem>

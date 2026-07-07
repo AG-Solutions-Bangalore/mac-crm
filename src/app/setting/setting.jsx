@@ -1,16 +1,63 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useApiMutation } from "@/hooks/useApiMutation";
+import {
+  useChangePasswordMutation,
+  useFetchProfileQuery,
+  useUpdateProfileMutation,
+} from "@/modules/Auth/hooks/useAuth";
 import { useTheme } from "@/lib/theme-context";
-import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { Loader2, Sun, Moon, Monitor } from "lucide-react";
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 
 const Settings = () => {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, themeMode, setThemeMode } = useTheme();
   const user = useSelector((state) => state.auth.user);
-  const { trigger, loading: isSubmitting } = useApiMutation();
+  const changePasswordMutation = useChangePasswordMutation();
+  const isSubmitting = changePasswordMutation.isPending;
+
+  const { data: profileResponse, isLoading: profileLoading } = useFetchProfileQuery();
+  const updateProfileMutation = useUpdateProfileMutation();
+  const isProfileUpdating = updateProfileMutation.isPending;
+
+  const [profileData, setProfileData] = useState({
+    mobile: "",
+    email: "",
+  });
+
+  useEffect(() => {
+    if (profileResponse?.data) {
+      setProfileData({
+        mobile: profileResponse.data.mobile || "",
+        email: profileResponse.data.email || "",
+      });
+    }
+  }, [profileResponse]);
+
+  const handleProfileInputChange = (e) => {
+    const { name, value } = e.target;
+    setProfileData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleProfileSubmit = async () => {
+    if (!profileData.mobile || !profileData.email) {
+      toast.error("Please fill in both mobile and email");
+      return;
+    }
+    try {
+      await updateProfileMutation.mutateAsync({
+        mobile: profileData.mobile,
+        email: profileData.email,
+      });
+      toast.success("Profile details updated successfully");
+    } catch (error) {
+      toast.error(error.message || "Failed to update profile details");
+    }
+  };
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -43,19 +90,10 @@ const Settings = () => {
     }
 
     try {
-      const formDataObj = {
+      const res = await changePasswordMutation.mutateAsync({
         username: formData.name,
-        old_password: formData.currentPassword,
-        new_password: formData.newPassword,
-      };
-
-      const res = await trigger({
-        url: CHANGE_PASSWORD_API.create,
-        method: "post",
-        data: formDataObj,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        oldPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
       });
 
       if (res?.code === 200) {
@@ -70,12 +108,12 @@ const Settings = () => {
         toast.error(res?.msg || "Failed to update password");
       }
     } catch (error) {
-      toast.error(error?.response?.data?.msg || "Something went wrong");
+      toast.error(error?.response?.data?.msg || error?.message || "Something went wrong");
     }
   };
 
   return (
-    <div className="p-2  mx-auto ">
+    <div className="p-2 mx-auto">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
           Settings
@@ -85,14 +123,16 @@ const Settings = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
+        <div className="space-y-6">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
             Appearance
           </h3>
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-              Theme Color
+
+          {/* Theme Color selector */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 space-y-4">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Theme Color Accent
             </p>
             <div className="flex gap-3 flex-wrap">
               {["default", "yellow", "green", "purple", "teal", "gray"].map(
@@ -111,12 +151,12 @@ const Settings = () => {
                       key={color}
                       onClick={() => setTheme(color)}
                       className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200
-                                            ${colorsMap[color]} 
-                                            ${
-                                              isActive
-                                                ? "shadow-lg ring-2 ring-offset-2 ring-blue-400 scale-110"
-                                                : "opacity-80 hover:opacity-100 hover:scale-105"
-                                            }`}
+                        ${colorsMap[color]} 
+                        ${
+                          isActive
+                            ? "shadow-lg ring-2 ring-offset-2 ring-blue-400 scale-110"
+                            : "opacity-80 hover:opacity-100 hover:scale-105"
+                        }`}
                       title={`Set ${color} theme`}
                     >
                       {isActive && (
@@ -140,10 +180,42 @@ const Settings = () => {
                 }
               )}
             </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
-              Current theme:{" "}
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              Current color accent:{" "}
               <span className="font-medium capitalize">{theme}</span>
             </p>
+          </div>
+
+          {/* Theme Mode selector */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700 space-y-4">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Theme Mode (Dark / Light)
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { id: "light", label: "Light", icon: Sun },
+                { id: "dark", label: "Dark", icon: Moon },
+                { id: "system", label: "System", icon: Monitor },
+              ].map((mode) => {
+                const Icon = mode.icon;
+                const isActive = themeMode === mode.id;
+                return (
+                  <button
+                    key={mode.id}
+                    onClick={() => setThemeMode(mode.id)}
+                    className={`flex flex-col items-center gap-2 p-3 rounded-lg border transition-all duration-200 text-sm font-medium
+                      ${
+                        isActive
+                          ? "bg-slate-100 dark:bg-slate-700 border-slate-400 dark:border-slate-500 text-slate-900 dark:text-slate-100 shadow-sm"
+                          : "bg-transparent border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      }`}
+                  >
+                    <Icon className="h-5 h-5" />
+                    <span>{mode.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -154,18 +226,26 @@ const Settings = () => {
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
             <div>
               <div>
-                <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 flex  flex-row items-center  justify-between ">
+                <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 flex flex-row items-center justify-between mb-4">
                   <span>Change Password</span>
-
                   <span className="text-xs text-gray-500 dark:text-gray-400">
                     Must be at least 6 characters long
                   </span>
                 </h4>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div className="space-y-2">
-                    {/* <Label htmlFor="currentPassword" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                            Current Password
-                                        </Label> */}
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+                    <Input
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      placeholder="Enter name"
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Current Password</label>
                     <Input
                       id="currentPassword"
                       name="currentPassword"
@@ -178,15 +258,13 @@ const Settings = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    {/* <Label htmlFor="newPassword" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                            New Password
-                                        </Label> */}
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300">New Password</label>
                     <Input
                       id="newPassword"
                       name="newPassword"
                       value={formData.newPassword}
                       onChange={handleInputChange}
-                      placeholder="Enter new password (min 6 characters)"
+                      placeholder="Enter new password"
                       type="password"
                       maxLength={16}
                       className="w-full"
@@ -195,25 +273,75 @@ const Settings = () => {
                 </div>
               </div>
 
-              <Button
-                onClick={handleSubmit}
-                disabled={
-                  isSubmitting ||
-                  !formData.currentPassword ||
-                  !formData.newPassword
-                }
-                className="w-full mt-1"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  "Update Password"
-                )}
-              </Button>
+              <div className="mt-6 flex justify-end">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    "Update Password"
+                  )}
+                </Button>
+              </div>
             </div>
+          </div>
+
+          {/* Profile Details Card */}
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-4">
+              Profile Details
+            </h4>
+            {profileLoading ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-slate-500" />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Mobile Number</label>
+                  <Input
+                    name="mobile"
+                    value={profileData.mobile}
+                    onChange={handleProfileInputChange}
+                    placeholder="Enter mobile number"
+                    className="w-full bg-transparent"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email Address</label>
+                  <Input
+                    name="email"
+                    value={profileData.email}
+                    onChange={handleProfileInputChange}
+                    placeholder="Enter email address"
+                    type="email"
+                    className="w-full bg-transparent"
+                  />
+                </div>
+                <div className="flex justify-end pt-2">
+                  <Button
+                    onClick={handleProfileSubmit}
+                    disabled={isProfileUpdating}
+                    className="w-full sm:w-auto"
+                  >
+                    {isProfileUpdating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Profile"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

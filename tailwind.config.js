@@ -62,7 +62,9 @@ export default {
   			}
   		},
   		fontFamily: {
-  			sans: ["Noto Sans Georgian", "sans-serif"]
+  			sans: ["Inter", "Noto Sans Georgian", "sans-serif"],
+  			display: ["Space Grotesk", "sans-serif"],
+  			mono: ["JetBrains Mono", "monospace"]
   		},
   		keyframes: {
   			'accordion-down': {

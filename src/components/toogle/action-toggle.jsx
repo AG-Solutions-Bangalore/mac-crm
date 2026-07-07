@@ -56,40 +56,39 @@ const ToggleAction = ({
 
   const statusStyle =
     status === "Approved"
-      ? "bg-green-100 text-green-700 border-green-200"
-      : status === "Cancel"
-        ? "bg-red-100 text-red-700 border-red-200"
-        : "bg-yellow-100 text-yellow-700 border-yellow-200";
+      ? "pill-approved"
+      : status === "Cancel" || status === "Rejected"
+        ? "pill-rejected"
+        : "pill-pending";
 
   return (
     <div className={`flex items-center gap-2`}>
-      {loading && <RefreshCcw className="h-4 w-4 animate-spin text-blue-500" />}
+      {loading && <RefreshCcw className="h-3.5 w-3.5 animate-spin text-[var(--primary-color)]" />}
 
       <Select
-        // value={status}
         onValueChange={(value) => handleToggle(value)}
         disabled={loading}
       >
         {status === "Pending" ? (
           <SelectTrigger
-            className={`h-8 w-[150px] text-sm rounded-xl border hover:scale-[1.04] transition-all duration-200 ${statusStyle}`}
+            className={`pill ${statusStyle} !flex h-8 w-[125px] items-center justify-between border-0 shadow-none hover:scale-[1.04] transition-all cursor-pointer`}
           >
             <SelectValue placeholder={status} />
           </SelectTrigger>
         ) : (
           <div
-            className={`h-8 w-[150px] text-sm rounded-xl border flex px-3 justify-start items-center ${statusStyle}`}
+            className={`pill ${statusStyle} h-8 w-[125px] !flex items-center justify-center`}
           >
-            {status}
+            {status === "Cancel" ? "Cancelled" : status}
           </div>
         )}
 
         <SelectContent>
-          <SelectItem value="Approved" className="text-green-700">
+          <SelectItem value="Approved" className="text-green-700 font-medium">
             Approved
           </SelectItem>
 
-          <SelectItem value="Cancel" className="text-red-700">
+          <SelectItem value="Cancel" className="text-red-700 font-medium">
             Cancel
           </SelectItem>
         </SelectContent>
