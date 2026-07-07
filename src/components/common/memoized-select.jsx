@@ -12,6 +12,7 @@ export const MemoizedSelect = React.memo(
     noOptionsMessage,
     className,
     classNamePrefix,
+    hasError = false,
     ...props
   }) => {
     const selectOptions = options.map((option) => {
@@ -52,12 +53,20 @@ export const MemoizedSelect = React.memo(
       control: (base, state) => ({
         ...base,
         minHeight: "40px",
-        borderColor: state.isFocused ? "hsl(var(--ring))" : "hsl(var(--input))",
+        borderColor: state.isFocused
+          ? "hsl(var(--ring))"
+          : hasError
+          ? "rgb(239, 68, 68)"
+          : "hsl(var(--input))",
         backgroundColor: "hsl(var(--background))",
         "&:hover": {
-          borderColor: "hsl(var(--ring))",
+          borderColor: hasError ? "rgb(239, 68, 68)" : "hsl(var(--ring))",
         },
-        boxShadow: state.isFocused ? "0 0 0 1px hsl(var(--ring))" : "none",
+        boxShadow: state.isFocused
+          ? hasError
+            ? "0 0 0 1px rgb(239, 68, 68)"
+            : "0 0 0 1px hsl(var(--ring))"
+          : "none",
         borderRadius: "calc(var(--radius) - 2px)",
         cursor: "pointer",
         transition: "all 0.2s",
@@ -209,7 +218,9 @@ export const MemoizedSelect = React.memo(
       JSON.stringify(prevProps.value) === JSON.stringify(nextProps.value) &&
       JSON.stringify(prevProps.options) === JSON.stringify(nextProps.options) &&
       prevProps.isLoading === nextProps.isLoading &&
-      prevProps.isMulti === nextProps.isMulti
+      prevProps.isMulti === nextProps.isMulti &&
+      prevProps.isDisabled === nextProps.isDisabled &&
+      prevProps.hasError === nextProps.hasError
     );
   }
 );

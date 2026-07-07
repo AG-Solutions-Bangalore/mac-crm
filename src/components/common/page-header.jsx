@@ -7,7 +7,6 @@ const PageHeader = ({
   return (
     <div className="relative overflow-hidden rounded-2xl  p-4 mb-2 border  shadow-sm">
       <div className="absolute top-0 right-0 w-40 h-40 bg-white/30 rounded-full blur-3xl -mr-20 -mt-20" />
-      <div className="absolute bottom-0 left-1/2 w-60 h-60 bg-white/20 rounded-full blur-3xl -ml-30 -mb-20" />
 
       <div className="relative flex flex-col gap-4 md:flex-row md:justify-between">
         <div className="flex items-start gap-4 min-w-0">

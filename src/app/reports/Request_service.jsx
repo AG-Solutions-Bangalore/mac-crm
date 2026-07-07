@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import * as XLSX from "xlsx";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Select,
   SelectContent,
@@ -35,6 +36,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+const getServiceBadgeClass = (serviceName) => {
+  if (!serviceName) return "badge-default";
+  const service = serviceName.toLowerCase();
+  if (service.includes("switch")) return "badge-switches";
+  if (service.includes("door") || service.includes("automation")) return "badge-automation";
+  if (service.includes("network") || service.includes("wifi") || service.includes("internet")) return "badge-networking";
+  if (service.includes("light")) return "badge-lighting";
+  if (service.includes("secur") || service.includes("camera") || service.includes("cctv")) return "badge-security";
+  return "badge-default";
+};
 
 function Request_service() {
   const { trigger, loading, error } = useApiMutation();
@@ -135,9 +147,9 @@ function Request_service() {
         </CardHeader>
 
         <CardContent>
-          <div className="flex justify-between items-center gap-10">
-            <div className="flex flex-col md:flex-row items-end gap-4">
-              <div className="flex flex-col gap-2">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 w-full md:w-auto">
+              <div className="flex flex-col gap-2 w-full sm:w-auto">
                 <label className="text-sm font-medium leading-none">
                   From Date
                 </label>
@@ -147,7 +159,7 @@ function Request_service() {
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-[240px] justify-start text-left font-normal",
+                        "w-full sm:w-[240px] justify-start text-left font-normal",
                         !fromDate && "text-muted-foreground",
                       )}
                     >
@@ -168,7 +180,7 @@ function Request_service() {
                 </Popover>
               </div>
 
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 w-full sm:w-auto">
                 <label className="text-sm font-medium leading-none">
                   To Date
                 </label>
@@ -178,7 +190,7 @@ function Request_service() {
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-[240px] justify-start text-left font-normal",
+                        "w-full sm:w-[240px] justify-start text-left font-normal",
                         !toDate && "text-muted-foreground",
                       )}
                     >
@@ -199,7 +211,7 @@ function Request_service() {
                 </Popover>
               </div>
 
-              <Button onClick={fetchReport} disabled={loading}>
+              <Button onClick={fetchReport} disabled={loading} className="w-full sm:w-auto">
                 {loading ? (
                   "Loading..."
                 ) : (
@@ -210,8 +222,8 @@ function Request_service() {
               </Button>
             </div>
 
-            <div className="w-full flex">
-              <div className="flex flex-col gap-2 w-1/3">
+            <div className="w-full sm:w-auto">
+              <div className="flex flex-col gap-2 w-full sm:w-[200px]">
                 <label className="text-sm font-medium leading-none">
                   Status
                 </label>
@@ -272,30 +284,71 @@ function Request_service() {
 
                   <TableBody>
                     {paginatedData.length > 0 ? (
-                      paginatedData.map((request) => (
-                        <TableRow key={request.id}>
-                          <TableCell>
-                            {request.services_request_date
-                              ? moment(request.services_request_date).format(
-                                  "DD-MM-YYYY",
-                                )
-                              : "-"}
+                      paginatedData.map((request, index) => (
+                        <TableRow
+                          key={request.id}
+                          className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                        >
+                          <TableCell className="mono text-xs">
+                            <motion.div
+                              initial={{ opacity: 0, y: 8, filter: "blur(3px)" }}
+                              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                              transition={{ duration: 0.22, delay: index * 0.008 }}
+                            >
+                              {request.services_request_date
+                                ? moment(request.services_request_date).format(
+                                    "DD-MM-YYYY",
+                                  )
+                                : "-"}
+                            </motion.div>
                           </TableCell>
 
-                          <TableCell>{request.user_m_id || "-"}</TableCell>
-                          <TableCell>{request.name || "-"}</TableCell>
-                          <TableCell>{request.service_name || "-"}</TableCell>
+                          <TableCell className="mono text-xs">
+                            <motion.div
+                              initial={{ opacity: 0, y: 8, filter: "blur(3px)" }}
+                              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                              transition={{ duration: 0.22, delay: index * 0.008 }}
+                            >
+                              {request.user_m_id || "-"}
+                            </motion.div>
+                          </TableCell>
+                          <TableCell className="font-medium text-xs">
+                            <motion.div
+                              initial={{ opacity: 0, y: 8, filter: "blur(3px)" }}
+                              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                              transition={{ duration: 0.22, delay: index * 0.008 }}
+                            >
+                              {request.name || "-"}
+                            </motion.div>
+                          </TableCell>
+                          <TableCell>
+                            <motion.div
+                              initial={{ opacity: 0, y: 8, filter: "blur(3px)" }}
+                              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                              transition={{ duration: 0.22, delay: index * 0.008 }}
+                            >
+                              <span className={`service-badge ${getServiceBadgeClass(request.service_name)}`}>
+                                {request.service_name || "-"}
+                              </span>
+                            </motion.div>
+                          </TableCell>
 
-                          <TableCell
-                            className={`${
-                              request.services_request_status === "Pending"
-                                ? "text-yellow-500"
-                                : request.services_request_status === "Approved"
-                                  ? "text-green-500"
-                                  : "text-red-500"
-                            }`}
-                          >
-                            {request.services_request_status || "-"}
+                          <TableCell>
+                            <motion.div
+                              initial={{ opacity: 0, y: 8, filter: "blur(3px)" }}
+                              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                              transition={{ duration: 0.22, delay: index * 0.008 }}
+                            >
+                              <span className={`pill ${
+                                request.services_request_status === "Approved"
+                                  ? "pill-approved"
+                                  : request.services_request_status === "Pending"
+                                    ? "pill-pending"
+                                    : "pill-rejected"
+                              }`}>
+                                {request.services_request_status || "-"}
+                              </span>
+                            </motion.div>
                           </TableCell>
                         </TableRow>
                       ))

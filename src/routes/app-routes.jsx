@@ -1,13 +1,14 @@
-import Login from "@/app/auth/login";
-import ForgotPassword from "@/components/forgot-password/forgot-password";
-import BlogList from "@/app/blog/blog-list";
-import CreateBlog from "@/app/blog/create-blog";
+import LoginPage from "@/modules/auth/pages/LoginPage";
+import ForgotPasswordPage from "@/modules/auth/pages/ForgotPasswordPage";
+import BlogListPage from "@/modules/blog/pages/BlogListPage";
+import BlogCreatePage from "@/modules/blog/pages/BlogCreatePage";
 import NotFound from "@/app/errors/not-found";
-import FaqForm from "@/app/faq/create-faq";
-import FaqList from "@/app/faq/faq-list";
-import GalleryList from "@/app/gallery/gallery-list";
-import LectureYoutubeForm from "@/app/lecture-youtube/lecture-youtube-form";
-import LetureYoutubeList from "@/app/lecture-youtube/lecture-youtube-list";
+import FaqFormPage from "@/modules/faq/pages/FaqFormPage";
+import FaqListPage from "@/modules/faq/pages/FaqListPage";
+import GalleryListPage from "@/modules/gallery/pages/GalleryListPage";
+import LectureFormPage from "@/modules/lecture-youtube/pages/LectureFormPage";
+import LectureListPage from "@/modules/lecture-youtube/pages/LectureListPage";
+import PlaylistListPage from "@/modules/lecture-youtube/pages/PlaylistListPage";
 import PopupList from "@/app/popup/popup";
 import Settings from "@/app/setting/setting";
 import SidePopupList from "@/app/sidepopup/sidepopup-list";
@@ -25,33 +26,55 @@ import ErrorBoundary from "@/components/error-boundry/error-boundry";
 import LoadingBar from "@/components/loader/loading-bar";
 import { Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
-import EditBlog from "../app/blog/edit-blog";
+import BlogEditPage from "@/modules/blog/pages/BlogEditPage";
 import AuthRoute from "./auth-route";
 import ProtectedRoute from "./protected-route";
 import StudenScreenShot from "@/app/student/student-screenshot";
-import NotificationList from "@/app/notification/notifycation-list";
+import NotificationListPage from "@/modules/notification/pages/NotificationListPage";
 import Dashboard from "@/app/dashboard/home";
-import ClientList from "@/app/member/client-list";
-import CreateClient from "@/app/member/create-client";
-import RequestList from "@/app/service-request/request-list";
-import ServiceList from "@/app/service/service-list";
-import CreateService from "@/app/service/create-service";
-import UpdateService from "@/app/service/update-service";
+import ServiceListPage from "@/modules/service/pages/ServiceListPage";
+import ServiceFormPage from "@/modules/service/pages/ServiceFormPage";
+import ClientListPage from "@/modules/client/pages/ClientListPage";
+import ClientFormPage from "@/modules/client/pages/ClientFormPage";
+import RequestListPage from "@/modules/service-request/pages/RequestListPage";
 import Client from "@/app/reports/Client";
 import Request_service from "@/app/reports/Request_service";
-import ComplaintList from "@/app/complaint/complaint-list";
+import Quotation from "@/app/reports/Quotation";
+import ComplaintListPage from "@/modules/complaint/pages/ComplaintListPage";
+
+// New Modules (Modular Architecture)
+import BuyerListPage from "@/modules/buyer/pages/BuyerListPage";
+import BuyerFormPage from "@/modules/buyer/pages/BuyerFormPage";
+import PropertyListPage from "@/modules/property/pages/PropertyListPage";
+import PropertyFormPage from "@/modules/property/pages/PropertyFormPage";
+import FloorListPage from "@/modules/floor/pages/FloorListPage";
+import FloorFormPage from "@/modules/floor/pages/FloorFormPage";
+
+// Area, Brand, Category Masters
+import AreaListPage from "@/modules/area/pages/AreaListPage";
+import AreaFormPage from "@/modules/area/pages/AreaFormPage";
+import BrandListPage from "@/modules/brand/pages/BrandListPage";
+import BrandFormPage from "@/modules/brand/pages/BrandFormPage";
+import CategoryListPage from "@/modules/category/pages/CategoryListPage";
+import CategoryFormPage from "@/modules/category/pages/CategoryFormPage";
+import ProductListPage from "@/modules/product/pages/ProductListPage";
+import ProductFormPage from "@/modules/product/pages/ProductFormPage";
+import QuotationListPage from "@/modules/quotation/pages/QuotationListPage";
+import QuotationFormPage from "@/modules/quotation/pages/QuotationFormPage";
+import RevQuotationListPage from "@/modules/quotation/pages/RevQuotationListPage";
+import RevQuotationFormPage from "@/modules/quotation/pages/RevQuotationFormPage";
 
 function AppRoutes() {
   return (
     <ErrorBoundary>
       <Routes>
         <Route path="/" element={<AuthRoute />}>
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<LoginPage />} />
           <Route
             path="/forgot-password"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <ForgotPassword />
+                <ForgotPasswordPage />
               </Suspense>
             }
           />
@@ -72,7 +95,7 @@ function AppRoutes() {
             path="/service-list"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <ServiceList />
+                <ServiceListPage />
               </Suspense>
             }
           />
@@ -80,7 +103,7 @@ function AppRoutes() {
             path="/service-list/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <CreateService />
+                <ServiceFormPage />
               </Suspense>
             }
           />
@@ -88,7 +111,7 @@ function AppRoutes() {
             path="/service-list/edit/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <UpdateService />
+                <ServiceFormPage />
               </Suspense>
             }
           />
@@ -98,7 +121,7 @@ function AppRoutes() {
             path="/client-list"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <ClientList />
+                <ClientListPage />
               </Suspense>
             }
           />
@@ -106,7 +129,7 @@ function AppRoutes() {
             path="/client-list/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <CreateClient />
+                <ClientFormPage />
               </Suspense>
             }
           />
@@ -114,7 +137,7 @@ function AppRoutes() {
             path="/client-list/create-relation/"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <CreateClient isRelation={true} />
+                <ClientFormPage isRelation={true} />
               </Suspense>
             }
           />
@@ -122,7 +145,241 @@ function AppRoutes() {
             path="/client-list/edit/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <CreateClient isEdit={true} />
+                <ClientFormPage isEdit={true} />
+              </Suspense>
+            }
+          />
+
+          {/* Buyers */}
+          <Route
+            path="/buyer-list"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <BuyerListPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/buyer-list/create"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <BuyerFormPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/buyer-list/edit/:id"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <BuyerFormPage />
+              </Suspense>
+            }
+          />
+
+          {/* Properties */}
+          <Route
+            path="/property-list"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <PropertyListPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/property-list/create"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <PropertyFormPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/property-list/edit/:id"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <PropertyFormPage />
+              </Suspense>
+            }
+          />
+
+          {/* Floors */}
+          <Route
+            path="/floor-list"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <FloorListPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/floor-list/create"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <FloorFormPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/floor-list/edit/:id"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <FloorFormPage />
+              </Suspense>
+            }
+          />
+
+          {/* Areas */}
+          <Route
+            path="/area-list"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <AreaListPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/area-list/create"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <AreaFormPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/area-list/edit/:id"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <AreaFormPage />
+              </Suspense>
+            }
+          />
+
+          {/* Brands */}
+          <Route
+            path="/brand-list"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <BrandListPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/brand-list/create"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <BrandFormPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/brand-list/edit/:id"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <BrandFormPage />
+              </Suspense>
+            }
+          />
+
+          {/* Categories */}
+          <Route
+            path="/category-list"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <CategoryListPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/category-list/create"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <CategoryFormPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/category-list/edit/:id"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <CategoryFormPage />
+              </Suspense>
+            }
+          />
+
+          {/* Products */}
+          <Route
+            path="/product-list"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <ProductListPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/product-list/create"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <ProductFormPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/product-list/edit/:id"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <ProductFormPage />
+              </Suspense>
+            }
+          />
+
+          {/* Quotations */}
+          <Route
+            path="/quotation-list"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <QuotationListPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/quotation-list/create"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <QuotationFormPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/quotation-list/edit/:id"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <QuotationFormPage />
+              </Suspense>
+            }
+          />
+
+          {/* Revised Quotations */}
+          <Route
+            path="/quotation-list/revised/:id"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <RevQuotationListPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/quotation-list/revised/:id/create"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <RevQuotationFormPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/quotation-list/revised/:id/edit/:revId"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <RevQuotationFormPage />
               </Suspense>
             }
           />
@@ -132,7 +389,7 @@ function AppRoutes() {
             path="/service-request"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <RequestList />
+                <RequestListPage />
               </Suspense>
             }
           />
@@ -142,7 +399,7 @@ function AppRoutes() {
             path="/notification-list"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <NotificationList />
+                <NotificationListPage />
               </Suspense>
             }
           />
@@ -152,7 +409,7 @@ function AppRoutes() {
             path="/complaint-list"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <ComplaintList />
+                <ComplaintListPage />
               </Suspense>
             }
           />
@@ -174,13 +431,21 @@ function AppRoutes() {
               </Suspense>
             }
           />
+          <Route
+            path="/quotation-report/:id"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <Quotation />
+              </Suspense>
+            }
+          />
 
           {/* old routes --------------------------------------------------------------------- */}
           <Route
             path="/lecture-youtube"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <LetureYoutubeList />
+                <LectureListPage />
               </Suspense>
             }
           />
@@ -188,7 +453,7 @@ function AppRoutes() {
             path="/lecture-youtube/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <LectureYoutubeForm />
+                <LectureFormPage />
               </Suspense>
             }
           />
@@ -196,7 +461,23 @@ function AppRoutes() {
             path="/lecture-youtube/:id/edit"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <LectureYoutubeForm />
+                <LectureFormPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/lecture-youtube/edit/:id"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <LectureFormPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/lecture-youtube-playlist"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <PlaylistListPage />
               </Suspense>
             }
           />
@@ -327,7 +608,7 @@ function AppRoutes() {
             path="/faq-list"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <FaqList />
+                <FaqListPage />
               </Suspense>
             }
           />
@@ -335,7 +616,15 @@ function AppRoutes() {
             path="/add-faq"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <FaqForm />
+                <FaqFormPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/faq-list/create"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <FaqFormPage />
               </Suspense>
             }
           />
@@ -343,7 +632,15 @@ function AppRoutes() {
             path="/edit-faq/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <FaqForm />
+                <FaqFormPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/faq-list/edit/:id"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <FaqFormPage />
               </Suspense>
             }
           />
@@ -359,7 +656,7 @@ function AppRoutes() {
             path="/blog-list"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <BlogList />
+                <BlogListPage />
               </Suspense>
             }
           />
@@ -367,7 +664,15 @@ function AppRoutes() {
             path="/add-blog"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <CreateBlog />
+                <BlogCreatePage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/blog-list/create"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <BlogCreatePage />
               </Suspense>
             }
           />
@@ -375,7 +680,15 @@ function AppRoutes() {
             path="/edit-blog/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <EditBlog />
+                <BlogEditPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/blog-list/edit/:id"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <BlogEditPage />
               </Suspense>
             }
           />
@@ -383,7 +696,7 @@ function AppRoutes() {
             path="/gallery-list"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <GalleryList />
+                <GalleryListPage />
               </Suspense>
             }
           />

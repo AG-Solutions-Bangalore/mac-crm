@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 
 const ImageCell = ({
   src,
@@ -8,27 +8,25 @@ const ImageCell = ({
   height = 20,
   className = "",
 }) => {
-  const cacheBustedSrc = useMemo(() => {
-    if (!src) return fallback;
-    return `${src}${src.includes("?") ? "&" : "?"}t=${Date.now()}`;
+  const [imgSrc, setImgSrc] = useState(src || fallback);
+
+  useEffect(() => {
+    setImgSrc(src || fallback);
   }, [src, fallback]);
 
-  const [imgSrc, setImgSrc] = useState(cacheBustedSrc);
-  // console.log(imgSrc, "imgSrc");
-  useEffect(() => {
-    setImgSrc(cacheBustedSrc);
-  }, [cacheBustedSrc]);
-
   return (
-    <img
-      src={imgSrc}
-      alt={alt}
-      loading="lazy"
-      width={width}
-      height={height}
-      onError={() => setImgSrc(fallback)}
-      className={`object-cover rounded border block ${className}`}
-    />
+    <div 
+      style={{ width: `${width}px`, height: `${height}px` }} 
+      className="shrink-0 overflow-hidden rounded border bg-slate-100 dark:bg-slate-800 flex items-center justify-center"
+    >
+      <img
+        src={imgSrc}
+        alt={alt}
+        loading="lazy"
+        onError={() => setImgSrc(fallback)}
+        className={`object-cover w-full h-full block ${className}`}
+      />
+    </div>
   );
 };
 

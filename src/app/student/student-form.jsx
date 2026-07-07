@@ -26,9 +26,10 @@ import ImageUpload from "@/components/image-upload/image-upload";
 import { getImageBaseUrl, getNoImageUrl } from "@/utils/imageUtils";
 import PageHeader from "@/components/common/page-header";
 import { User } from "lucide-react";
+import MemoizedSelect from "@/components/common/memoized-select";
 import { GroupButton } from "@/components/group-button";
 import { Card } from "@/components/ui/card";
-import CompanyDialog from "../notification/create-notification";
+import CompanyDialog from "@/modules/notification/components/NotificationDialog";
 import CountryForm from "../country/country-form";
 import { CKEditor } from "ckeditor4-react";
 
@@ -585,21 +586,16 @@ const StudentForm = () => {
             <div>
               <label className="text-sm font-medium">Course *</label>
 
-              <Select
+              <MemoizedSelect
+                options={coursesData?.data?.map((c) => ({
+                  value: c.courses_name,
+                  label: c.courses_name,
+                })) || []}
                 value={data.student_course}
-                onValueChange={(v) => setData({ ...data, student_course: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Courses" />
-                </SelectTrigger>
-                <SelectContent>
-                  {coursesData?.data?.map((c, key) => (
-                    <SelectItem key={key} value={c.courses_name}>
-                      {c.courses_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(option) => setData({ ...data, student_course: option ? option.value : "" })}
+                placeholder="Select Courses"
+                hasError={Boolean(errors.student_course)}
+              />
               {errors.student_course && (
                 <p className="text-xs text-red-500 mt-1">
                   {errors.student_course}
@@ -636,23 +632,18 @@ const StudentForm = () => {
                   + Country
                 </button>
               </div>
-              <Select
-                value={data.student_country_id?.toString() || ""}
-                onValueChange={(v) =>
-                  setData({ ...data, student_country_id: Number(v) })
+              <MemoizedSelect
+                options={countriesData?.data?.map((c) => ({
+                  value: c.id?.toString(),
+                  label: `${c.country_name}-${c.country_city}`,
+                })) || []}
+                value={data.student_country_id?.toString()}
+                onChange={(option) =>
+                  setData({ ...data, student_country_id: option ? Number(option.value) : "" })
                 }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Country - City" />
-                </SelectTrigger>
-                <SelectContent>
-                  {countriesData?.data?.map((c) => (
-                    <SelectItem key={c.id} value={c.id.toString()}>
-                      {c.country_name}-{c.country_city}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select Country - City"
+                hasError={Boolean(errors.student_country_id)}
+              />
               {errors.student_country_id && (
                 <p className="text-xs text-red-500 mt-1">
                   {errors.student_country_id}
@@ -675,23 +666,18 @@ const StudentForm = () => {
                 </button>
               </div>
 
-              <Select
-                value={data.student_company_id?.toString() || ""}
-                onValueChange={(v) =>
-                  setData({ ...data, student_company_id: Number(v) })
+              <MemoizedSelect
+                options={companiesData?.data?.map((c) => ({
+                  value: c.id?.toString(),
+                  label: c.student_company_name,
+                })) || []}
+                value={data.student_company_id?.toString()}
+                onChange={(option) =>
+                  setData({ ...data, student_company_id: option ? Number(option.value) : "" })
                 }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Company" />
-                </SelectTrigger>
-                <SelectContent>
-                  {companiesData?.data?.map((c) => (
-                    <SelectItem key={c.id} value={c.id.toString()}>
-                      {c.student_company_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select Company"
+                hasError={Boolean(errors.student_company_id)}
+              />
 
               {errors.student_company_id && (
                 <p className="text-xs text-red-500 mt-1">
