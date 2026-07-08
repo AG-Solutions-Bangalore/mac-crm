@@ -11,9 +11,7 @@ export const floorApi = {
   },
   createFloor: async (floorData) => {
     const formData = new FormData();
-    Object.keys(floorData).forEach((key) => {
-      formData.append(key, floorData[key]);
-    });
+    formData.append("property_floor", floorData.property_floor);
     const response = await apiClient.post("/floor", formData, {
       headers: {
         "Content-Type": "multipart/form-data",

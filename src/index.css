@@ -103,6 +103,8 @@
     --surface: #121826;
     --base: #0c101a;
     --line: #2c3545;
+    --primary-color: #3b82f6;
+    --primary-soft: rgba(59, 130, 246, 0.15);
   }
 }
 
@@ -880,5 +882,15 @@ input:disabled + .slider {
 .dark .border-gray-200,
 .dark .border-slate-200 {
   border-color: #2c3545 !important;
+}
+
+/* Dark Mode Table Header & Muted Text Visibility Overrides */
+.dark th,
+.dark th.text-muted-foreground {
+  color: #ffffff !important;
+}
+
+.dark .text-muted-foreground {
+  color: #94a3b8 !important;
 }
 

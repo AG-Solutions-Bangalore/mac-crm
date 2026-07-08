@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { User, Mail, Phone, Loader2, Save, ArrowLeft } from "lucide-react";
+import { User, Mail, Phone, Loader2, Save, ArrowLeft, MapPin, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ const BuyerFormPage = () => {
     buyer_name: "",
     buyer_mobile: "",
     buyer_email: "",
+    buyer_status: "Active",
     buyer_address: "",
   });
 
@@ -49,7 +50,13 @@ const BuyerFormPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    let updatedValue = value;
+
+    if (name === "buyer_mobile") {
+      updatedValue = value.replace(/\D/g, "").slice(0, 10);
+    }
+
+    setFormData((prev) => ({ ...prev, [name]: updatedValue }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -62,9 +69,13 @@ const BuyerFormPage = () => {
   const validateForm = () => {
     const newErrors = {};
     if (!formData.buyer_name.trim()) newErrors.buyer_name = "Buyer Name is required";
-    if (formData.buyer_mobile.trim() && !/^\d{10}$/.test(formData.buyer_mobile.trim())) {
+    
+    if (!formData.buyer_mobile) {
+      newErrors.buyer_mobile = "Mobile number is required";
+    } else if (formData.buyer_mobile.length !== 10) {
       newErrors.buyer_mobile = "Mobile must be a 10-digit number";
     }
+
     if (!formData.buyer_email.trim()) {
       newErrors.buyer_email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.buyer_email.trim())) {
@@ -109,7 +120,7 @@ const BuyerFormPage = () => {
   }
 
   return (
-    <div className="px-5 max-w-4xl mx-auto">
+    <div className="w-full px-5">
       <PageHeader
         icon={User}
         title={isEdit ? "Edit Buyer" : "Add Buyer"}
@@ -127,11 +138,11 @@ const BuyerFormPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Name */}
               <div className="space-y-2">
-                <Label htmlFor="buyer_name">
+                <Label htmlFor="buyer_name" className="flex items-center gap-1">
                   Buyer Name <RedStar />
                 </Label>
                 <div className="relative">
-                  <User className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                   <Input
                     id="buyer_name"
                     name="buyer_name"
@@ -146,11 +157,11 @@ const BuyerFormPage = () => {
 
               {/* Mobile */}
               <div className="space-y-2">
-                <Label htmlFor="buyer_mobile">
-                  Mobile Number
+                <Label htmlFor="buyer_mobile" className="flex items-center gap-1">
+                  Mobile Number <RedStar />
                 </Label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                   <Input
                     id="buyer_mobile"
                     name="buyer_mobile"
@@ -166,11 +177,11 @@ const BuyerFormPage = () => {
 
               {/* Email */}
               <div className="space-y-2">
-                <Label htmlFor="buyer_email">
+                <Label htmlFor="buyer_email" className="flex items-center gap-1">
                   Email Address <RedStar />
                 </Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
                   <Input
                     id="buyer_email"
                     name="buyer_email"
@@ -184,33 +195,41 @@ const BuyerFormPage = () => {
                 {errors.buyer_email && <p className="text-xs text-red-500">{errors.buyer_email}</p>}
               </div>
 
-              {/* Address */}
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="buyer_address">Address</Label>
-                <Textarea
-                  id="buyer_address"
-                  name="buyer_address"
-                  value={formData.buyer_address}
-                  onChange={handleChange}
-                  placeholder="Enter address"
-                  rows={3}
-                />
-              </div>
-
+              {/* Status */}
               {isEdit && (
                 <div className="space-y-2">
-                  <Label htmlFor="buyer_status">Status</Label>
-                  <Select value={formData.buyer_status} onValueChange={handleSelectChange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Active">Active</SelectItem>
-                      <SelectItem value="Inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="buyer_status" className="flex items-center gap-1">Status</Label>
+                  <div className="relative">
+                    <Activity className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 z-10" />
+                    <Select value={formData.buyer_status} onValueChange={handleSelectChange}>
+                      <SelectTrigger className="w-full pl-10 pr-3">
+                        <SelectValue placeholder="Select Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Active">Active</SelectItem>
+                        <SelectItem value="Inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               )}
+
+              {/* Address */}
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="buyer_address" className="flex items-center gap-1">Address</Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-3.5 h-4 w-4 text-gray-500" />
+                  <Textarea
+                    id="buyer_address"
+                    name="buyer_address"
+                    value={formData.buyer_address}
+                    onChange={handleChange}
+                    className="pl-10 pt-2"
+                    placeholder="Enter address"
+                    rows={3}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t">

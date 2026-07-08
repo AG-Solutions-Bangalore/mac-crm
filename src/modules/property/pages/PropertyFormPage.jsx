@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Building2, Loader2, Save, ArrowLeft } from "lucide-react";
+import { Building2, Loader2, Save, ArrowLeft, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -96,7 +96,7 @@ const PropertyFormPage = () => {
   }
 
   return (
-    <div className="px-5 max-w-4xl mx-auto">
+    <div className="w-full px-5">
       <PageHeader
         icon={Building2}
         title={isEdit ? "Edit Property" : "Add Property"}
@@ -114,7 +114,7 @@ const PropertyFormPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Property name */}
               <div className="space-y-2">
-                <Label htmlFor="property">
+                <Label htmlFor="property" className="flex items-center gap-1">
                   Property Type <RedStar />
                 </Label>
                 <div className="relative">
@@ -131,19 +131,22 @@ const PropertyFormPage = () => {
                 {errors.property && <p className="text-xs text-red-500">{errors.property}</p>}
               </div>
 
-              {/* Status (Edit only) */}
+              {/* Status */}
               {isEdit && (
                 <div className="space-y-2">
-                  <Label htmlFor="property_status">Status</Label>
-                  <Select value={formData.property_status} onValueChange={handleSelectChange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Active">Active</SelectItem>
-                      <SelectItem value="Inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="property_status" className="flex items-center gap-1">Status</Label>
+                  <div className="relative">
+                    <Activity className="absolute left-3 top-2.5 h-4 w-4 text-gray-500 z-10" />
+                    <Select value={formData.property_status} onValueChange={handleSelectChange}>
+                      <SelectTrigger className="w-full pl-10 bg-transparent">
+                        <SelectValue placeholder="Select Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Active">Active</SelectItem>
+                        <SelectItem value="Inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               )}
             </div>

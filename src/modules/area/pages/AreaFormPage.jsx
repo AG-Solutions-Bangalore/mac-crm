@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Map, Loader2, Save, ArrowLeft } from "lucide-react";
+import { Map, Loader2, Save, ArrowLeft, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PageHeader from "@/components/common/page-header";
 import RedStar from "@/components/RedStar";
 import LoadingBar from "@/components/loader/loading-bar";
@@ -44,6 +45,10 @@ const AreaFormPage = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const handleSelectChange = (value) => {
+    setFormData((prev) => ({ ...prev, property_area_status: value }));
   };
 
   const validateForm = () => {
@@ -94,7 +99,7 @@ const AreaFormPage = () => {
   }
 
   return (
-    <div className="px-5 max-w-4xl mx-auto">
+    <div className="w-full px-5">
       <PageHeader
         icon={Map}
         title={isEdit ? "Edit Area" : "Add Area"}
@@ -112,34 +117,43 @@ const AreaFormPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Property Area Name */}
               <div className="space-y-2">
-                <Label className="flex">
+                <Label htmlFor="property_area" className="flex items-center gap-1">
                   Property Area <RedStar />
                 </Label>
-                <Input
-                  name="property_area"
-                  value={formData.property_area}
-                  onChange={handleInputChange}
-                  className={errorBorder("property_area")}
-                  placeholder="Enter Area (e.g. Foyer, Kitchen, Common)"
-                />
+                <div className="relative">
+                  <Map className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    id="property_area"
+                    name="property_area"
+                    value={formData.property_area}
+                    onChange={handleInputChange}
+                    className={`${errorBorder("property_area")} pl-10`}
+                    placeholder="Enter Area (e.g. Foyer, Kitchen, Common)"
+                  />
+                </div>
                 {errors.property_area && (
                   <p className="text-red-500 text-sm">{errors.property_area}</p>
                 )}
               </div>
 
               {/* Status */}
-              <div className="space-y-2">
-                <Label>Status</Label>
-                <select
-                  name="property_area_status"
-                  value={formData.property_area_status}
-                  onChange={handleInputChange}
-                  className="w-full border rounded-md h-10 px-3 focus:outline-none focus:ring-2 focus:ring-primary bg-transparent border-slate-200 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100"
-                >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
-                </select>
-              </div>
+              {isEdit && (
+                <div className="space-y-2">
+                  <Label htmlFor="property_area_status" className="flex items-center gap-1">Status</Label>
+                  <div className="relative">
+                    <Activity className="absolute left-3 top-2.5 h-4 w-4 text-gray-500 z-10" />
+                    <Select value={formData.property_area_status} onValueChange={handleSelectChange}>
+                      <SelectTrigger className="w-full pl-10 bg-transparent">
+                        <SelectValue placeholder="Select Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Active">Active</SelectItem>
+                        <SelectItem value="Inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 mt-4 pt-4 border-t">

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Edit, ArrowLeft, CheckCircle2, Award, FileText } from "lucide-react";
+import { Edit, ArrowLeft, CheckCircle2, Award, FileText, CalendarDays } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
@@ -8,7 +8,7 @@ import ToggleStatus from "@/components/toogle/status-toogle";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/common/page-header";
 import ConfirmDialog from "@/components/common/confirm-dialog";
-import { useRevQuotationsQuery, useApproveRevQuotationMutation } from "../hooks/useQuotation";
+import { useRevQuotationsQuery, useApproveRevQuotationMutation, useQuotationQuery } from "../hooks/useQuotation";
 import moment from "moment";
 import { toast } from "sonner";
 
@@ -20,10 +20,12 @@ const RevQuotationListPage = () => {
   const [pendingApproveId, setPendingApproveId] = useState(null);
 
   const { data: responseData, isLoading, isError, refetch } = useRevQuotationsQuery(parentId, page);
+  const { data: parentQuotationData, isLoading: isParentLoading, isError: isParentError } = useQuotationQuery(parentId);
   const approveMutation = useApproveRevQuotationMutation();
 
   const paginationData = responseData?.data;
   const revQuotationList = paginationData?.data || [];
+  const parentFinishWorkDate = parentQuotationData?.data?.quotation_finish_work_date;
 
   const handleApprove = (revId) => {
     setPendingApproveId(revId);
@@ -78,6 +80,13 @@ const RevQuotationListPage = () => {
         if (status === "Approved") {
           return <span className="pill pill-approved">Approved</span>;
         }
+        if (parentFinishWorkDate) {
+          return (
+            <span className={`text-xs font-bold ${status === "Pending" ? "text-amber-500" : "text-red-500"}`}>
+              {status}
+            </span>
+          );
+        }
         return (
           <ToggleStatus
             initialStatus={status}
@@ -97,15 +106,17 @@ const RevQuotationListPage = () => {
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex gap-2">
-          <abbr title="Edit Revised Quotation">
-            <Button
-              size="icon"
-              variant="outline"
-              onClick={() => navigate(`/quotation-list/revised/${parentId}/edit/${row.original.id}`)}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-          </abbr>
+          {!parentFinishWorkDate && (
+            <abbr title="Edit Revised Quotation">
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={() => navigate(`/quotation-list/revised/${parentId}/edit/${row.original.id}`)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            </abbr>
+          )}
 
           <abbr title="View Report">
             <Button
@@ -118,26 +129,28 @@ const RevQuotationListPage = () => {
             </Button>
           </abbr>
 
-          {row.original.quotation_status !== "Approved" && (
-            <abbr title="Approve & Finalize">
-              <Button
-                size="icon"
-                variant="outline"
-                className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                onClick={() => handleApprove(row.original.id)}
-                disabled={approveMutation.isPending}
-              >
-                <Award className="h-4 w-4" />
-              </Button>
-            </abbr>
-          )}
+          {!parentFinishWorkDate &&
+            !revQuotationList.some((q) => q.quotation_status === "Approved") &&
+            row.original.quotation_status !== "Approved" && (
+              <abbr title="Approve & Finalize">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                  onClick={() => handleApprove(row.original.id)}
+                  disabled={approveMutation.isPending}
+                >
+                  <Award className="h-4 w-4" />
+                </Button>
+              </abbr>
+            )}
         </div>
       ),
     },
   ];
 
-  if (isLoading) return <LoadingBar />;
-  if (isError) return <ApiErrorPage onRetry={refetch} />;
+  if (isLoading || isParentLoading) return <LoadingBar />;
+  if (isError || isParentError) return <ApiErrorPage onRetry={refetch} />;
 
   return (
     <div className="px-5">
@@ -154,15 +167,29 @@ const RevQuotationListPage = () => {
         }
       />
 
+      {parentFinishWorkDate && (
+        <div className="mb-4 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 p-4 rounded-xl flex items-center gap-3">
+          <CalendarDays className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+          <div>
+            <p className="font-semibold text-sm">Parent Quotation Finalized</p>
+            <p className="text-xs opacity-90">The parent quotation has a finish work date. Revisions cannot be added, edited, or approved.</p>
+          </div>
+        </div>
+      )}
+
       <DataTable
         data={revQuotationList}
         columns={columns}
         searchPlaceholder="Search Revisions..."
         pageSize={50}
-        addButton={{
-          onClick: () => navigate(`/quotation-list/revised/${parentId}/create`),
-          label: "Add Revised Quotation",
-        }}
+        addButton={
+          !parentFinishWorkDate
+            ? {
+                onClick: () => navigate(`/quotation-list/revised/${parentId}/create`),
+                label: "Add Revised Quotation",
+              }
+            : undefined
+        }
         backendPagination={true}
         page={paginationData?.current_page || 1}
         totalPages={paginationData?.last_page || 1}

@@ -1,20 +1,58 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Edit, GitBranch, FileText } from "lucide-react";
+import { Edit, GitBranch, FileText, CalendarDays } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
 import ToggleStatus from "@/components/toogle/status-toogle";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/common/page-header";
-import { useQuotationsQuery } from "../hooks/useQuotation";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import {
+  useQuotationsQuery,
+  useUpdateQuotationFinishWorkDateMutation,
+} from "../hooks/useQuotation";
 import moment from "moment";
 
 const QuotationListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [finishDateDialogOpen, setFinishDateDialogOpen] = useState(false);
+  const [selectedQuotation, setSelectedQuotation] = useState(null);
+  const [finishDate, setFinishDate] = useState("");
 
   const { data: responseData, isLoading, isError, refetch } = useQuotationsQuery(page);
+  const updateFinishWorkDateMutation = useUpdateQuotationFinishWorkDateMutation();
+
+  const handleOpenFinishDateDialog = (quotation) => {
+    setSelectedQuotation(quotation);
+    setFinishDate(quotation.quotation_finish_work_date || "");
+    setFinishDateDialogOpen(true);
+  };
+
+  const handleSaveFinishDate = async () => {
+    if (!selectedQuotation) return;
+    try {
+      await updateFinishWorkDateMutation.mutateAsync({
+        id: selectedQuotation.id,
+        finishWorkDate: finishDate,
+      });
+      toast.success("Finish work date updated successfully");
+      refetch();
+      setFinishDateDialogOpen(false);
+    } catch (error) {
+      toast.error(error.message || "Failed to update finish work date");
+    }
+  };
 
   const paginationData = responseData?.data;
   const quotationList = paginationData?.data || [];
@@ -31,6 +69,14 @@ const QuotationListPage = () => {
       cell: ({ row }) =>
         row.original.quotation_date
           ? moment(row.original.quotation_date).format("DD-MM-YYYY")
+          : "-",
+    },
+    {
+      header: "Finish Work Date",
+      accessorKey: "quotation_finish_work_date",
+      cell: ({ row }) =>
+        row.original.quotation_finish_work_date
+          ? moment(row.original.quotation_finish_work_date).format("DD-MM-YYYY")
           : "-",
     },
     {
@@ -84,15 +130,17 @@ const QuotationListPage = () => {
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex gap-2">
-          <abbr title="Edit Quotation">
-            <Button
-              size="icon"
-              variant="outline"
-              onClick={() => navigate(`/quotation-list/edit/${row.original.id}`)}
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
-          </abbr>
+          {!row.original.quotation_finish_work_date && (
+            <abbr title="Edit Quotation">
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={() => navigate(`/quotation-list/edit/${row.original.id}`)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            </abbr>
+          )}
 
           <abbr title="View Report">
             <Button
@@ -115,6 +163,19 @@ const QuotationListPage = () => {
               <GitBranch className="h-4 w-4" />
             </Button>
           </abbr>
+
+          {row.original.quotation_status === "Approved" && !row.original.quotation_finish_work_date && (
+            <abbr title="Add Finish Work Date">
+              <Button
+                size="icon"
+                variant="outline"
+                className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                onClick={() => handleOpenFinishDateDialog(row.original)}
+              >
+                <CalendarDays className="h-4 w-4" />
+              </Button>
+            </abbr>
+          )}
         </div>
       ),
     },
@@ -125,6 +186,11 @@ const QuotationListPage = () => {
 
   return (
     <div className="px-5">
+      <PageHeader
+        icon={FileText}
+        title="Quotations"
+        description="Manage customer quotations and revisions"
+      />
       <DataTable
         data={quotationList}
         columns={columns}
@@ -140,6 +206,35 @@ const QuotationListPage = () => {
         totalRecords={paginationData?.total || 0}
         onPageChange={setPage}
       />
+
+      <Dialog open={finishDateDialogOpen} onOpenChange={setFinishDateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Finish Work Date</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Finish Work Date</Label>
+              <Input
+                type="date"
+                value={finishDate}
+                onChange={(e) => setFinishDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFinishDateDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveFinishDate}
+              disabled={updateFinishWorkDateMutation.isPending}
+            >
+              Save Date
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

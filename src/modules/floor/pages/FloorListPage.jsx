@@ -1,7 +1,15 @@
+import PageHeader from "@/components/common/page-header";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Edit, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
@@ -11,6 +19,7 @@ import { useFloorsQuery } from "../hooks/useFloor";
 const FloorListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const { data: responseData, isLoading, isError, refetch } = useFloorsQuery();
 
@@ -18,6 +27,10 @@ const FloorListPage = () => {
   const isPaginated = paginationData && typeof paginationData === "object" && "data" in paginationData && Array.isArray(paginationData.data);
   const floorList = isPaginated ? paginationData.data : (Array.isArray(paginationData) ? paginationData : []);
 
+  const filteredData = floorList.filter((item) => {
+    if (statusFilter === "all") return true;
+    return item.property_floor_status?.toLowerCase() === statusFilter.toLowerCase();
+  });
   const columns = [
     {
       header: "Sl No",
@@ -69,13 +82,26 @@ const FloorListPage = () => {
 
   return (
     <div className="px-5">
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Floors</h1>
-        <p className="text-sm text-gray-600 dark:text-gray-400">Manage floor levels and status</p>
-      </div>
+            <PageHeader
+        icon={Layers}
+        title="Floors"
+        description="Manage property floor levels"
+      />
 
       <DataTable
-        data={floorList}
+        extraButton={
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Select Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="Active">Active</SelectItem>
+              <SelectItem value="Inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        }
+        data={filteredData}
         columns={columns}
         searchPlaceholder="Search Floors..."
         pageSize={50}

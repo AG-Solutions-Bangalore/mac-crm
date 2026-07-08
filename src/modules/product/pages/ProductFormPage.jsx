@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Package, Loader2, Save, ArrowLeft } from "lucide-react";
+import { Package, Loader2, Save, ArrowLeft, Wrench, Tag, Award, Cpu, ShieldCheck, IndianRupee } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
 import PageHeader from "@/components/common/page-header";
 import LoadingBar from "@/components/loader/loading-bar";
 import { toast } from "sonner";
@@ -27,7 +28,6 @@ const ProductFormPage = () => {
     product_name: "",
     product_warranty: "",
     product_price: "",
-    product_status: "Active",
   });
 
   const [errors, setErrors] = useState({});
@@ -55,7 +55,6 @@ const ProductFormPage = () => {
         product_name: data.product_name || "",
         product_warranty: data.product_warranty || "",
         product_price: data.product_price?.toString() || "",
-        product_status: data.product_status || "Active",
       });
     }
   }, [isEdit, fetchedData]);
@@ -120,7 +119,7 @@ const ProductFormPage = () => {
   }
 
   return (
-    <div className="max-w-full mx-auto px-5">
+    <div className="w-full px-5">
       <PageHeader
         icon={Package}
         title={isEdit ? "Edit Product" : "Add Product"}
@@ -132,29 +131,33 @@ const ProductFormPage = () => {
         }
       />
 
-      <Card className="mt-4 max-w-3xl mx-auto">
+      <Card className="mt-4">
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Service Select */}
               <div className="space-y-2">
                 <Label>Service</Label>
-                <MemoizedSelect
-                  options={activeServices.map((service) => ({
-                    value: service.id?.toString(),
-                    label: service.service_name,
-                  }))}
-                  value={formData.service_id}
-                  onChange={(option) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      service_id: option ? option.value : "",
-                    }));
-                    setErrors((prev) => ({ ...prev, service_id: "" }));
-                  }}
-                  placeholder="Select Service"
-                  hasError={Boolean(errors.service_id)}
-                />
+                <div className="relative">
+                  <Wrench className="absolute left-3 top-2.5 h-4 w-4 text-gray-500 z-10" />
+                  <MemoizedSelect
+                    options={activeServices.map((service) => ({
+                      value: service.id?.toString(),
+                      label: service.service_name,
+                    }))}
+                    value={formData.service_id}
+                    onChange={(option) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        service_id: option ? option.value : "",
+                      }));
+                      setErrors((prev) => ({ ...prev, service_id: "" }));
+                    }}
+                    placeholder="Select Service"
+                    hasError={Boolean(errors.service_id)}
+                    hasIcon={true}
+                  />
+                </div>
                 {errors.service_id && (
                   <p className="text-red-500 text-xs">{errors.service_id}</p>
                 )}
@@ -163,22 +166,26 @@ const ProductFormPage = () => {
               {/* Category Select */}
               <div className="space-y-2">
                 <Label>Category</Label>
-                <MemoizedSelect
-                  options={activeCategories.map((category) => ({
-                    value: category.id?.toString(),
-                    label: category.category_name,
-                  }))}
-                  value={formData.category_id}
-                  onChange={(option) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      category_id: option ? option.value : "",
-                    }));
-                    setErrors((prev) => ({ ...prev, category_id: "" }));
-                  }}
-                  placeholder="Select Category"
-                  hasError={Boolean(errors.category_id)}
-                />
+                <div className="relative">
+                  <Tag className="absolute left-3 top-2.5 h-4 w-4 text-gray-500 z-10" />
+                  <MemoizedSelect
+                    options={activeCategories.map((category) => ({
+                      value: category.id?.toString(),
+                      label: category.category_name,
+                    }))}
+                    value={formData.category_id}
+                    onChange={(option) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        category_id: option ? option.value : "",
+                      }));
+                      setErrors((prev) => ({ ...prev, category_id: "" }));
+                    }}
+                    placeholder="Select Category"
+                    hasError={Boolean(errors.category_id)}
+                    hasIcon={true}
+                  />
+                </div>
                 {errors.category_id && (
                   <p className="text-red-500 text-xs">{errors.category_id}</p>
                 )}
@@ -187,22 +194,26 @@ const ProductFormPage = () => {
               {/* Brand Select */}
               <div className="space-y-2">
                 <Label>Brand</Label>
-                <MemoizedSelect
-                  options={activeBrands.map((brand) => ({
-                    value: brand.id?.toString(),
-                    label: brand.brand_name,
-                  }))}
-                  value={formData.brand_id}
-                  onChange={(option) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      brand_id: option ? option.value : "",
-                    }));
-                    setErrors((prev) => ({ ...prev, brand_id: "" }));
-                  }}
-                  placeholder="Select Brand"
-                  hasError={Boolean(errors.brand_id)}
-                />
+                <div className="relative">
+                  <Award className="absolute left-3 top-2.5 h-4 w-4 text-gray-500 z-10" />
+                  <MemoizedSelect
+                    options={activeBrands.map((brand) => ({
+                      value: brand.id?.toString(),
+                      label: brand.brand_name,
+                    }))}
+                    value={formData.brand_id}
+                    onChange={(option) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        brand_id: option ? option.value : "",
+                      }));
+                      setErrors((prev) => ({ ...prev, brand_id: "" }));
+                    }}
+                    placeholder="Select Brand"
+                    hasError={Boolean(errors.brand_id)}
+                    hasIcon={true}
+                  />
+                </div>
                 {errors.brand_id && (
                   <p className="text-red-500 text-xs">{errors.brand_id}</p>
                 )}
@@ -211,13 +222,16 @@ const ProductFormPage = () => {
               {/* Product Module */}
               <div className="space-y-2">
                 <Label>Product Module</Label>
-                <Input
-                  name="product_module"
-                  value={formData.product_module}
-                  onChange={handleInputChange}
-                  className={errorBorder("product_module")}
-                  placeholder="Enter Product Module (e.g. 4M)"
-                />
+                <div className="relative">
+                  <Cpu className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    name="product_module"
+                    value={formData.product_module}
+                    onChange={handleInputChange}
+                    className={`${errorBorder("product_module")} pl-10`}
+                    placeholder="Enter Product Module (e.g. 4M)"
+                  />
+                </div>
                 {errors.product_module && (
                   <p className="text-red-500 text-xs">{errors.product_module}</p>
                 )}
@@ -226,13 +240,16 @@ const ProductFormPage = () => {
               {/* Product Name */}
               <div className="space-y-2 md:col-span-2">
                 <Label>Product Name</Label>
-                <Input
-                  name="product_name"
-                  value={formData.product_name}
-                  onChange={handleInputChange}
-                  className={errorBorder("product_name")}
-                  placeholder="Enter Product Name (e.g. 4M - 8 Control)"
-                />
+                <div className="relative">
+                  <Package className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    name="product_name"
+                    value={formData.product_name}
+                    onChange={handleInputChange}
+                    className={`${errorBorder("product_name")} pl-10`}
+                    placeholder="Enter Product Name (e.g. 4M - 8 Control)"
+                  />
+                </div>
                 {errors.product_name && (
                   <p className="text-red-500 text-xs">{errors.product_name}</p>
                 )}
@@ -241,14 +258,17 @@ const ProductFormPage = () => {
               {/* Product Warranty */}
               <div className="space-y-2">
                 <Label>Warranty (In Years)</Label>
-                <Input
-                  name="product_warranty"
-                  type="number"
-                  value={formData.product_warranty}
-                  onChange={handleInputChange}
-                  className={errorBorder("product_warranty")}
-                  placeholder="Enter Warranty in years"
-                />
+                <div className="relative">
+                  <ShieldCheck className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    name="product_warranty"
+                    type="number"
+                    value={formData.product_warranty}
+                    onChange={handleInputChange}
+                    className={`${errorBorder("product_warranty")} pl-10`}
+                    placeholder="Enter Warranty in years"
+                  />
+                </div>
                 {errors.product_warranty && (
                   <p className="text-red-500 text-xs">{errors.product_warranty}</p>
                 )}
@@ -257,34 +277,21 @@ const ProductFormPage = () => {
               {/* Product Price */}
               <div className="space-y-2">
                 <Label>Price (₹)</Label>
-                <Input
-                  name="product_price"
-                  type="number"
-                  value={formData.product_price}
-                  onChange={handleInputChange}
-                  className={errorBorder("product_price")}
-                  placeholder="Enter Product Price (e.g. 14200)"
-                />
+                <div className="relative">
+                  <IndianRupee className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    name="product_price"
+                    type="number"
+                    value={formData.product_price}
+                    onChange={handleInputChange}
+                    className={`${errorBorder("product_price")} pl-10`}
+                    placeholder="Enter Product Price (e.g. 14200)"
+                  />
+                </div>
                 {errors.product_price && (
                   <p className="text-red-500 text-xs">{errors.product_price}</p>
                 )}
               </div>
-
-              {/* Status (Edit only) */}
-              {isEdit && (
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Status</Label>
-                  <select
-                    name="product_status"
-                    value={formData.product_status}
-                    onChange={handleInputChange}
-                    className="w-full border rounded-md h-10 px-3 focus:outline-none focus:ring-2 focus:ring-primary bg-white text-sm"
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
-              )}
             </div>
 
             <div className="flex justify-end gap-2 mt-4 pt-4 border-t">

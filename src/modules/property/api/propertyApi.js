@@ -11,9 +11,7 @@ export const propertyApi = {
   },
   createProperty: async (propertyData) => {
     const formData = new FormData();
-    Object.keys(propertyData).forEach((key) => {
-      formData.append(key, propertyData[key]);
-    });
+    formData.append("property", propertyData.property);
     const response = await apiClient.post("/property", formData, {
       headers: {
         "Content-Type": "multipart/form-data",

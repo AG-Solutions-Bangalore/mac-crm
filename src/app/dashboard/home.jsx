@@ -90,6 +90,29 @@ const getServiceBadgeClass = (serviceName) => {
   return "badge-default";
 };
 
+const CustomTooltip = ({ active, payload, label, prefix = "", suffix = "" }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0];
+    const showName = data.name && data.name !== "value" && data.name !== "sales" && data.name !== "value";
+    return (
+      <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-2.5 shadow-md text-xs text-[var(--ink)]">
+        <div className="flex flex-col gap-0.5">
+          {label && (
+            <span className="text-[10px] text-[var(--ink-soft)] font-semibold uppercase tracking-wider font-mono">
+              {label}
+            </span>
+          )}
+          <span className="font-semibold text-sm">
+            {showName ? `${data.name}: ` : ""}
+            {prefix}{data.value}{suffix}
+          </span>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth?.user);
@@ -272,16 +295,7 @@ const Dashboard = () => {
                       <CartesianGrid strokeDasharray="5 5" vertical={false} stroke="var(--line)" />
                       <XAxis dataKey="name" stroke="var(--ink-soft)" fontSize={11} tickLine={false} axisLine={false} />
                       <YAxis stroke="var(--ink-soft)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v}L`} />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'var(--surface)', 
-                          borderColor: 'var(--line)', 
-                          borderRadius: '8px',
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '12px' 
-                        }} 
-                        formatter={(value) => [`₹${value} Lakhs`, "Sales"]} 
-                      />
+                      <Tooltip content={<CustomTooltip prefix="₹" suffix=" Lakhs" />} />
                       <Area type="monotone" dataKey="sales" stroke="var(--primary-color)" strokeWidth={2} fillOpacity={1} fill="url(#colorSales)" />
                     </AreaChart>
                   </ResponsiveContainer>
@@ -315,14 +329,7 @@ const Dashboard = () => {
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'var(--surface)', 
-                          borderColor: 'var(--line)', 
-                          borderRadius: '8px',
-                          fontSize: '11px' 
-                        }}
-                      />
+                      <Tooltip content={<CustomTooltip />} />
                       <Legend verticalAlign="bottom" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, color: 'var(--ink-soft)' }} />
                     </PieChart>
                   </ResponsiveContainer>
@@ -353,16 +360,7 @@ const Dashboard = () => {
                       <CartesianGrid strokeDasharray="5 5" horizontal={false} stroke="var(--line)" />
                       <XAxis type="number" stroke="var(--ink-soft)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v}L`} />
                       <YAxis dataKey="name" type="category" stroke="var(--ink-soft)" fontSize={11} tickLine={false} axisLine={false} width={90} />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'var(--surface)', 
-                          borderColor: 'var(--line)', 
-                          borderRadius: '8px',
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '12px' 
-                        }} 
-                        formatter={(v) => [`₹${v} Lakhs`, "Sales"]} 
-                      />
+                      <Tooltip cursor={false} content={<CustomTooltip prefix="₹" suffix=" Lakhs" />} />
                       <Bar dataKey="value" fill="var(--copper)" radius={[0, 4, 4, 0]} barSize={10} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -389,16 +387,7 @@ const Dashboard = () => {
                       <CartesianGrid strokeDasharray="5 5" vertical={false} stroke="var(--line)" />
                       <XAxis dataKey="name" stroke="var(--ink-soft)" fontSize={11} tickLine={false} axisLine={false} />
                       <YAxis stroke="var(--ink-soft)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v}L`} />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'var(--surface)', 
-                          borderColor: 'var(--line)', 
-                          borderRadius: '8px',
-                          fontFamily: 'var(--font-mono)',
-                          fontSize: '12px' 
-                        }} 
-                        formatter={(v) => [`₹${v} Lakhs`, "Sales"]} 
-                      />
+                      <Tooltip cursor={false} content={<CustomTooltip prefix="₹" suffix=" Lakhs" />} />
                       <Bar dataKey="value" fill="var(--primary-color)" radius={[4, 4, 0, 0]} barSize={30} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -418,7 +407,7 @@ const Dashboard = () => {
                 </div>
                 <div className="space-y-4 mt-4 overflow-y-auto max-h-[230px]">
                   {followupsData.map((item, index) => (
-                    <div key={index} className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 transition-all duration-200">
+                    <div key={index} className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-200">
                       <div className="shrink-0 text-center px-2 py-1 rounded bg-[rgba(193,121,63,0.08)] text-[var(--copper)] font-mono text-[10px] font-bold leading-tight">
                         {item.date.split(" ")[0]}
                         <br />
@@ -470,24 +459,8 @@ const Dashboard = () => {
                         tickFormatter={(value) => `${value}`}
                       />
                       <Tooltip
-                        cursor={{ fill: "rgba(0,0,0,0.02)" }}
-                        content={({ active, payload }) => {
-                          if (active && payload && payload.length) {
-                            return (
-                              <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-2 shadow-md text-xs text-[var(--ink)]">
-                                <div className="flex flex-col">
-                                  <span className="text-[0.70rem] text-[var(--ink-soft)]">
-                                    Service - {payload[0].payload.service_name}
-                                  </span>
-                                  <span className="font-semibold text-sm">
-                                    Clients - {payload[0].value}
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          }
-                          return null;
-                        }}
+                        cursor={false}
+                        content={<CustomTooltip suffix=" Clients" />}
                       />
                       <Bar
                         dataKey="users_count"
@@ -523,7 +496,7 @@ const Dashboard = () => {
                     <tbody>
                       {latestRequests.length > 0 ? (
                         latestRequests.map((request) => (
-                          <tr key={request.id} className="clickable hover:bg-slate-50 transition-colors" onClick={() => navigate("/service-request")}>
+                          <tr key={request.id} className="clickable hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors" onClick={() => navigate("/service-request")}>
                             <td className="mono text-[11px]">
                               {request.services_request_date
                                 ? moment(request.services_request_date).format("DD-MM-YYYY")

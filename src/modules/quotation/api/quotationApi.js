@@ -3,15 +3,50 @@ import apiClient from "@/api/apiClient";
 export const quotationApi = {
   // Fetch products by categories and services (Form-Data)
   getProductsForQuotation: async (categoryIds, serviceIds) => {
+    // Normalise inputs to clean comma-separated strings
+    const normaliseParam = (val) => {
+      if (!val) return "";
+      if (Array.isArray(val)) return val.join(",");
+      return val.toString().trim();
+    };
+
+    const cleanCategoryIds = normaliseParam(categoryIds);
+    const cleanServiceIds = normaliseParam(serviceIds);
+
+    console.group("🔍 API Request: /getProducts");
+    console.log("Raw categoryIds passed:", categoryIds);
+    console.log("Raw serviceIds passed:", serviceIds);
+    console.log("Normalized category_ids sent:", cleanCategoryIds);
+    console.log("Normalized service_ids sent:", cleanServiceIds);
+    console.groupEnd();
+
     const formData = new FormData();
-    formData.append("category_ids", categoryIds);
-    formData.append("service_ids", serviceIds);
-    const response = await apiClient.post("/getProducts", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    return response.data;
+    formData.append("category_ids", cleanCategoryIds);
+    formData.append("service_ids", cleanServiceIds);
+
+    try {
+      const response = await apiClient.post("/getProducts", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      
+      console.group("✅ API Response: /getProducts (Success)");
+      console.log("Response Status:", response.status);
+      console.log("Response Data:", response.data);
+      console.groupEnd();
+      
+      return response.data;
+    } catch (error) {
+      console.group("❌ API Response: /getProducts (Error)");
+      console.error("Error Message:", error.message);
+      if (error.response) {
+        console.error("Response Status:", error.response.status);
+        console.error("Response Data:", error.response.data);
+      }
+      console.groupEnd();
+      throw error;
+    }
   },
 
   // Quotation CRUD
