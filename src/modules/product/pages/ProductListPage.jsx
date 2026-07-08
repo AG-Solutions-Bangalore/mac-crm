@@ -1,27 +1,46 @@
+import PageHeader from "@/components/common/page-header";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Edit } from "lucide-react";
+import { Edit , Package } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
 import ToggleStatus from "@/components/toogle/status-toogle";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useProductsQuery } from "../hooks/useProduct";
 
 const ProductListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const { data: responseData, isLoading, isError, refetch } = useProductsQuery(page);
 
   const paginationData = responseData?.data;
   const productList = paginationData?.data || [];
 
+  const filteredData = productList.filter((item) => {
+    if (statusFilter === "all") return true;
+    return item.product_status?.toLowerCase() === statusFilter.toLowerCase();
+  });
+
+
   const columns = [
     {
       header: "Sl No",
       id: "sl_no",
       cell: ({ row }) => (page - 1) * 50 + row.index + 1,
+    },
+    {
+      header: "Module",
+      accessorKey: "product_module",
     },
     {
       header: "Product Name",
@@ -40,10 +59,6 @@ const ProductListPage = () => {
       accessorKey: "brand_name",
     },
     {
-      header: "Module",
-      accessorKey: "product_module",
-    },
-    {
       header: "Price (₹)",
       accessorKey: "product_price",
       cell: ({ row }) => {
@@ -54,6 +69,10 @@ const ProductListPage = () => {
     {
       header: "Warranty",
       accessorKey: "product_warranty",
+      cell: ({ row }) => {
+        const val = row.original.product_warranty;
+        return val ? `${val} Years` : "-";
+      },
     },
     {
       header: "Status",
@@ -93,8 +112,25 @@ const ProductListPage = () => {
 
   return (
     <div className="px-5">
+      <PageHeader
+        icon={Package}
+        title="Products"
+        description="Manage product catalog items"
+      />
       <DataTable
-        data={productList}
+        extraButton={
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Select Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="Active">Active</SelectItem>
+              <SelectItem value="Inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        }
+        data={filteredData}
         columns={columns}
         searchPlaceholder="Search Product..."
         pageSize={50}

@@ -1,11 +1,19 @@
+import PageHeader from "@/components/common/page-header";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Edit } from "lucide-react";
+import { Edit , Users } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
 import ToggleStatus from "@/components/toogle/status-toogle";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useClientsQuery } from "../hooks/useClient";
 
 const getServiceBadgeClass = (serviceName) => {
@@ -22,11 +30,18 @@ const getServiceBadgeClass = (serviceName) => {
 const ClientListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const { data: responseData, isLoading, isError, refetch } = useClientsQuery(page);
 
   const paginationData = responseData?.data;
   const clientList = paginationData?.data || [];
+
+  const filteredData = clientList.filter((item) => {
+    if (statusFilter === "all") return true;
+    return item.status?.toLowerCase() === statusFilter.toLowerCase();
+  });
+
 
   const columns = [
     {
@@ -129,8 +144,25 @@ const ClientListPage = () => {
 
   return (
     <div className="px-5">
+      <PageHeader
+        icon={Users}
+        title="Clients"
+        description="Manage customer accounts and service mappings"
+      />
       <DataTable
-        data={clientList}
+        extraButton={
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Select Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="Active">Active</SelectItem>
+              <SelectItem value="Inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        }
+        data={filteredData}
         columns={columns}
         searchPlaceholder="Search Clients..."
         pageSize={50}

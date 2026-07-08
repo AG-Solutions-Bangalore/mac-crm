@@ -11,12 +11,14 @@ import {
   Locate,
   ArrowLeft,
   Save,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PageHeader from "@/components/common/page-header";
 import RedStar from "@/components/RedStar";
 import LoadingBar from "@/components/loader/loading-bar";
@@ -143,6 +145,10 @@ const ClientFormPage = ({ isEdit, isRelation = false }) => {
     setFormData((prev) => ({ ...prev, [name]: updatedValue }));
   };
 
+  const handleStatusSelectChange = (value) => {
+    setFormData((prev) => ({ ...prev, status: value }));
+  };
+
   const validateForm = () => {
     let newErrors = {};
     if (!formData.name) newErrors.name = "Name is required";
@@ -216,7 +222,7 @@ const ClientFormPage = ({ isEdit, isRelation = false }) => {
   }
 
   return (
-    <div className="max-w-full mx-auto px-5">
+    <div className="w-full px-5">
       <PageHeader
         icon={User}
         title={isEdit ? "Edit Client" : "Add New Client"}
@@ -231,19 +237,22 @@ const ClientFormPage = ({ isEdit, isRelation = false }) => {
       <Card className="mt-4">
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Name */}
               <div className="space-y-2">
-                <Label className="flex">
-                  <User className="h-3.5 w-5" /> Name <RedStar />
+                <Label className="flex items-center gap-1">
+                  Name <RedStar />
                 </Label>
-                <Input
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className={errorBorder("name")}
-                  placeholder="Enter Name"
-                />
+                <div className="relative">
+                  <User className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className={`${errorBorder("name")} pl-10`}
+                    placeholder="Enter Name"
+                  />
+                </div>
                 {errors.name && (
                   <p className="text-red-500 text-sm">{errors.name}</p>
                 )}
@@ -251,16 +260,19 @@ const ClientFormPage = ({ isEdit, isRelation = false }) => {
 
               {/* Email */}
               <div className="space-y-2">
-                <Label className="flex">
-                  <Mail className="h-3.5 w-5" /> Email <RedStar />
+                <Label className="flex items-center gap-1">
+                  Email <RedStar />
                 </Label>
-                <Input
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className={errorBorder("email")}
-                  placeholder="Enter Email"
-                />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className={`${errorBorder("email")} pl-10`}
+                    placeholder="Enter Email"
+                  />
+                </div>
                 {errors.email && (
                   <p className="text-red-500 text-sm">{errors.email}</p>
                 )}
@@ -268,16 +280,19 @@ const ClientFormPage = ({ isEdit, isRelation = false }) => {
 
               {/* Mobile */}
               <div className="space-y-2">
-                <Label className="flex">
-                  <Phone className="h-3.5 w-5" /> Mobile <RedStar />
+                <Label className="flex items-center gap-1">
+                  Mobile <RedStar />
                 </Label>
-                <Input
-                  name="mobile"
-                  value={formData.mobile}
-                  onChange={handleInputChange}
-                  className={errorBorder("mobile")}
-                  placeholder="Enter Mobile"
-                />
+                <div className="relative">
+                  <Phone className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    name="mobile"
+                    value={formData.mobile}
+                    onChange={handleInputChange}
+                    className={`${errorBorder("mobile")} pl-10`}
+                    placeholder="Enter Mobile"
+                  />
+                </div>
                 {errors.mobile && (
                   <p className="text-red-500 text-sm">{errors.mobile}</p>
                 )}
@@ -285,35 +300,41 @@ const ClientFormPage = ({ isEdit, isRelation = false }) => {
 
               {/* Whatsapp */}
               <div className="space-y-2">
-                <Label className="flex">
-                  <Phone className="h-3.5 w-5" /> Whatsapp
+                <Label className="flex items-center gap-1">
+                  Whatsapp
                 </Label>
-                <Input
-                  name="whatsapp"
-                  value={formData.whatsapp}
-                  onChange={handleInputChange}
-                  placeholder="Enter Whatsapp"
-                />
+                <div className="relative">
+                  <Phone className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    name="whatsapp"
+                    value={formData.whatsapp}
+                    onChange={handleInputChange}
+                    className="pl-10"
+                    placeholder="Enter Whatsapp"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* Services select */}
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <BookOpen className="h-3.5 w-4" /> Services <RedStar />
+                <Label className="flex items-center gap-1">
+                  Services <RedStar />
                 </Label>
-                <MemoizedSelect
-                  isMulti
-                  options={serviceOptions.filter(
-                    (service) =>
-                      !selectedHideServices?.some(
-                        (hidden) => hidden.value === service.value,
-                      ),
-                  )}
-                  value={selectedServices}
-                  onChange={setSelectedServices}
-                />
+                <div className="relative">
+                  <BookOpen className="absolute left-3 top-2.5 h-4 w-4 text-gray-500 z-10" />
+                  <MemoizedSelect
+                    isMulti
+                    options={serviceOptions.filter(
+                      (service) =>
+                        !selectedHideServices?.some(
+                          (hidden) => hidden.value === service.value,
+                        ),
+                    )}
+                    value={selectedServices}
+                    onChange={setSelectedServices}
+                    hasIcon={true}
+                  />
+                </div>
                 {errors.services && (
                   <p className="text-red-500 text-sm">{errors.services}</p>
                 )}
@@ -321,88 +342,106 @@ const ClientFormPage = ({ isEdit, isRelation = false }) => {
 
               {/* Hide Services select */}
               <div className="space-y-2">
-                <Label className="flex items-center gap-2">
-                  <BookOpen className="h-3.5 w-4" /> Hide Services
+                <Label className="flex items-center gap-1">
+                  Hide Services
                 </Label>
-                <MemoizedSelect
-                  isMulti
-                  options={serviceOptions.filter(
-                    (service) =>
-                      !selectedServices?.some(
-                        (selected) => selected.value === service.value,
-                      ),
-                  )}
-                  value={selectedHideServices}
-                  onChange={setSelectedHideServices}
-                />
+                <div className="relative">
+                  <BookOpen className="absolute left-3 top-2.5 h-4 w-4 text-gray-500 z-10" />
+                  <MemoizedSelect
+                    isMulti
+                    options={serviceOptions.filter(
+                      (service) =>
+                        !selectedServices?.some(
+                          (selected) => selected.value === service.value,
+                        ),
+                    )}
+                    value={selectedHideServices}
+                    onChange={setSelectedHideServices}
+                    hasIcon={true}
+                  />
+                </div>
               </div>
 
               {/* Area */}
               <div className="space-y-2">
-                <Label className="flex">
-                  <Locate className="h-3.5 w-5" /> Area
+                <Label className="flex items-center gap-1">
+                  Area
                 </Label>
-                <Input
-                  name="area"
-                  value={formData.area}
-                  onChange={handleInputChange}
-                  placeholder="Enter Area"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {/* Description */}
-              <div className={`space-y-2 md:col-span-2 ${isEdit ? "md:col-span-2" : "md:col-span-3"}`}>
-                <Label className="flex">
-                  <FormInput className="h-3.5 w-5" /> Description
-                </Label>
-                <Textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="Type Your Description Here..."
-                />
+                <div className="relative">
+                  <Locate className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    name="area"
+                    value={formData.area}
+                    onChange={handleInputChange}
+                    className="pl-10"
+                    placeholder="Enter Area"
+                  />
+                </div>
               </div>
 
               {/* Relation (if relation or child/sub profile) */}
               {(isRelation ||
                 (formData.m_id !== formData.r_id &&
-                  formData.m_id !== null)) && (
+                  formData.m_id !== null)) ? (
                 <div className="space-y-2">
-                  <Label className="flex">
-                    <GitBranch className="h-3.5 w-5" /> Relation <RedStar />
+                  <Label className="flex items-center gap-1">
+                    Relation <RedStar />
                   </Label>
-                  <Input
-                    name="relation"
-                    value={formData.relation}
-                    onChange={handleInputChange}
-                    className={errorBorder("relation")}
-                    placeholder="Enter Relation"
-                  />
+                  <div className="relative">
+                    <GitBranch className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                    <Input
+                      name="relation"
+                      value={formData.relation}
+                      onChange={handleInputChange}
+                      className={`${errorBorder("relation")} pl-10`}
+                      placeholder="Enter Relation"
+                    />
+                  </div>
                   {errors.relation && (
                     <p className="text-red-500 text-sm">{errors.relation}</p>
                   )}
                 </div>
+              ) : (
+                /* Empty div placeholder to keep grid aligned */
+                <div className="hidden md:block"></div>
               )}
 
-              {/* Status */}
-              {isEdit && (
-                <div className="space-y-2">
-                  <Label className="flex">
-                    <GitBranch className="h-3.5 w-5" /> Status
-                  </Label>
-                  <select
-                    name="status"
-                    value={formData.status}
+              {/* Description */}
+              <div className="space-y-2 md:col-span-2">
+                <Label className="flex items-center gap-1">
+                  Description
+                </Label>
+                <div className="relative">
+                  <FormInput className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                  <Textarea
+                    name="description"
+                    value={formData.description}
                     onChange={handleInputChange}
-                    className="w-full border rounded-md h-10 px-3 focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
+                    className="pl-10 pt-2"
+                    placeholder="Type Your Description Here..."
+                    rows={3}
+                  />
                 </div>
-              )}
+              </div>
+
+              {/* Status */}
+              <div className="space-y-2 md:col-span-2">
+                <Label className="flex items-center gap-1">
+                  Status
+                </Label>
+                <div className="relative">
+                  <Activity className="absolute left-3 top-2.5 h-4 w-4 text-gray-500 z-10" />
+                  <Select value={formData.status} onValueChange={handleStatusSelectChange}>
+                    <SelectTrigger className="w-full pl-10 bg-transparent">
+                      <SelectValue placeholder="Select Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="Inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
 
             <div className="md:col-span-2 flex justify-end gap-2 mt-4 pt-4 border-t">

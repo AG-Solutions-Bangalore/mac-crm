@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ListFilter, Loader2, Save, ArrowLeft } from "lucide-react";
+import { ListFilter, Loader2, Save, ArrowLeft, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import PageHeader from "@/components/common/page-header";
 import RedStar from "@/components/RedStar";
 import LoadingBar from "@/components/loader/loading-bar";
@@ -44,6 +45,10 @@ const CategoryFormPage = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const handleSelectChange = (value) => {
+    setFormData((prev) => ({ ...prev, category_status: value }));
   };
 
   const validateForm = () => {
@@ -94,7 +99,7 @@ const CategoryFormPage = () => {
   }
 
   return (
-    <div className="max-w-full mx-auto px-5">
+    <div className="w-full px-5">
       <PageHeader
         icon={ListFilter}
         title={isEdit ? "Edit Category" : "Add Category"}
@@ -106,40 +111,47 @@ const CategoryFormPage = () => {
         }
       />
 
-      <Card className="mt-4 max-w-2xl mx-auto">
+      <Card className="mt-4">
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Category Name */}
               <div className="space-y-2">
-                <Label className="flex">
+                <Label htmlFor="category_name" className="flex items-center gap-1">
                   Category Name <RedStar />
                 </Label>
-                <Input
-                  name="category_name"
-                  value={formData.category_name}
-                  onChange={handleInputChange}
-                  className={errorBorder("category_name")}
-                  placeholder="Enter Category Name (e.g. Frame, Frameless)"
-                />
+                <div className="relative">
+                  <ListFilter className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    id="category_name"
+                    name="category_name"
+                    value={formData.category_name}
+                    onChange={handleInputChange}
+                    className={`${errorBorder("category_name")} pl-10`}
+                    placeholder="Enter Category Name (e.g. Frame, Frameless)"
+                  />
+                </div>
                 {errors.category_name && (
                   <p className="text-red-500 text-sm">{errors.category_name}</p>
                 )}
               </div>
 
-              {/* Status (Edit only) */}
+              {/* Status */}
               {isEdit && (
                 <div className="space-y-2">
-                  <Label>Status</Label>
-                  <select
-                    name="category_status"
-                    value={formData.category_status}
-                    onChange={handleInputChange}
-                    className="w-full border rounded-md h-10 px-3 focus:outline-none focus:ring-2 focus:ring-primary bg-white"
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
+                  <Label htmlFor="category_status" className="flex items-center gap-1">Status</Label>
+                  <div className="relative">
+                    <Activity className="absolute left-3 top-2.5 h-4 w-4 text-gray-500 z-10" />
+                    <Select value={formData.category_status} onValueChange={handleSelectChange}>
+                      <SelectTrigger className="w-full pl-10 bg-transparent">
+                        <SelectValue placeholder="Select Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Active">Active</SelectItem>
+                        <SelectItem value="Inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               )}
             </div>

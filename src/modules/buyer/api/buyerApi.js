@@ -11,9 +11,12 @@ export const buyerApi = {
   },
   createBuyer: async (buyerData) => {
     const formData = new FormData();
-    Object.keys(buyerData).forEach((key) => {
-      formData.append(key, buyerData[key]);
-    });
+    formData.append("buyer_name", buyerData.buyer_name);
+    formData.append("buyer_mobile", buyerData.buyer_mobile);
+    formData.append("buyer_email", buyerData.buyer_email);
+    if (buyerData.buyer_address) {
+      formData.append("buyer_address", buyerData.buyer_address);
+    }
     const response = await apiClient.post("/buyer", formData, {
       headers: {
         "Content-Type": "multipart/form-data",

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -214,6 +214,8 @@ const QuotationFormPage = () => {
     createQuotationMutation.isPending ||
     updateQuotationMutation.isPending ||
     updateQuotationFinishWorkDateMutation.isPending;
+
+  const hasFinishWorkDate = Boolean(isEdit && fetchedData?.data?.quotation_finish_work_date);
 
   useEffect(() => {
     if (isEdit && fetchedData?.data) {
@@ -744,6 +746,16 @@ const QuotationFormPage = () => {
           </Button>
         }
       />
+
+      {hasFinishWorkDate && (
+        <div className="mt-4 bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 p-4 rounded-xl flex items-center gap-3">
+          <CalendarDays className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+          <div>
+            <p className="font-semibold text-sm">Quotation Finalized</p>
+            <p className="text-xs opacity-90">This quotation has a finish work date and cannot be edited.</p>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-6">
         <Card>
@@ -1288,7 +1300,7 @@ const QuotationFormPage = () => {
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting || hasFinishWorkDate}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...

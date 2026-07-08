@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Image, Loader2, Save, ArrowLeft } from "lucide-react";
+import { Image, Loader2, Save, ArrowLeft, Wrench, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -323,7 +323,7 @@ const ServiceFormPage = () => {
   }
 
   return (
-    <div className="max-w-full mx-auto px-5">
+    <div className="w-full px-5">
       <PageHeader
         icon={Image}
         title={isEdit ? "Edit Service" : "Add Service"}
@@ -338,19 +338,22 @@ const ServiceFormPage = () => {
       <Card className="mt-4">
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Service Name */}
               <div className="space-y-2">
                 <Label className="flex">
                   Service Name <RedStar />
                 </Label>
-                <Input
-                  name="service_name"
-                  value={formData.service_name}
-                  onChange={handleInputChange}
-                  className={errorBorder("service_name")}
-                  placeholder="Enter Service Name"
-                />
+                <div className="relative">
+                  <Wrench className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    name="service_name"
+                    value={formData.service_name}
+                    onChange={handleInputChange}
+                    className={`${errorBorder("service_name")} pl-10`}
+                    placeholder="Enter Service Name"
+                  />
+                </div>
                 {errors.service_name && (
                   <p className="text-red-500 text-sm">{errors.service_name}</p>
                 )}
@@ -359,70 +362,74 @@ const ServiceFormPage = () => {
               {/* Service URL */}
               <div className="space-y-2">
                 <Label className="flex">Service URL</Label>
-                <Input
-                  name="service_url"
-                  value={formData.service_url}
-                  onChange={handleInputChange}
-                  className={errorBorder("service_url")}
-                  placeholder="Enter Service URL"
-                />
+                <div className="relative">
+                  <Activity className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    name="service_url"
+                    value={formData.service_url}
+                    onChange={handleInputChange}
+                    className={`${errorBorder("service_url")} pl-10`}
+                    placeholder="Enter Service URL"
+                  />
+                </div>
               </div>
 
               {/* Status */}
               <div className="space-y-2">
                 <Label className="flex">Status</Label>
-                <Select
-                  value={formData.service_status}
-                  onValueChange={(value) =>
-                    handleInputChange({
-                      target: { name: "service_status", value },
-                    })
-                  }
-                >
-                  <SelectTrigger
-                    className={`h-10 w-full ${
-                      formData.service_status === "Active"
-                        ? "bg-green-100 text-green-700 border-green-200"
-                        : "bg-red-100 text-red-700 border-red-200"
-                    }`}
+                <div className="relative">
+                  <Activity className="absolute left-3 top-2.5 h-4 w-4 text-gray-500 z-10" />
+                  <Select
+                    value={formData.service_status}
+                    onValueChange={(value) =>
+                      handleInputChange({
+                        target: { name: "service_status", value },
+                      })
+                    }
                   >
-                    <SelectValue placeholder="Select Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Active" className="text-green-700">
-                      Active
-                    </SelectItem>
-                    <SelectItem value="Inactive" className="text-red-700">
-                      Inactive
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                    <SelectTrigger className="w-full pl-10 bg-transparent">
+                      <SelectValue placeholder="Select Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="Inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Service Other */}
               <div className="space-y-2">
                 <Label className="flex">Service Other</Label>
-                <Textarea
-                  name="service_other"
-                  value={formData.service_other}
-                  onChange={handleInputChange}
-                  placeholder="Enter Other details..."
-                  rows={3}
-                />
+                <div className="relative">
+                  <Activity className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                  <Textarea
+                    name="service_other"
+                    value={formData.service_other}
+                    onChange={handleInputChange}
+                    className="pl-10 pt-2"
+                    placeholder="Enter Other details..."
+                    rows={3}
+                  />
+                </div>
               </div>
 
               {/* Service Description */}
               <div className="space-y-2">
                 <Label className="flex">Service Description</Label>
-                <Textarea
-                  name="service_description"
-                  value={formData.service_description}
-                  onChange={handleInputChange}
-                  placeholder="Type Your Description Here..."
-                  rows={3}
-                />
+                <div className="relative">
+                  <Activity className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                  <Textarea
+                    name="service_description"
+                    value={formData.service_description}
+                    onChange={handleInputChange}
+                    className="pl-10 pt-2"
+                    placeholder="Type Your Description Here..."
+                    rows={3}
+                  />
+                </div>
               </div>
 
               {/* Logo Upload */}

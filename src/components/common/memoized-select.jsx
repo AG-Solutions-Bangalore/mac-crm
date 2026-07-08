@@ -13,6 +13,7 @@ export const MemoizedSelect = React.memo(
     className,
     classNamePrefix,
     hasError = false,
+    hasIcon = false,
     ...props
   }) => {
     const selectOptions = options.map((option) => {
@@ -52,20 +53,21 @@ export const MemoizedSelect = React.memo(
     const customSelectStyles = {
       control: (base, state) => ({
         ...base,
+        paddingLeft: hasIcon ? "24px" : "0px",
         minHeight: "40px",
         borderColor: state.isFocused
-          ? "hsl(var(--ring))"
+          ? "var(--primary-color)"
           : hasError
           ? "rgb(239, 68, 68)"
-          : "hsl(var(--input))",
-        backgroundColor: "hsl(var(--background))",
+          : "var(--line)",
+        backgroundColor: "var(--base)",
         "&:hover": {
-          borderColor: hasError ? "rgb(239, 68, 68)" : "hsl(var(--ring))",
+          borderColor: hasError ? "rgb(239, 68, 68)" : "var(--primary-color)",
         },
         boxShadow: state.isFocused
           ? hasError
             ? "0 0 0 1px rgb(239, 68, 68)"
-            : "0 0 0 1px hsl(var(--ring))"
+            : "0 0 0 1px var(--primary-color)"
           : "none",
         borderRadius: "calc(var(--radius) - 2px)",
         cursor: "pointer",
@@ -73,8 +75,8 @@ export const MemoizedSelect = React.memo(
       }),
       menu: (base) => ({
         ...base,
-        backgroundColor: "hsl(var(--popover))",
-        border: "1px solid hsl(var(--border))",
+        backgroundColor: "var(--surface)",
+        border: "1px solid var(--line)",
         borderRadius: "calc(var(--radius) - 2px)",
         boxShadow: "var(--shadow-md)",
         zIndex: 50,
@@ -88,83 +90,83 @@ export const MemoizedSelect = React.memo(
       option: (base, state) => ({
         ...base,
         backgroundColor: state.isSelected
-          ? "hsl(var(--accent))"
+          ? "var(--primary-soft)"
           : state.isFocused
-          ? "hsl(var(--accent))"
+          ? "var(--primary-soft)"
           : "transparent",
         color: state.isSelected
-          ? "hsl(var(--accent-foreground))"
-          : "hsl(var(--foreground))",
+          ? "var(--primary-color)"
+          : "var(--ink)",
         borderRadius: "calc(var(--radius) - 4px)",
         padding: "8px 12px",
         fontSize: "14px",
         cursor: "pointer",
         transition: "all 0.15s",
         "&:active": {
-          backgroundColor: "hsl(var(--accent))",
+          backgroundColor: "var(--primary-soft)",
         },
       }),
       multiValue: (base) => ({
         ...base,
-        backgroundColor: "hsl(var(--accent))",
+        backgroundColor: "var(--primary-soft)",
         borderRadius: "calc(var(--radius) - 2px)",
         display: "flex",
         gap: "2px",
       }),
       multiValueLabel: (base) => ({
         ...base,
-        color: "hsl(var(--accent-foreground))",
+        color: "var(--primary-color)",
         fontSize: "13px",
         padding: "2px 6px",
       }),
       multiValueRemove: (base) => ({
         ...base,
-        color: "hsl(var(--muted-foreground))",
+        color: "var(--ink-soft)",
         borderRadius: "0 calc(var(--radius) - 3px) calc(var(--radius) - 3px) 0",
         cursor: "pointer",
         "&:hover": {
-          backgroundColor: "hsl(var(--destructive))",
-          color: "hsl(var(--destructive-foreground))",
+          backgroundColor: "var(--danger)",
+          color: "#fff",
         },
       }),
       placeholder: (base) => ({
         ...base,
-        color: "hsl(var(--muted-foreground))",
+        color: "var(--ink-soft)",
         fontSize: "14px",
       }),
       input: (base) => ({
         ...base,
-        color: "hsl(var(--foreground))",
+        color: "var(--ink)",
         fontSize: "14px",
       }),
       singleValue: (base) => ({
         ...base,
-        color: "hsl(var(--foreground))",
+        color: "var(--ink)",
         fontSize: "14px",
       }),
       indicatorSeparator: (base) => ({
         ...base,
-        backgroundColor: "hsl(var(--border))",
+        backgroundColor: "var(--line)",
       }),
       dropdownIndicator: (base) => ({
         ...base,
-        color: "hsl(var(--muted-foreground))",
+        color: "var(--ink-soft)",
         padding: "8px",
         "&:hover": {
-          color: "hsl(var(--foreground))",
+          color: "var(--ink)",
         },
       }),
       clearIndicator: (base) => ({
         ...base,
-        color: "hsl(var(--muted-foreground))",
+        color: "var(--ink-soft)",
         padding: "8px",
         "&:hover": {
-          color: "hsl(var(--destructive))",
+          color: "var(--danger)",
         },
       }),
       loadingIndicator: (base) => ({
         ...base,
-        color: "hsl(var(--muted-foreground))",
+        color: "var(--ink-soft)",
       }),
     };
 

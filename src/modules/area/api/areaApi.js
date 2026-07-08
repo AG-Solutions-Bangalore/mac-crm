@@ -13,10 +13,8 @@ export const areaApi = {
     const formData = new FormData();
     if (typeof areaData === "string") {
       formData.append("property_area", areaData);
-      formData.append("property_area_status", "Active");
     } else {
       formData.append("property_area", areaData.property_area);
-      formData.append("property_area_status", areaData.property_area_status || "Active");
     }
     const response = await apiClient.post("/area", formData, {
       headers: {

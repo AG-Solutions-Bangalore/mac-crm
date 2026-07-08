@@ -1,6 +1,7 @@
+import PageHeader from "@/components/common/page-header";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Edit, Image } from "lucide-react";
+import { Edit, Image , Wrench } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import ImageCell from "@/components/common/ImageCell";
 import LoadingBar from "@/components/loader/loading-bar";
@@ -89,6 +90,11 @@ const ServiceListPage = () => {
 
   return (
     <div className="px-5">
+      <PageHeader
+        icon={Wrench}
+        title="Services"
+        description="Manage service categories and configurations"
+      />
       <DataTable
         data={filteredData}
         columns={columns}
