@@ -95,12 +95,12 @@ export default function ForgotPasswordPage() {
   );
   const baseUrl =
     companyImageObj?.image_url ||
-    "https://agsdemo.in/macapi/public/assets/images/company_images/";
+    "https://makcautomations.com/crmapi/public/assets/images/company_images/";
 
   const noImageObj = companyImage?.find((img) => img.image_for === "No Image");
   const fallbackUrl =
     noImageObj?.image_url ||
-    "https://agsdemo.in/macapi/public/assets/images/no_image.jpg";
+    "https://makcautomations.com/crmapi/public/assets/images/no_image.jpg";
 
   const logoPath =
     useSelector((state) => state.company?.companyDetails?.company_logo) || "";

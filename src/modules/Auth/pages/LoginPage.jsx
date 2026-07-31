@@ -14,14 +14,16 @@ import { useLoginMutation } from "../hooks/useAuth";
 const slides = [
   {
     image: hero1,
-    title: "Our Smart Solutions",
+    subtitle: "#1 Choice for Home Automation",
+    title: "Smart Home\nAutomation",
     description:
-      "Our Smart Home Devices open up a world of endless possibilities. Dive into the extraordinary, where control and customization know no bounds.",
+      "A smart home or office is only as good as its network. With professionally designed networking solutions in Bangalore, MAKc Automation ensures strong, secure, and uninterrupted connectivity across every corner of your space. Designed for homes, villas, apartments, offices, and commercial spaces.",
     stat: "500+",
     statLabel: "Clients",
   },
   {
     image: hero2,
+    subtitle: "Secure & Reliable",
     title: "Home Security Camera System",
     description:
       "Unlock the power of seamless control and vigilant monitoring with our Home Security System in Bangalore. Gain peace of mind knowing that your home is secure no matter where you are.",
@@ -30,6 +32,7 @@ const slides = [
   },
   {
     image: hero3,
+    subtitle: "Smart Lighting",
     title: "Our LED Solutions",
     description:
       "MAKc Automation's Smart LED lights for Home and innovative lighting solutions. Our commitment to providing exceptional lighting goes beyond mere illumination.",
@@ -129,12 +132,12 @@ export default function LoginPage() {
   );
   const baseUrl =
     companyImageObj?.image_url ||
-    "https://agsdemo.in/macapi/public/assets/images/company_images/";
+    "https://makcautomations.com/crmapi/public/assets/images/company_images/";
 
   const noImageObj = companyImage?.find((img) => img.image_for === "No Image");
   const fallbackUrl =
     noImageObj?.image_url ||
-    "https://agsdemo.in/macapi/public/assets/images/no_image.jpg";
+    "https://makcautomations.com/crmapi/public/assets/images/no_image.jpg";
 
   const logoPath =
     useSelector((state) => state.company?.companyDetails?.company_logo) || "";
