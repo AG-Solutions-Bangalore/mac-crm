@@ -1,146 +1,151 @@
-import React, { useState, useMemo } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
-import { Edit, Trash2, BookOpen } from "lucide-react";
-import moment from "moment";
+import { BookOpen, Edit } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import PageHeader from "@/components/common/page-header";
 import DataTable from "@/components/common/data-table";
 import ImageCell from "@/components/common/ImageCell";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
-import PageHeader from "@/components/common/page-header";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import ToggleStatus from "@/components/toogle/status-toogle";
 import { getImageBaseUrl, getNoImageUrl } from "@/utils/imageUtils";
-import { useBlogsQuery, useDeleteBlogMutation } from "../hooks/useBlog";
+import { useBlogsQuery } from "../hooks/useBlog";
+
+/**
+ * Small visual badge for "Yes" / "No" fields like blog_featured and blog_front.
+ */
+const YesNoBadge = ({ value }) => {
+  const isYes =
+    value === true ||
+    value === 1 ||
+    value === "1" ||
+    (typeof value === "string" && value.toLowerCase() === "yes");
+
+  return (
+    <span
+      className={`px-3 py-1 rounded-full text-xs font-medium ${
+        isYes
+          ? "bg-green-100 text-green-800"
+          : "bg-gray-100 text-gray-700"
+      }`}
+    >
+      {isYes ? "Yes" : "No"}
+    </span>
+  );
+};
 
 const BlogListPage = () => {
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedBlog, setSelectedBlog] = useState(null);
   const navigate = useNavigate();
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: responseData, isLoading, isError, refetch } = useBlogsQuery();
-  const deleteMutation = useDeleteBlogMutation();
-  const isDeleting = deleteMutation.isPending;
+  const { data: responseData, isLoading, isError, refetch } = useBlogsQuery(page);
 
-  const list = responseData?.data || [];
+  const paginationData = responseData?.data;
+  const blogList = paginationData?.data || [];
+
   const IMAGE_FOR = "Blog";
   const blogBaseUrl = getImageBaseUrl(responseData?.image_url, IMAGE_FOR);
   const noImageUrl = getNoImageUrl(responseData?.image_url);
 
-  const courses = useMemo(
-    () => [...new Set(list.map((blog) => blog.blog_course).filter(Boolean))],
-    [list]
-  );
-
-  const handleDeleteClick = (blog) => {
-    setSelectedBlog(blog);
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!selectedBlog) return;
-    try {
-      const res = await deleteMutation.mutateAsync(selectedBlog.id);
-      if (res?.code === 200 || res?.status === true) {
-        toast.success(res?.msg || "Blog deleted successfully");
-      } else {
-        toast.error(res?.msg || "Failed to delete blog");
-      }
-    } catch (error) {
-      toast.error(error?.response?.data?.msg || "Something went wrong");
-    } finally {
-      setDeleteDialogOpen(false);
-      setSelectedBlog(null);
-    }
-  };
+  const filteredData = blogList.filter((item) => {
+    if (statusFilter === "all") return true;
+    return item.blog_status?.toLowerCase() === statusFilter.toLowerCase();
+  });
 
   const columns = [
     {
-      header: "Image",
-      accessorKey: "blog_images",
-      cell: ({ row }) => {
-        const fileName = row.original.blog_images;
-        const src = fileName ? `${blogBaseUrl}${fileName}` : noImageUrl;
-        return <ImageCell src={src} fallback={noImageUrl} alt="Blog Image" />;
-      },
+      header: "Sl No",
+      id: "sl_no",
+      cell: ({ row }) => (page - 1) * 50 + row.index + 1,
       enableSorting: false,
     },
-    { header: "Blog Slug", accessorKey: "blog_slug" },
-    { header: "Blog Heading", accessorKey: "blog_heading" },
-    { header: "Course", accessorKey: "blog_course" },
     {
-      header: "Trending",
-      accessorKey: "blog_trending",
+      header: "Banner",
+      accessorKey: "blog_banner_image",
+      enableSorting: false,
       cell: ({ row }) => {
-        const value = row.original.blog_trending;
-        if (value == null) return null;
-
-        const normalizedValue = String(value).toLowerCase();
-        const displayText = normalizedValue === "yes" ? "Yes" : "No";
-        const bgColor = normalizedValue === "yes" ? "bg-green-100" : "bg-red-100";
-        const textColor = normalizedValue === "yes" ? "text-green-800" : "text-red-800";
-
-        return (
-          <span className={`px-4 py-1 rounded-full text-center text-xs font-medium ${bgColor} ${textColor}`}>
-            {displayText}
-          </span>
-        );
+        const fileName = row.original.blog_banner_image;
+        const src = fileName ? `${blogBaseUrl}${fileName}` : noImageUrl;
+        return <ImageCell src={src} fallback={noImageUrl} alt="Blog banner" />;
       },
+    },
+    {
+      header: "Title",
+      accessorKey: "blog_title",
+      cell: ({ row }) => (
+        <div className="max-w-[280px]">
+          <p className="font-medium truncate">{row.original.blog_title}</p>
+          <p className="text-xs text-gray-500 truncate">
+            {row.original.blog_short_description}
+          </p>
+        </div>
+      ),
+    },
+    {
+      header: "Slug",
+      accessorKey: "blog_slug",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+          {row.original.blog_slug}
+        </code>
+      ),
+    },
+    {
+      header: "Index",
+      accessorKey: "blog_index",
+      cell: ({ row }) => <YesNoBadge value={row.original.blog_index} />,
+    },
+    {
+      header: "Featured",
+      accessorKey: "blog_featured",
+      cell: ({ row }) => <YesNoBadge value={row.original.blog_featured} />,
+    },
+    {
+      header: "Front",
+      accessorKey: "blog_front",
+      cell: ({ row }) => <YesNoBadge value={row.original.blog_front} />,
     },
     {
       header: "Status",
       accessorKey: "blog_status",
       cell: ({ row }) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
-            row.original.blog_status === "Active"
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
-          }`}
-        >
-          {row.original.blog_status}
-        </span>
+        <ToggleStatus
+          initialStatus={row.original.blog_status}
+          apiUrl={`/blogs/${row.original.id}/status`}
+          payloadKey="blog_status"
+          activeValue="Active"
+          inactiveValue="Inactive"
+          onSuccess={refetch}
+          method="patch"
+        />
       ),
-    },
-    {
-      header: "Created Date",
-      accessorKey: "blog_created",
-      cell: ({ row }) => {
-        const date = row.original.blog_created;
-        return <span>{date ? moment(date).format("DD MMM YYYY") : "-"}</span>;
-      },
     },
     {
       header: "Actions",
+      id: "actions",
+      enableSorting: false,
       cell: ({ row }) => (
-        <div className="flex items-center gap-3">
-          <Button
-            size="icon"
-            variant="outline"
-            onClick={() => navigate(`/blog-list/edit/${row.original.id}`)}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <button
-            title="Delete blog"
-            onClick={() => handleDeleteClick(row.original)}
-            className="cursor-pointer text-gray-400 hover:text-red-600 transition-colors"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+        <div className="flex gap-2">
+          <abbr title="Edit Blog">
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={() => navigate(`/blog-list/edit/${row.original.id}`)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </abbr>
         </div>
       ),
-      enableSorting: false,
     },
   ];
 
@@ -152,69 +157,35 @@ const BlogListPage = () => {
       <PageHeader
         icon={BookOpen}
         title="Blogs"
-        description="Manage portal blog posts, categories and tags"
+        description="Manage blog posts published on the portal"
       />
-
-      <Tabs defaultValue="ALL" className="mt-6">
-        <TabsList className="mb-4">
-          <TabsTrigger value="ALL">All</TabsTrigger>
-          {courses.map((course) => (
-            <TabsTrigger key={course} value={course}>
-              {course}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        <TabsContent value="ALL">
-          <DataTable
-            data={list}
-            columns={columns}
-            pageSize={50}
-            searchPlaceholder="Search blogs..."
-            addButton={{ onClick: () => navigate("/blog-list/create"), label: "Add Blog" }}
-          />
-        </TabsContent>
-
-        {courses.map((course) => {
-          const filteredData = list.filter((blog) => blog.blog_course === course);
-          return (
-            <TabsContent key={course} value={course}>
-              <DataTable
-                data={filteredData}
-                columns={columns}
-                pageSize={50}
-                searchPlaceholder={`Search ${course} blogs...`}
-                addButton={{ onClick: () => navigate("/blog-list/create"), label: "Add Blog" }}
-              />
-            </TabsContent>
-          );
-        })}
-      </Tabs>
-
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-red-600">Delete Blog</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete the blog{" "}
-              <span className="font-bold text-red-800">
-                {selectedBlog?.blog_heading}
-              </span>
-              ? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700 text-white"
-            >
-              {isDeleting ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DataTable
+        extraButton={
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Select Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="Active">Active</SelectItem>
+              <SelectItem value="Inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        }
+        data={filteredData}
+        columns={columns}
+        searchPlaceholder="Search blogs..."
+        pageSize={50}
+        addButton={{
+          onClick: () => navigate("/blog-list/create"),
+          label: "Add Blog",
+        }}
+        backendPagination={true}
+        page={paginationData?.current_page || 1}
+        totalPages={paginationData?.last_page || 1}
+        totalRecords={paginationData?.total || 0}
+        onPageChange={setPage}
+      />
     </div>
   );
 };

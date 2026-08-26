@@ -1,103 +1,103 @@
-import React, { useState } from "react";
-import { Copy, Image } from "lucide-react";
-import { toast } from "sonner";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Edit, Image as ImageIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import PageHeader from "@/components/common/page-header";
 import DataTable from "@/components/common/data-table";
 import ImageCell from "@/components/common/ImageCell";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
-import PageHeader from "@/components/common/page-header";
+import ToggleStatus from "@/components/toogle/status-toogle";
 import { getImageBaseUrl, getNoImageUrl } from "@/utils/imageUtils";
-import { useGalleryListQuery } from "../hooks/useGallery";
-import GalleryCreate from "../components/GalleryCreate";
-import GalleryEdit from "../components/GalleryEdit";
+import { useGalleriesQuery } from "../hooks/useGallery";
 
 const GalleryListPage = () => {
-  const { data: responseData, isLoading, isError, refetch } = useGalleryListQuery();
-  const [copiedId, setCopiedId] = useState(null);
+  const navigate = useNavigate();
+  const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  const IMAGE_FOR = "Link Gallery";
+  const { data: responseData, isLoading, isError, refetch } = useGalleriesQuery(page);
+
+  const paginationData = responseData?.data;
+  const galleryList = paginationData?.data || [];
+
+  const IMAGE_FOR = "Gallery";
   const galleryBaseUrl = getImageBaseUrl(responseData?.image_url, IMAGE_FOR);
   const noImageUrl = getNoImageUrl(responseData?.image_url);
 
-  const handleCopyClipboard = async (id, text) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedId(id);
-      toast.success("Link copied");
-      setTimeout(() => setCopiedId(null), 1500);
-    } catch {
-      toast.error("Failed to copy");
-    }
-  };
+  const filteredData = galleryList.filter((item) => {
+    if (statusFilter === "all") return true;
+    return item.gallery_status?.toLowerCase() === statusFilter.toLowerCase();
+  });
 
   const columns = [
     {
-      id: "S. No.",
-      header: "S. No.",
-      cell: ({ row }) => <div className="text-xs font-medium">{row.index + 1}</div>,
-      size: 60,
+      header: "Sl No",
+      id: "sl_no",
+      cell: ({ row }) => (page - 1) * 50 + row.index + 1,
+      enableSorting: false,
     },
     {
       header: "Image",
       accessorKey: "gallery_image",
+      enableSorting: false,
       cell: ({ row }) => {
         const fileName = row.original.gallery_image;
         const src = fileName
           ? `${galleryBaseUrl}${fileName}?t=${Date.now()}`
           : `${noImageUrl}?t=${Date.now()}`;
-        return <ImageCell src={src} fallback={noImageUrl} alt="Gallery Image" />;
+        return <ImageCell src={src} fallback={noImageUrl} alt="Gallery image" />;
       },
-      enableSorting: false,
-      size: 120,
     },
     {
-      accessorKey: "gallery_url",
-      header: "Gallery Url",
-      cell: ({ row }) => {
-        const baseUrl = row.original.gallery_url;
-        const fileName = row.original.gallery_image;
-        const fullUrl = `${baseUrl}${fileName}`;
-        const id = row.original.id;
-
-        return (
-          <div className="text-xs flex items-center gap-3">
-            <span className="truncate max-w-[200px] text-gray-500">{fullUrl}</span>
-            <Copy
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleCopyClipboard(id, fullUrl);
-              }}
-              className={`w-4 h-4 cursor-pointer transition-all ${
-                copiedId === id ? "text-green-600" : "text-gray-400 hover:text-gray-600"
-              }`}
-            />
-          </div>
-        );
-      },
+      header: "Image File",
+      accessorKey: "gallery_image",
       enableSorting: false,
+      cell: ({ row }) => (
+        <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+          {row.original.gallery_image || "-"}
+        </code>
+      ),
     },
     {
       header: "Status",
       accessorKey: "gallery_status",
       cell: ({ row }) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${
-            row.original.gallery_status === "Active"
-              ? "bg-green-100 text-green-800"
-              : "bg-red-100 text-red-800"
-          }`}
-        >
-          {row.original.gallery_status}
-        </span>
+        <ToggleStatus
+          initialStatus={row.original.gallery_status}
+          apiUrl={`/gallerys/${row.original.id}/status`}
+          payloadKey="gallery_status"
+          activeValue="Active"
+          inactiveValue="Inactive"
+          onSuccess={refetch}
+          method="patch"
+        />
       ),
     },
     {
       header: "Actions",
-      accessorKey: "actions",
-      cell: ({ row }) => <GalleryEdit galleryId={row.original.id} />,
-      size: 120,
+      id: "actions",
       enableSorting: false,
+      cell: ({ row }) => (
+        <div className="flex gap-2">
+          <abbr title="Edit Gallery">
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={() => navigate(`/gallery-list/edit/${row.original.id}`)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </abbr>
+        </div>
+      ),
     },
   ];
 
@@ -107,20 +107,37 @@ const GalleryListPage = () => {
   return (
     <div className="px-5">
       <PageHeader
-        icon={Image}
+        icon={ImageIcon}
         title="Gallery"
-        description="Manage media assets and images for the portal"
-        rightContent={<GalleryCreate />}
+        description="Manage images published on the portal"
       />
-
-      <div className="mt-6">
-        <DataTable
-          data={responseData?.data || []}
-          columns={columns}
-          pageSize={20}
-          searchPlaceholder="Search gallery..."
-        />
-      </div>
+      <DataTable
+        extraButton={
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Select Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="Active">Active</SelectItem>
+              <SelectItem value="Inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        }
+        data={filteredData}
+        columns={columns}
+        searchPlaceholder="Search gallery..."
+        pageSize={50}
+        addButton={{
+          onClick: () => navigate("/gallery-list/create"),
+          label: "Add Gallery",
+        }}
+        backendPagination={true}
+        page={paginationData?.current_page || 1}
+        totalPages={paginationData?.last_page || 1}
+        totalRecords={paginationData?.total || 0}
+        onPageChange={setPage}
+      />
     </div>
   );
 };

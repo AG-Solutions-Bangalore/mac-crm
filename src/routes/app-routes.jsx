@@ -1,11 +1,12 @@
 import LoginPage from "@/modules/auth/pages/LoginPage";
 import ForgotPasswordPage from "@/modules/auth/pages/ForgotPasswordPage";
 import BlogListPage from "@/modules/blog/pages/BlogListPage";
-import BlogCreatePage from "@/modules/blog/pages/BlogCreatePage";
+import BlogFormPage from "@/modules/blog/pages/BlogFormPage";
 import NotFound from "@/app/errors/not-found";
 import FaqFormPage from "@/modules/faq/pages/FaqFormPage";
 import FaqListPage from "@/modules/faq/pages/FaqListPage";
 import GalleryListPage from "@/modules/gallery/pages/GalleryListPage";
+import GalleryFormPage from "@/modules/gallery/pages/GalleryFormPage";
 import LectureFormPage from "@/modules/lecture-youtube/pages/LectureFormPage";
 import LectureListPage from "@/modules/lecture-youtube/pages/LectureListPage";
 import PlaylistListPage from "@/modules/lecture-youtube/pages/PlaylistListPage";
@@ -26,9 +27,9 @@ import ErrorBoundary from "@/components/error-boundry/error-boundry";
 import LoadingBar from "@/components/loader/loading-bar";
 import { Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
-import BlogEditPage from "@/modules/blog/pages/BlogEditPage";
 import AuthRoute from "./auth-route";
 import ProtectedRoute from "./protected-route";
+import RoleGuard from "@/components/common/role-guard";
 import StudenScreenShot from "@/app/student/student-screenshot";
 import NotificationListPage from "@/modules/notification/pages/NotificationListPage";
 import Dashboard from "@/app/dashboard/home";
@@ -652,19 +653,15 @@ function AppRoutes() {
               </Suspense>
             }
           />
+
+          {/* Blog & Gallery — superadmin only (user_type=3) */}
           <Route
             path="/blog-list"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <BlogListPage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/add-blog"
-            element={
-              <Suspense fallback={<LoadingBar />}>
-                <BlogCreatePage />
+                <RoleGuard allow={[3]}>
+                  <BlogListPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -672,15 +669,9 @@ function AppRoutes() {
             path="/blog-list/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <BlogCreatePage />
-              </Suspense>
-            }
-          />
-          <Route
-            path="/edit-blog/:id"
-            element={
-              <Suspense fallback={<LoadingBar />}>
-                <BlogEditPage />
+                <RoleGuard allow={[3]}>
+                  <BlogFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -688,7 +679,9 @@ function AppRoutes() {
             path="/blog-list/edit/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <BlogEditPage />
+                <RoleGuard allow={[3]}>
+                  <BlogFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -696,7 +689,29 @@ function AppRoutes() {
             path="/gallery-list"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <GalleryListPage />
+                <RoleGuard allow={[3]}>
+                  <GalleryListPage />
+                </RoleGuard>
+              </Suspense>
+            }
+          />
+          <Route
+            path="/gallery-list/create"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <RoleGuard allow={[3]}>
+                  <GalleryFormPage />
+                </RoleGuard>
+              </Suspense>
+            }
+          />
+          <Route
+            path="/gallery-list/edit/:id"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <RoleGuard allow={[3]}>
+                  <GalleryFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />

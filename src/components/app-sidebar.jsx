@@ -28,6 +28,8 @@ import {
   Tag,
   ListFilter,
   Package,
+  BookOpen,
+  Image,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
@@ -120,6 +122,18 @@ const NAVIGATION_CONFIG = {
       icon: Bell,
       isActive: false,
     },
+    BLOG: {
+      title: "Blogs",
+      url: "/blog-list",
+      icon: BookOpen,
+      isActive: false,
+    },
+    GALLERY: {
+      title: "Gallery",
+      url: "/gallery-list",
+      icon: Image,
+      isActive: false,
+    },
   },
 
   REPORTS: {
@@ -206,6 +220,8 @@ const USER_ROLE_PERMISSIONS = {
       "SERVICEREQUEST",
       "COMPLAINT",
       "NOTIFICATION",
+      "BLOG",
+      "GALLERY",
     ],
     navMainReport: ["REPORT_MENU"],
   },
@@ -313,7 +329,7 @@ export function AppSidebar({ ...props }) {
   };
 
   const dashboardItem = initialData.navMain.filter((item) => item.url === "/dashboard");
-  const masterItems = initialData.navMain.filter((item) => ["Service", "Clients", "Buyers", "Properties", "Floors", "Areas", "Brands", "Categories", "Products"].includes(item.title));
+  const masterItems = initialData.navMain.filter((item) => ["Service", "Clients", "Buyers", "Properties", "Floors", "Areas", "Brands", "Categories", "Products", "Blogs", "Gallery"].includes(item.title));
   const operationsItems = initialData.navMain.filter((item) => ["Service Request", "Complaint", "Notification", "Quotations"].includes(item.title));
   const reportItems = initialData.navMainReport.filter((item) => item.title === "Reports");
   const systemItems = initialData.navMainReport.filter((item) => item.title === "Settings" || item.url === "/settings");
