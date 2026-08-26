@@ -314,8 +314,6 @@ export function AppSidebar({ ...props }) {
   const [openItem, setOpenItem] = useState(null);
   const user = useSelector((state) => state.auth.user);
   const { navMain, navMainReport } = useNavigationData(user?.user_type);
-  const { state } = useSidebar();
-  const isCollapsed = state === "collapsed";
 
   const initialData = {
     user: {
@@ -336,10 +334,12 @@ export function AppSidebar({ ...props }) {
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader className="border-b-0">
-        <div className="brand flex items-center gap-2 px-2 py-3">
-          <img src={makcLogo} alt="M" className="w-[30px] h-[30px] object-contain rounded shrink-0" />
-          {!isCollapsed && <div className="brand-name font-bold">MAKc</div>}
+      <SidebarHeader className="border-b border-sidebar-border/40">
+        <div className="brand flex items-center gap-2.5 px-2 py-2.5 overflow-hidden">
+          <img src={makcLogo} alt="MAKc" className="w-[28px] h-[28px] object-contain rounded shrink-0" />
+          <div className="brand-name font-bold truncate transition-opacity duration-200 group-data-[collapsible=icon]:hidden">
+            MAKc
+          </div>
         </div>
       </SidebarHeader>
       <SidebarContent className="sidebar-content px-2">
@@ -349,50 +349,55 @@ export function AppSidebar({ ...props }) {
               items={dashboardItem}
               openItem={openItem}
               setOpenItem={setOpenItem}
+              groupId="dashboard"
             />
           </div>
         )}
         
         {masterItems.length > 0 && (
           <div className="sidebar-group-masters">
-            <div className="nav-sec">Masters</div>
+            <div className="nav-sec group-data-[collapsible=icon]:hidden">Masters</div>
             <NavMain
               items={masterItems}
               openItem={openItem}
               setOpenItem={setOpenItem}
+              groupId="masters"
             />
           </div>
         )}
 
         {operationsItems.length > 0 && (
           <div className="sidebar-group-operations">
-            <div className="nav-sec">Operations</div>
+            <div className="nav-sec group-data-[collapsible=icon]:hidden">Operations</div>
             <NavMain
               items={operationsItems}
               openItem={openItem}
               setOpenItem={setOpenItem}
+              groupId="operations"
             />
           </div>
         )}
 
         {reportItems.length > 0 && (
           <div className="sidebar-group-insights">
-            <div className="nav-sec">Insights</div>
+            <div className="nav-sec group-data-[collapsible=icon]:hidden">Insights</div>
             <NavMainReport
               items={reportItems}
               openItem={openItem}
               setOpenItem={setOpenItem}
+              groupId="insights"
             />
           </div>
         )}
 
         {systemItems.length > 0 && (
           <div className="sidebar-group-system">
-            <div className="nav-sec">System</div>
+            <div className="nav-sec group-data-[collapsible=icon]:hidden">System</div>
             <NavMain
               items={systemItems}
               openItem={openItem}
               setOpenItem={setOpenItem}
+              groupId="system"
             />
           </div>
         )}

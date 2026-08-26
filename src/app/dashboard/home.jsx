@@ -5,14 +5,14 @@ import { DASHBOARD_API } from "@/constants/apiConstants";
 import { useNavigate } from "react-router-dom";
 import moment from "moment";
 import { useSelector } from "react-redux";
-import { 
-  Users, 
-  Layers, 
-  Clock, 
-  DollarSign, 
-  RefreshCw, 
-  Calendar, 
-  TrendingUp, 
+import {
+  Users,
+  Layers,
+  Clock,
+  DollarSign,
+  RefreshCw,
+  Calendar,
+  TrendingUp,
   ArrowUpRight,
   UserCheck
 } from "lucide-react";
@@ -258,7 +258,7 @@ const Dashboard = () => {
                     </div>
                     <div className="kpi-value mt-1 text-2xl font-bold">₹4.82 Cr</div>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-green-50 text-[var(--success)] transition-colors group-hover:bg-[var(--success)] group-hover:text-white">
+                  <div className="p-2.5 rounded-lg group-hover:bg-white group-hover:text-black  transition-colors bg-[var(--success)] text-white">
                     <DollarSign className="h-5 w-5" />
                   </div>
                 </div>
@@ -288,8 +288,8 @@ const Dashboard = () => {
                     <AreaChart data={monthlySalesData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="var(--primary-color)" stopOpacity={0.15}/>
-                          <stop offset="95%" stopColor="var(--primary-color)" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="var(--primary-color)" stopOpacity={0.15} />
+                          <stop offset="95%" stopColor="var(--primary-color)" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="5 5" vertical={false} stroke="var(--line)" />
@@ -510,13 +510,12 @@ const Dashboard = () => {
                               </span>
                             </td>
                             <td>
-                              <span className={`pill ${
-                                request.services_request_status === "Pending"
+                              <span className={`pill ${request.services_request_status === "Pending"
                                   ? "pill-pending"
                                   : request.services_request_status === "Approved"
                                     ? "pill-approved"
                                     : "pill-rejected"
-                              }`}>
+                                }`}>
                                 {request.services_request_status}
                               </span>
                             </td>

@@ -54,15 +54,31 @@
   --color-input: #e5e5e5;
   --color-ring: #2563eb;
 
-  /* Sidebar — always near-black, premium monochrome */
-  --color-sidebar: #0a0a0b;
-  --color-sidebar-foreground: #a3a3a3;
-  --color-sidebar-primary: #ffffff;
-  --color-sidebar-primary-foreground: #0a0a0b;
-  --color-sidebar-accent: #171717;
-  --color-sidebar-accent-foreground: #ffffff;
-  --color-sidebar-border: #1f1f23;
+  /* Sidebar dimensions */
+  --sidebar-width: 18.75rem;
+  --sidebar-width-mobile: 18.75rem;
+  --sidebar-width-icon: 3.5rem;
+
+  /* Sidebar — light mode: clean white/gray */
+  --color-sidebar: #f8f9fb;
+  --color-sidebar-foreground: #374151;
+  --color-sidebar-primary: #111827;
+  --color-sidebar-primary-foreground: #f8f9fb;
+  --color-sidebar-accent: #f0f2f5;
+  --color-sidebar-accent-foreground: #111827;
+  --color-sidebar-border: #e2e8f0;
   --color-sidebar-ring: #2563eb;
+
+  /* Sidebar semantic tokens */
+  --sidebar-text-muted: #6b7280;
+  --sidebar-text-active: #111827;
+  --sidebar-hover-bg: rgba(0, 0, 0, 0.05);
+  --sidebar-active-bg-from: rgba(37, 99, 235, 0.12);
+  --sidebar-active-bg-to: rgba(37, 99, 235, 0.02);
+  --sidebar-icon-muted: #9ca3af;
+  --sidebar-icon-active: #2563eb;
+  --sidebar-sub-hover-bg: rgba(0, 0, 0, 0.03);
+  --sidebar-sub-active-bg: rgba(37, 99, 235, 0.1);
 
   /* Chart palette (Tailwind convention) */
   --color-chart-1: #2563eb;
@@ -155,6 +171,27 @@
   --color-chart-4: #404040;
   --color-chart-5: #d4d4d4;
 
+  /* Sidebar — dark mode: near-black, premium monochrome */
+  --color-sidebar: #0a0a0b;
+  --color-sidebar-foreground: #a3a3a3;
+  --color-sidebar-primary: #ffffff;
+  --color-sidebar-primary-foreground: #0a0a0b;
+  --color-sidebar-accent: #171717;
+  --color-sidebar-accent-foreground: #ffffff;
+  --color-sidebar-border: #1f1f23;
+  --color-sidebar-ring: #3b82f6;
+
+  /* Sidebar semantic tokens — dark overrides */
+  --sidebar-text-muted: #6b7280;
+  --sidebar-text-active: #ffffff;
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.04);
+  --sidebar-active-bg-from: rgba(59, 130, 246, 0.16);
+  --sidebar-active-bg-to: rgba(59, 130, 246, 0.02);
+  --sidebar-icon-muted: #64748b;
+  --sidebar-icon-active: #3b82f6;
+  --sidebar-sub-hover-bg: rgba(255, 255, 255, 0.03);
+  --sidebar-sub-active-bg: rgba(59, 130, 246, 0.12);
+
   /* Legacy aliases */
   --ink: #fafafa;
   --ink-soft: #a3a3a3;
@@ -219,24 +256,24 @@
 }
 
 /* ----------------------------------------------------------------------
-   Sidebar — premium monochrome, blue active
+   Sidebar — theme aware, light + dark
    ---------------------------------------------------------------------- */
 [data-sidebar="sidebar"] {
-  background: linear-gradient(180deg, #0a0a0b 0%, #050506 100%) !important;
+  background: var(--color-sidebar) !important;
+  color: var(--color-sidebar-foreground) !important;
   border-right: 1px solid var(--color-sidebar-border) !important;
 }
 
 .brand {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  padding: 14px 10px;
+  padding: 12px 8px;
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
 }
 .brand-mark {
-  width: 32px;
-  height: 32px;
-  border-radius: 7px;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   background: var(--color-primary);
   display: flex;
   align-items: center;
@@ -244,25 +281,36 @@
   color: #fff;
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 16px;
+  font-size: 15px;
 }
 .brand-name {
-  background: linear-gradient(135deg, #ffffff 0%, #d4d4d4 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--color-sidebar-primary);
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 16px;
+  letter-spacing: -0.01em;
+}
+.dark .brand-name {
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 .nav-sec {
   font-family: var(--font-display);
   font-size: 10px !important;
   text-transform: uppercase;
   letter-spacing: 1px !important;
-  color: #64748b !important;
-  margin: 16px 0 6px 12px;
+  color: var(--sidebar-text-muted) !important;
+  margin: 14px 0 4px 8px;
   font-weight: 600;
   opacity: 0.85;
+  transition: opacity 0.2s ease-in-out;
+}
+
+[data-collapsible="icon"] .nav-sec,
+[data-state="collapsed"] .nav-sec {
+  display: none !important;
+  opacity: 0 !important;
 }
 
 /* Hide scrollbar in sidebar while preserving scroll */
@@ -280,25 +328,36 @@
   background-color: transparent !important;
 }
 
-/* Per-group monochrome styling — every group uses the SAME blue accent now.
-   This satisfies the "premium monochrome + blue" brief. */
+/* Cursor pointer on all sidebar interactive elements */
+[data-sidebar="sidebar"] [data-sidebar="menu-button"],
+[data-sidebar="sidebar"] [data-sidebar="menu-sub-button"],
+[data-sidebar="sidebar"] [data-sidebar="trigger"],
+[data-sidebar="sidebar"] button,
+[data-sidebar="sidebar"] a,
+[data-sidebar="trigger"] {
+  cursor: pointer !important;
+}
+
+/* Per-group styling — theme-aware via CSS variables, NO left border */
 .sidebar-group-dashboard .sidebar-hover-pill,
 .sidebar-group-masters .sidebar-hover-pill,
 .sidebar-group-operations .sidebar-hover-pill,
 .sidebar-group-insights .sidebar-hover-pill,
 .sidebar-group-system .sidebar-hover-pill {
-  background-color: rgba(255, 255, 255, 0.04) !important;
+  background-color: var(--sidebar-hover-bg) !important;
   border-radius: 6px;
+  pointer-events: none;
 }
 .sidebar-group-dashboard .sidebar-active-item,
 .sidebar-group-masters .sidebar-active-item,
 .sidebar-group-operations .sidebar-active-item,
 .sidebar-group-insights .sidebar-active-item,
 .sidebar-group-system .sidebar-active-item {
-  background: linear-gradient(90deg, rgba(37, 99, 235, 0.16) 0%, rgba(37, 99, 235, 0.02) 100%) !important;
-  border-left: 2px solid var(--color-primary);
+  background: linear-gradient(90deg, var(--sidebar-active-bg-from) 0%, var(--sidebar-active-bg-to) 100%) !important;
+  border: none !important;
+  border-left: none !important;
   border-radius: 6px;
-  color: #ffffff !important;
+  color: var(--sidebar-text-active) !important;
   font-weight: 600;
 }
 .sidebar-group-dashboard .sidebar-active-item svg,
@@ -306,42 +365,44 @@
 .sidebar-group-operations .sidebar-active-item svg,
 .sidebar-group-insights .sidebar-active-item svg,
 .sidebar-group-system .sidebar-active-item svg {
-  color: var(--color-primary) !important;
-  filter: drop-shadow(0 0 6px rgba(37, 99, 235, 0.4));
+  color: var(--sidebar-icon-active) !important;
 }
 .sidebar-group-dashboard svg,
 .sidebar-group-masters svg,
 .sidebar-group-operations svg,
 .sidebar-group-insights svg,
 .sidebar-group-system svg {
-  color: #94a3b8;
-  transition: color 0.2s ease, filter 0.2s ease;
+  color: var(--sidebar-icon-muted);
+  transition: color 0.15s ease;
 }
 .sidebar-group-dashboard [data-sidebar="menu-button"]:hover svg,
 .sidebar-group-masters [data-sidebar="menu-button"]:hover svg,
 .sidebar-group-operations [data-sidebar="menu-button"]:hover svg,
 .sidebar-group-insights [data-sidebar="menu-button"]:hover svg,
 .sidebar-group-system [data-sidebar="menu-button"]:hover svg {
-  color: var(--color-primary);
+  color: var(--sidebar-icon-active);
 }
 
-/* Submenu */
+/* Submenu — theme-aware, NO left border */
 .sidebar-sub-hover-pill {
-  background-color: rgba(255, 255, 255, 0.03) !important;
+  background-color: var(--sidebar-sub-hover-bg) !important;
   border-radius: 4px;
+  pointer-events: none;
 }
 .sidebar-sub-active-item {
-  background-color: rgba(37, 99, 235, 0.12) !important;
-  color: #ffffff !important;
-  border-left: 2px solid var(--color-primary);
+  background-color: var(--sidebar-sub-active-bg) !important;
+  color: var(--sidebar-text-active) !important;
+  border: none !important;
+  border-left: none !important;
   border-radius: 4px;
+  font-weight: 600;
 }
 
 /* Sidebar footer */
 [data-sidebar="footer"] {
-  border-top: 1px solid rgba(255, 255, 255, 0.04) !important;
-  background: rgba(255, 255, 255, 0.01);
-  padding: 12px !important;
+  border-top: 1px solid var(--color-sidebar-border) !important;
+  background: transparent;
+  padding: 8px !important;
 }
 
 /* ----------------------------------------------------------------------
