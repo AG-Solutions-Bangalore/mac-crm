@@ -26,7 +26,20 @@ const GalleryListPage = () => {
   const { data: responseData, isLoading, isError, refetch } = useGalleriesQuery(page);
 
   const paginationData = responseData?.data;
-  const galleryList = paginationData?.data || [];
+  const isPaginated =
+    paginationData &&
+    typeof paginationData === "object" &&
+    !Array.isArray(paginationData) &&
+    "data" in paginationData &&
+    Array.isArray(paginationData.data);
+
+  const galleryList = isPaginated
+    ? paginationData.data
+    : Array.isArray(paginationData)
+    ? paginationData
+    : Array.isArray(responseData?.data)
+    ? responseData.data
+    : [];
 
   const IMAGE_FOR = "Gallery";
   const galleryBaseUrl = getImageBaseUrl(responseData?.image_url, IMAGE_FOR);
@@ -50,8 +63,9 @@ const GalleryListPage = () => {
       enableSorting: false,
       cell: ({ row }) => {
         const fileName = row.original.gallery_image;
+        const baseUrl = row.original.gallery_url || galleryBaseUrl;
         const src = fileName
-          ? `${galleryBaseUrl}${fileName}?t=${Date.now()}`
+          ? `${baseUrl}${fileName}?t=${Date.now()}`
           : `${noImageUrl}?t=${Date.now()}`;
         return <ImageCell src={src} fallback={noImageUrl} alt="Gallery image" />;
       },
@@ -61,7 +75,7 @@ const GalleryListPage = () => {
       accessorKey: "gallery_image",
       enableSorting: false,
       cell: ({ row }) => (
-        <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+        <code className="text-xs bg-muted text-foreground px-2 py-1 rounded font-mono">
           {row.original.gallery_image || "-"}
         </code>
       ),
@@ -132,10 +146,10 @@ const GalleryListPage = () => {
           onClick: () => navigate("/gallery-list/create"),
           label: "Add Gallery",
         }}
-        backendPagination={true}
-        page={paginationData?.current_page || 1}
-        totalPages={paginationData?.last_page || 1}
-        totalRecords={paginationData?.total || 0}
+        backendPagination={isPaginated}
+        page={isPaginated ? (paginationData?.current_page || 1) : 1}
+        totalPages={isPaginated ? (paginationData?.last_page || 1) : 1}
+        totalRecords={isPaginated ? (paginationData?.total || 0) : galleryList.length}
         onPageChange={setPage}
       />
     </div>

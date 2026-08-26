@@ -68,6 +68,8 @@ const BlogFormPage = () => {
     blog_description: "",
     blog_banner_image: null,
     blog_banner_image_alt: "",
+    blog_meta_title: "",
+    blog_meta_description: "",
     blog_meta_keywords: "",
     blog_front: 0,
     blog_featured: "No",
@@ -87,7 +89,13 @@ const BlogFormPage = () => {
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   const categoryOptions = useMemo(() => {
-    const list = activeServicesData?.data || activeServicesData || [];
+    const list = Array.isArray(activeServicesData?.data?.data)
+      ? activeServicesData.data.data
+      : Array.isArray(activeServicesData?.data)
+      ? activeServicesData.data
+      : Array.isArray(activeServicesData)
+      ? activeServicesData
+      : [];
     return list.map((s) => ({
       value: s.id,
       label: s.service_name || s.name || `Service #${s.id}`,
@@ -96,10 +104,18 @@ const BlogFormPage = () => {
 
   // hydrate on edit
   useEffect(() => {
-    if (!isEdit || !fetchedData?.data) return;
-    const blog = fetchedData.data;
+    if (!isEdit || !fetchedData) return;
+
+    let blog = fetchedData?.data;
+    if (Array.isArray(blog)) {
+      blog = blog[0];
+    } else if (blog && typeof blog === "object" && "data" in blog) {
+      blog = Array.isArray(blog.data) ? blog.data[0] : blog.data;
+    }
+    if (!blog || typeof blog !== "object") return;
+
     const IMAGE_FOR = "Blog";
-    const baseUrl = getImageBaseUrl(fetchedData?.image_url, IMAGE_FOR);
+    const baseUrl = blog.blog_url || getImageBaseUrl(fetchedData?.image_url, IMAGE_FOR);
     const noImg = getNoImageUrl(fetchedData?.image_url);
 
     setFormData({
@@ -110,33 +126,34 @@ const BlogFormPage = () => {
       blog_description: blog.blog_description || "",
       blog_banner_image: blog.blog_banner_image || null,
       blog_banner_image_alt: blog.blog_banner_image_alt || "",
+      blog_meta_title: blog.blog_meta_title || "",
+      blog_meta_description: blog.blog_meta_description || "",
       blog_meta_keywords: blog.blog_meta_keywords || "",
       blog_front: toOneOrZero(blog.blog_front),
       blog_featured: toYesOrNo(blog.blog_featured),
       blog_status: blog.blog_status || "Active",
     });
 
-    if (blog.blog_banner_image && baseUrl) {
+    if (blog.blog_banner_image && (baseUrl || blog.blog_url)) {
       setPreviewImage(`${baseUrl}${blog.blog_banner_image}?t=${Date.now()}`);
-    } else {
+    } else if (noImg) {
       setPreviewImage(noImg);
     }
 
-    // Pre-fill selected categories from blog_categories_ids (array or comma-string)
-    const ids = blog.blog_categories_ids
-      ? Array.isArray(blog.blog_categories_ids)
-        ? blog.blog_categories_ids
-        : String(blog.blog_categories_ids).split(",").map((s) => s.trim()).filter(Boolean)
+    // Pre-fill selected categories from blog_categories_ids or categories (array, string, or comma-separated)
+    const rawCategoryIds = blog.blog_categories_ids ?? blog.categories;
+    const ids = rawCategoryIds
+      ? Array.isArray(rawCategoryIds)
+        ? rawCategoryIds.map((c) => (typeof c === "object" ? c.id || c.value : c))
+        : String(rawCategoryIds).split(",").map((s) => s.trim()).filter(Boolean)
       : [];
+
     if (ids.length && categoryOptions.length) {
       setSelectedCategories(
         categoryOptions.filter((opt) => ids.map(String).includes(String(opt.value))),
       );
-    } else {
-      setSelectedCategories([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEdit, fetchedData]);
+  }, [isEdit, fetchedData, categoryOptions]);
 
   /* ---------- handlers ---------- */
 

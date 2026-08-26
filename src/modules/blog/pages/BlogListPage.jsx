@@ -32,8 +32,8 @@ const YesNoBadge = ({ value }) => {
     <span
       className={`px-3 py-1 rounded-full text-xs font-medium ${
         isYes
-          ? "bg-green-100 text-green-800"
-          : "bg-gray-100 text-gray-700"
+          ? "bg-success/15 text-success"
+          : "bg-muted text-muted-foreground"
       }`}
     >
       {isYes ? "Yes" : "No"}
@@ -49,7 +49,20 @@ const BlogListPage = () => {
   const { data: responseData, isLoading, isError, refetch } = useBlogsQuery(page);
 
   const paginationData = responseData?.data;
-  const blogList = paginationData?.data || [];
+  const isPaginated =
+    paginationData &&
+    typeof paginationData === "object" &&
+    !Array.isArray(paginationData) &&
+    "data" in paginationData &&
+    Array.isArray(paginationData.data);
+
+  const blogList = isPaginated
+    ? paginationData.data
+    : Array.isArray(paginationData)
+    ? paginationData
+    : Array.isArray(responseData?.data)
+    ? responseData.data
+    : [];
 
   const IMAGE_FOR = "Blog";
   const blogBaseUrl = getImageBaseUrl(responseData?.image_url, IMAGE_FOR);
@@ -73,7 +86,8 @@ const BlogListPage = () => {
       enableSorting: false,
       cell: ({ row }) => {
         const fileName = row.original.blog_banner_image;
-        const src = fileName ? `${blogBaseUrl}${fileName}` : noImageUrl;
+        const baseUrl = row.original.blog_url || blogBaseUrl;
+        const src = fileName ? `${baseUrl}${fileName}` : noImageUrl;
         return <ImageCell src={src} fallback={noImageUrl} alt="Blog banner" />;
       },
     },
@@ -83,7 +97,7 @@ const BlogListPage = () => {
       cell: ({ row }) => (
         <div className="max-w-[280px]">
           <p className="font-medium truncate">{row.original.blog_title}</p>
-          <p className="text-xs text-gray-500 truncate">
+          <p className="text-xs text-muted-foreground truncate">
             {row.original.blog_short_description}
           </p>
         </div>
@@ -94,7 +108,7 @@ const BlogListPage = () => {
       accessorKey: "blog_slug",
       enableSorting: false,
       cell: ({ row }) => (
-        <code className="text-xs bg-gray-100 px-2 py-1 rounded">
+        <code className="text-xs bg-muted text-foreground px-2 py-1 rounded font-mono">
           {row.original.blog_slug}
         </code>
       ),
@@ -180,10 +194,10 @@ const BlogListPage = () => {
           onClick: () => navigate("/blog-list/create"),
           label: "Add Blog",
         }}
-        backendPagination={true}
-        page={paginationData?.current_page || 1}
-        totalPages={paginationData?.last_page || 1}
-        totalRecords={paginationData?.total || 0}
+        backendPagination={isPaginated}
+        page={isPaginated ? (paginationData?.current_page || 1) : 1}
+        totalPages={isPaginated ? (paginationData?.last_page || 1) : 1}
+        totalRecords={isPaginated ? (paginationData?.total || 0) : blogList.length}
         onPageChange={setPage}
       />
     </div>

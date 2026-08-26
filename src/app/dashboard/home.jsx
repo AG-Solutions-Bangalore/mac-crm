@@ -143,14 +143,14 @@ const Dashboard = () => {
 
   return (
     <Page>
-      <div className="main space-y-6 md:-mt-12">
+      <div className="main space-y-6">
         {/* HEADER GREETING BANNER */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--surface)] p-6 rounded-xl border border-[var(--line)] shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-6 rounded-xl border border-border shadow-sm">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight text-[var(--ink)] flex items-center gap-2">
-              {getGreeting()}, <span className="text-[var(--primary-color)] font-extrabold">{user?.name || "Admin"}</span>
+            <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight text-foreground flex items-center gap-2">
+              {getGreeting()}, <span className="text-primary font-extrabold">{user?.name || "Admin"}</span>
             </h1>
-            <p className="text-sm text-[var(--ink-soft)] mt-1 flex items-center gap-1.5">
+            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
               <Calendar className="h-4 w-4 text-[var(--copper)]" />
               Here's your business summary for today, {moment().format("MMMM Do, YYYY")}
             </p>
@@ -160,7 +160,7 @@ const Dashboard = () => {
               variant="outline"
               size="sm"
               onClick={() => refetch()}
-              className="border-[var(--line)] hover:bg-[var(--line)] text-xs font-semibold gap-1.5 transition-all duration-200"
+              className="text-xs font-semibold gap-1.5"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Refresh Data

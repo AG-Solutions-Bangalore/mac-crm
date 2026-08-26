@@ -91,8 +91,8 @@ const ImageUpload = ({
       </label>
 
       {selectedFile || previewImage ? (
-        <div className="relative group rounded-lg border border-gray-200 overflow-hidden bg-gray-50 hover:border-gray-300 transition-all">
-          <div className="w-full h-28 flex items-center justify-center bg-white">
+        <div className="relative group rounded-lg border border-border overflow-hidden bg-muted/30 hover:border-primary/50 transition-all">
+          <div className="w-full h-28 flex items-center justify-center bg-background">
             <img
               src={previewImage}
               alt="Preview"
@@ -102,16 +102,16 @@ const ImageUpload = ({
           <button
             type="button"
             onClick={handleRemove}
-            className="absolute top-1.5 right-1.5 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+            className="absolute top-1.5 right-1.5 p-1.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
           >
             <X className="h-3.5 w-3.5" />
           </button>
           {selectedFile && (
-            <div className="px-2 py-1.5 bg-gray-100 border-t border-gray-200 text-center">
-              <p className="text-xs text-gray-600 font-medium truncate">
+            <div className="px-2 py-1.5 bg-muted border-t border-border text-center">
+              <p className="text-xs text-foreground font-medium truncate">
                 {selectedFile.name}
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
               </p>
             </div>
@@ -120,7 +120,7 @@ const ImageUpload = ({
       ) : (
         <label
           htmlFor={id}
-          className="block border-2 border-dashed border-gray-300 rounded-lg p-3 text-center cursor-pointer hover:border-accent hover:bg-blue-50/50 transition-all"
+          className="block border-2 border-dashed border-border rounded-lg p-3 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all"
         >
           <Input
             id={id}
@@ -131,9 +131,9 @@ const ImageUpload = ({
             className="hidden"
           />
           <div className="flex flex-col items-center gap-1.5">
-            <Upload className="h-4 w-4 text-gray-400" />
-            <p className="text-xs font-medium text-gray-700">Upload image</p>
-            <p className="text-xs text-gray-500">
+            <Upload className="h-4 w-4 text-muted-foreground" />
+            <p className="text-xs font-medium text-foreground">Upload image</p>
+            <p className="text-xs text-muted-foreground">
               {format} • {displayDimensions} • {maxSize}MB
             </p>
           </div>

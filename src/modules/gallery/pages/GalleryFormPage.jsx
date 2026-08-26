@@ -39,19 +39,26 @@ const GalleryFormPage = () => {
 
   // hydrate on edit
   useEffect(() => {
-    if (!isEdit || !fetchedData?.data) return;
-    const item = fetchedData.data;
+    if (!isEdit || !fetchedData) return;
+    let item = fetchedData?.data;
+    if (Array.isArray(item)) {
+      item = item[0];
+    } else if (item && typeof item === "object" && "data" in item) {
+      item = Array.isArray(item.data) ? item.data[0] : item.data;
+    }
+    if (!item || typeof item !== "object") return;
+
     const IMAGE_FOR = "Gallery";
-    const baseUrl = getImageBaseUrl(fetchedData?.image_url, IMAGE_FOR);
+    const baseUrl = item.gallery_url || getImageBaseUrl(fetchedData?.image_url, IMAGE_FOR);
     const noImg = getNoImageUrl(fetchedData?.image_url);
 
     setGalleryStatus(item.gallery_status || "Active");
 
-    if (item.gallery_image && baseUrl) {
+    if (item.gallery_image && (baseUrl || item.gallery_url)) {
       const fullUrl = `${baseUrl}${item.gallery_image}?t=${Date.now()}`;
       setExistingImage(item.gallery_image);
       setPreviewImage(fullUrl);
-    } else {
+    } else if (noImg) {
       setPreviewImage(noImg);
     }
   }, [isEdit, fetchedData]);

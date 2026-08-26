@@ -60,13 +60,13 @@ const ToggleStatus = ({
       />
       <span className={`text-xs font-bold leading-none select-none w-[55px] inline-block shrink-0 ${
         status === activeValue
-          ? "text-[var(--success)]"
-          : "text-[var(--ink-soft)]"
+          ? "text-success"
+          : "text-muted-foreground"
       }`}>
         {status}
       </span>
       <div className="w-3.5 h-3.5 flex items-center justify-center shrink-0">
-        {loading && <RefreshCcw className="h-3 w-3 animate-spin text-[var(--ink-soft)]" />}
+        {loading && <RefreshCcw className="h-3 w-3 animate-spin text-muted-foreground" />}
       </div>
     </div>
   );

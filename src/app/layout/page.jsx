@@ -22,9 +22,7 @@ export default function Page({ children }) {
 
   return (
     <SidebarProvider>
-      <div className="hidden md:block">
-        <AppSidebar />
-      </div>
+      <AppSidebar />
 
       <SidebarInset className="bg-[var(--base)] dark:bg-[var(--base)]">
         <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-2 bg-[var(--base)]/95 dark:bg-[var(--base)]/95 backdrop-blur px-4">
