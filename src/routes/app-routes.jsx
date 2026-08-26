@@ -39,7 +39,7 @@ import ClientFormPage from "@/modules/client/pages/ClientFormPage";
 import RequestListPage from "@/modules/service-request/pages/RequestListPage";
 import Client from "@/app/reports/Client";
 import Request_service from "@/app/reports/Request_service";
-import Quotation from "@/app/reports/Quotation";
+import QuotationReportPage from "@/modules/quotation/pages/QuotationReportPage";
 import ComplaintListPage from "@/modules/complaint/pages/ComplaintListPage";
 
 // New Modules (Modular Architecture)
@@ -435,7 +435,7 @@ function AppRoutes() {
             path="/quotation-report/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <Quotation />
+                <QuotationReportPage />
               </Suspense>
             }
           />
