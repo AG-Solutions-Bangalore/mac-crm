@@ -76,33 +76,31 @@ export function NavUser({ user }) {
           {!showUpdateBadge ? (
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground cursor-pointer"
             >
-              <Avatar className="h-8 w-8 rounded-lg">
+              <Avatar className="h-8 w-8 rounded-lg shrink-0">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg bg-[var(--team-color)] text-black">
+                <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-bold text-xs">
                   {initialsChar}
                 </AvatarFallback>
               </Avatar>
 
-              {sidebarOpen && (
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
-                </div>
-              )}
+              <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                <span className="truncate font-semibold text-[var(--sidebar-text-active)]">{user.name}</span>
+                <span className="truncate text-xs text-[var(--sidebar-text-muted)]">{user.email}</span>
+              </div>
 
-              <div className="ml-auto flex items-center gap-2">
+              <div className="ml-auto flex items-center gap-2 group-data-[collapsible=icon]:hidden">
                 <abbr title="Change Password">
                   <Lock
                     onClick={() => setChangePasswordDialogOpen(true)}
-                    className="size-4 hover:text-blue-600 hover:scale-125 transition-transform cursor-pointer"
+                    className="size-4 text-[var(--sidebar-icon-muted)] hover:text-blue-600 hover:scale-110 transition-transform cursor-pointer"
                   />
                 </abbr>
                 <abbr title="Logout">
                   <LogOut
                     onClick={() => setLogoutDialogOpen(true)}
-                    className="size-4 hover:text-red-600 hover:scale-125 transition-transform cursor-pointer"
+                    className="size-4 text-[var(--sidebar-icon-muted)] hover:text-red-600 hover:scale-110 transition-transform cursor-pointer"
                   />
                 </abbr>
               </div>

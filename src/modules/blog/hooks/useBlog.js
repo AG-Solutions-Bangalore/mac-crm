@@ -1,10 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { blogApi } from "../api/blogApi";
 
-export function useBlogsQuery() {
+/**
+ * Blog hooks — TanStack Query.
+ *
+ * Conventions match the rest of the codebase (see modules/service/hooks):
+ *   • 5-minute staleTime
+ *   • refetchOnWindowFocus disabled
+ *   • retry once
+ *   • mutations invalidate the relevant list / detail keys
+ */
+
+const LIST_KEY = ["blogs"];
+const ITEM_KEY = (id) => ["blog", id];
+const ACTIVE_SERVICES_KEY = ["activeServices"];
+
+export function useBlogsQuery(page = 1) {
   return useQuery({
-    queryKey: ["blog-list"],
-    queryFn: blogApi.getBlogs,
+    queryKey: [...LIST_KEY, page],
+    queryFn: () => blogApi.getBlogs(page),
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -13,7 +27,7 @@ export function useBlogsQuery() {
 
 export function useBlogQuery(id, enabled = true) {
   return useQuery({
-    queryKey: ["blog-item", id],
+    queryKey: ITEM_KEY(id),
     queryFn: () => blogApi.getBlogById(id),
     enabled: !!id && enabled,
     staleTime: 1000 * 60 * 5,
@@ -27,7 +41,7 @@ export function useCreateBlogMutation() {
   return useMutation({
     mutationFn: blogApi.createBlog,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["blog-list"] });
+      queryClient.invalidateQueries({ queryKey: LIST_KEY });
     },
   });
 }
@@ -37,48 +51,33 @@ export function useUpdateBlogMutation() {
   return useMutation({
     mutationFn: ({ id, data }) => blogApi.updateBlog(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["blog-list"] });
-      queryClient.invalidateQueries({ queryKey: ["blog-item", variables.id] });
+      queryClient.invalidateQueries({ queryKey: LIST_KEY });
+      queryClient.invalidateQueries({ queryKey: ITEM_KEY(variables.id) });
     },
   });
 }
 
-export function useDeleteBlogMutation() {
+export function useUpdateBlogStatusMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: blogApi.deleteBlog,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["blog-list"] });
+    mutationFn: ({ id, status }) => blogApi.updateBlogStatus(id, status),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: LIST_KEY });
+      queryClient.invalidateQueries({ queryKey: ITEM_KEY(variables.id) });
     },
   });
 }
 
-export function useDeleteBlogSubMutation() {
-  return useMutation({
-    mutationFn: blogApi.deleteBlogSub,
-  });
-}
-
-export function useDeleteBlogRelatedMutation() {
-  return useMutation({
-    mutationFn: blogApi.deleteBlogRelated,
-  });
-}
-
-export function useBlogsDropdownQuery() {
+/**
+ * Reused for the `blog_categories_ids` multi-select.
+ * Pulls from the same /activeServices endpoint used by the service module.
+ */
+export function useActiveServicesQuery() {
   return useQuery({
-    queryKey: ["blogs-dropdown"],
-    queryFn: blogApi.getBlogsDropdown,
-    staleTime: 1000 * 60 * 30,
+    queryKey: ACTIVE_SERVICES_KEY,
+    queryFn: blogApi.getActiveServices,
+    staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
-  });
-}
-
-export function useCoursesQuery() {
-  return useQuery({
-    queryKey: ["courses-dropdown"],
-    queryFn: blogApi.getCourses,
-    staleTime: 1000 * 60 * 30,
-    refetchOnWindowFocus: false,
+    retry: 1,
   });
 }

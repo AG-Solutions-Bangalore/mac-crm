@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays } from "lucide-react";
+import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,7 @@ import { useActiveFloorsQuery } from "../../floor/hooks/useFloor";
 import { useActiveAreasQuery } from "../../area/hooks/useArea";
 import MemoizedSelect from "@/components/common/memoized-select";
 import ConfirmDialog from "@/components/common/confirm-dialog";
+import ImportQuotationDialog from "../components/ImportQuotationDialog";
 
 // Helper: Group flat subs to nested Services structure (Service -> Floor -> Area -> Product)
 const groupSubsToServices = (subsList) => {
@@ -176,6 +177,41 @@ const QuotationFormPage = () => {
   const [errors, setErrors] = useState({});
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+
+  const handleApplyImport = ({ nestedState, serviceIds, categoryIds }) => {
+    const currentServices = formData.quotation_service_id
+      ? formData.quotation_service_id.split(",")
+      : [];
+    let finalServiceIds = serviceIds;
+    if (!finalServiceIds || finalServiceIds.length === 0) {
+      finalServiceIds = services.map((s) => s.id?.toString()).filter(Boolean);
+    }
+    const mergedServices = Array.from(
+      new Set([...currentServices, ...finalServiceIds].filter(Boolean))
+    );
+
+    const currentCategories = formData.quotation_category_id
+      ? formData.quotation_category_id.split(",")
+      : [];
+    let finalCategoryIds = categoryIds;
+    if (!finalCategoryIds || finalCategoryIds.length === 0) {
+      finalCategoryIds = categories.map((c) => c.id?.toString()).filter(Boolean);
+    }
+    const mergedCategories = Array.from(
+      new Set([...currentCategories, ...finalCategoryIds].filter(Boolean))
+    );
+
+    setFormData((prev) => ({
+      ...prev,
+      quotation_service_id: mergedServices.join(","),
+      quotation_category_id: mergedCategories.join(","),
+    }));
+
+    if (nestedState && nestedState.length > 0) {
+      setServicesState(nestedState);
+    }
+  };
 
   // Active Masters Queries
   const { data: buyersData, isLoading: buyersLoading } = useActiveBuyersQuery();
@@ -555,6 +591,14 @@ const QuotationFormPage = () => {
       newErrors.quotation_buyer_id = "Buyer is required";
     if (!formData.quotation_property_id)
       newErrors.quotation_property_id = "Property is required";
+
+    if (newErrors.quotation_buyer_id || newErrors.quotation_property_id) {
+      toast.error("Please select a Buyer and Property at the top of the form.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      setErrors(newErrors);
+      return false;
+    }
+
     if (!formData.quotation_category_id) {
       toast.error("Please select at least one Category");
       return false;
@@ -926,9 +970,22 @@ const QuotationFormPage = () => {
         {/* Nested Timeline Tree Line Items Section */}
         <Card>
           <CardContent className="p-6">
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-6 pb-2 border-b dark:border-slate-800">
-              Quotation Items (Hierarchical Setup)
-            </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b dark:border-slate-800 pb-3 mb-6">
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
+                Quotation Items (Hierarchical Setup)
+              </h3>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setImportDialogOpen(true)}
+                disabled={hasFinishWorkDate}
+                className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 font-medium shrink-0"
+              >
+                <FileSpreadsheet className="w-4 h-4 mr-1.5 text-blue-600 dark:text-blue-400" />
+                Import from Excel / TSV
+              </Button>
+            </div>
 
             {!formData.quotation_category_id ||
             !formData.quotation_service_id ? (
@@ -1320,6 +1377,16 @@ const QuotationFormPage = () => {
         title="Delete Line Item"
         description="Are you sure you want to delete this line item?"
         confirmText="Delete"
+      />
+      <ImportQuotationDialog
+        isOpen={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        onApply={handleApplyImport}
+        services={services}
+        floors={floors}
+        areas={areas}
+        products={productsList}
+        categories={categories}
       />
     </div>
   );

@@ -5,14 +5,14 @@ import { DASHBOARD_API } from "@/constants/apiConstants";
 import { useNavigate } from "react-router-dom";
 import moment from "moment";
 import { useSelector } from "react-redux";
-import { 
-  Users, 
-  Layers, 
-  Clock, 
-  DollarSign, 
-  RefreshCw, 
-  Calendar, 
-  TrendingUp, 
+import {
+  Users,
+  Layers,
+  Clock,
+  DollarSign,
+  RefreshCw,
+  Calendar,
+  TrendingUp,
   ArrowUpRight,
   UserCheck
 } from "lucide-react";
@@ -143,14 +143,14 @@ const Dashboard = () => {
 
   return (
     <Page>
-      <div className="main space-y-6 md:-mt-12">
+      <div className="main space-y-6">
         {/* HEADER GREETING BANNER */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[var(--surface)] p-6 rounded-xl border border-[var(--line)] shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-6 rounded-xl border border-border shadow-sm">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight text-[var(--ink)] flex items-center gap-2">
-              {getGreeting()}, <span className="text-[var(--primary-color)] font-extrabold">{user?.name || "Admin"}</span>
+            <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight text-foreground flex items-center gap-2">
+              {getGreeting()}, <span className="text-primary font-extrabold">{user?.name || "Admin"}</span>
             </h1>
-            <p className="text-sm text-[var(--ink-soft)] mt-1 flex items-center gap-1.5">
+            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
               <Calendar className="h-4 w-4 text-[var(--copper)]" />
               Here's your business summary for today, {moment().format("MMMM Do, YYYY")}
             </p>
@@ -160,7 +160,7 @@ const Dashboard = () => {
               variant="outline"
               size="sm"
               onClick={() => refetch()}
-              className="border-[var(--line)] hover:bg-[var(--line)] text-xs font-semibold gap-1.5 transition-all duration-200"
+              className="text-xs font-semibold gap-1.5"
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Refresh Data
@@ -258,7 +258,7 @@ const Dashboard = () => {
                     </div>
                     <div className="kpi-value mt-1 text-2xl font-bold">₹4.82 Cr</div>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-green-50 text-[var(--success)] transition-colors group-hover:bg-[var(--success)] group-hover:text-white">
+                  <div className="p-2.5 rounded-lg group-hover:bg-white group-hover:text-black  transition-colors bg-[var(--success)] text-white">
                     <DollarSign className="h-5 w-5" />
                   </div>
                 </div>
@@ -288,8 +288,8 @@ const Dashboard = () => {
                     <AreaChart data={monthlySalesData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="var(--primary-color)" stopOpacity={0.15}/>
-                          <stop offset="95%" stopColor="var(--primary-color)" stopOpacity={0}/>
+                          <stop offset="5%" stopColor="var(--primary-color)" stopOpacity={0.15} />
+                          <stop offset="95%" stopColor="var(--primary-color)" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="5 5" vertical={false} stroke="var(--line)" />
@@ -510,13 +510,12 @@ const Dashboard = () => {
                               </span>
                             </td>
                             <td>
-                              <span className={`pill ${
-                                request.services_request_status === "Pending"
+                              <span className={`pill ${request.services_request_status === "Pending"
                                   ? "pill-pending"
                                   : request.services_request_status === "Approved"
                                     ? "pill-approved"
                                     : "pill-rejected"
-                              }`}>
+                                }`}>
                                 {request.services_request_status}
                               </span>
                             </td>
