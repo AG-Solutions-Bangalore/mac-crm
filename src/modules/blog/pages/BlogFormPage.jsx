@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -16,6 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CKEditor } from "ckeditor4-react";
 import PageHeader from "@/components/common/page-header";
 import RedStar from "@/components/RedStar";
 import ImageUpload from "@/components/image-upload/image-upload";
@@ -62,7 +63,7 @@ const BlogFormPage = () => {
 
   const [formData, setFormData] = useState({
     blog_slug: "",
-    blog_index: 0,
+    blog_index: "Yes",
     blog_title: "",
     blog_short_description: "",
     blog_description: "",
@@ -80,6 +81,7 @@ const BlogFormPage = () => {
   const [errors, setErrors] = useState({});
   const [previewImage, setPreviewImage] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
+  const editorInstanceRef = useRef(null);
 
   // queries / mutations
   const { data: fetchedData, isLoading: isFetching, isError } = useBlogQuery(id, isEdit);
@@ -118,12 +120,14 @@ const BlogFormPage = () => {
     const baseUrl = blog.blog_url || getImageBaseUrl(fetchedData?.image_url, IMAGE_FOR);
     const noImg = getNoImageUrl(fetchedData?.image_url);
 
+    const description = blog.blog_description || "";
+
     setFormData({
       blog_slug: blog.blog_slug || "",
-      blog_index: toOneOrZero(blog.blog_index),
+      blog_index: toYesOrNo(blog.blog_index),
       blog_title: blog.blog_title || "",
       blog_short_description: blog.blog_short_description || "",
-      blog_description: blog.blog_description || "",
+      blog_description: description,
       blog_banner_image: blog.blog_banner_image || null,
       blog_banner_image_alt: blog.blog_banner_image_alt || "",
       blog_meta_title: blog.blog_meta_title || "",
@@ -134,24 +138,76 @@ const BlogFormPage = () => {
       blog_status: blog.blog_status || "Active",
     });
 
+    if (editorInstanceRef.current && description) {
+      if (editorInstanceRef.current.getData() !== description) {
+        editorInstanceRef.current.setData(description);
+      }
+    }
+
     if (blog.blog_banner_image && (baseUrl || blog.blog_url)) {
       setPreviewImage(`${baseUrl}${blog.blog_banner_image}?t=${Date.now()}`);
     } else if (noImg) {
       setPreviewImage(noImg);
     }
 
-    // Pre-fill selected categories from blog_categories_ids or categories (array, string, or comma-separated)
-    const rawCategoryIds = blog.blog_categories_ids ?? blog.categories;
-    const ids = rawCategoryIds
-      ? Array.isArray(rawCategoryIds)
-        ? rawCategoryIds.map((c) => (typeof c === "object" ? c.id || c.value : c))
-        : String(rawCategoryIds).split(",").map((s) => s.trim()).filter(Boolean)
-      : [];
+    // Pre-fill selected categories from all possible backend fields
+    const rawCategories =
+      blog.blog_categories ??
+      blog.blog_categories_ids ??
+      blog.blog_category_ids ??
+      blog.blog_category_id ??
+      blog.blog_categories_id ??
+      blog.blog_category ??
+      blog.categories ??
+      blog.category_ids ??
+      blog.category_id ??
+      blog.services ??
+      blog.service_ids;
 
-    if (ids.length && categoryOptions.length) {
-      setSelectedCategories(
-        categoryOptions.filter((opt) => ids.map(String).includes(String(opt.value))),
-      );
+    if (rawCategories !== undefined && rawCategories !== null && rawCategories !== "") {
+      let parsedItems = [];
+      if (Array.isArray(rawCategories)) {
+        parsedItems = rawCategories;
+      } else if (typeof rawCategories === "string") {
+        const trimmed = rawCategories.trim();
+        if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+          try {
+            parsedItems = JSON.parse(trimmed);
+          } catch {
+            parsedItems = trimmed.split(",").map((s) => s.trim()).filter(Boolean);
+          }
+        } else {
+          parsedItems = trimmed.split(",").map((s) => s.trim()).filter(Boolean);
+        }
+      } else if (typeof rawCategories === "number") {
+        parsedItems = [rawCategories];
+      }
+
+      const mapped = parsedItems
+        .map((item) => {
+          if (item && typeof item === "object") {
+            const val = item.value ?? item.id ?? item.service_id ?? item;
+            const lbl = item.label ?? item.service_name ?? item.name ?? String(val);
+            const found = categoryOptions.find(
+              (opt) =>
+                String(opt.value) === String(val) ||
+                opt.label?.toLowerCase() === String(lbl).toLowerCase(),
+            );
+            return found || { value: val, label: lbl };
+          }
+
+          const strVal = String(item).trim();
+          if (!strVal) return null;
+          const found = categoryOptions.find(
+            (opt) =>
+              String(opt.value) === strVal ||
+              opt.label?.toLowerCase() === strVal.toLowerCase(),
+          );
+          return found || { value: item, label: strVal };
+        })
+        .filter(Boolean);
+
+      setSelectedCategories(mapped);
     }
   }, [isEdit, fetchedData, categoryOptions]);
 
@@ -216,7 +272,7 @@ const BlogFormPage = () => {
 
     const fd = new FormData();
     fd.append("blog_slug", formData.blog_slug);
-    fd.append("blog_index", String(formData.blog_index));
+    fd.append("blog_index", formData.blog_index);
     fd.append("blog_title", formData.blog_title);
     fd.append("blog_short_description", formData.blog_short_description);
     fd.append("blog_description", formData.blog_description);
@@ -233,12 +289,9 @@ const BlogFormPage = () => {
       fd.append("existing_blog_banner_image", formData.blog_banner_image);
     }
 
-    if (selectedCategories.length) {
-      fd.append(
-        "blog_categories_ids",
-        selectedCategories.map((c) => c.value).join(","),
-      );
-    }
+    const categoriesValue = selectedCategories.map((c) => c.value).join(",");
+    fd.append("blog_categories", categoriesValue);
+    fd.append("blog_categories_ids", categoriesValue);
 
     try {
       if (isEdit) {
@@ -343,8 +396,8 @@ const BlogFormPage = () => {
                   value={formData.blog_index}
                   onChange={(v) => setFormData((p) => ({ ...p, blog_index: v }))}
                   options={[
-                    { label: "1 (Yes)", value: 1 },
-                    { label: "0 (No)", value: 0 },
+                    { label: "Yes", value: "Yes" },
+                    { label: "No", value: "No" },
                   ]}
                 />
               </div>
@@ -364,17 +417,77 @@ const BlogFormPage = () => {
 
               {/* Full description */}
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="blog_description" className="flex items-center gap-1">
-                  Blog Description <RedStar />
+                <Label className="flex items-center gap-1">
+                  Full Article Content <RedStar />
                 </Label>
-                <Textarea
-                  id="blog_description"
-                  name="blog_description"
-                  value={formData.blog_description}
-                  onChange={handleChange}
-                  placeholder="Full blog content"
-                  rows={5}
-                />
+                <div
+                  className={`rounded overflow-hidden ${
+                    errors.blog_description ? "border border-red-500" : ""
+                  }`}
+                >
+                  <CKEditor
+                    key={isEdit ? `edit-${id}` : "create"}
+                    initData={formData.blog_description || ""}
+                    onInstanceReady={(event) => {
+                      editorInstanceRef.current = event.editor;
+                      const initialDesc =
+                        formData.blog_description ||
+                        fetchedData?.data?.blog_description ||
+                        "";
+                      if (initialDesc) {
+                        event.editor.setData(initialDesc);
+                      }
+                    }}
+                    config={{
+                      versionCheck: false,
+                      toolbar: [
+                        {
+                          name: "basicstyles",
+                          items: ["Bold", "Italic", "Strike"],
+                        },
+                        {
+                          name: "paragraph",
+                          items: [
+                            "NumberedList",
+                            "BulletedList",
+                            "-",
+                            "Outdent",
+                            "Indent",
+                          ],
+                        },
+                        {
+                          name: "links",
+                          items: ["Link", "Unlink"],
+                        },
+                        {
+                          name: "insert",
+                          items: ["Image", "Table"],
+                        },
+                        {
+                          name: "styles",
+                          items: ["Styles", "Format"],
+                        },
+                        { name: "tools", items: ["Maximize"] },
+                      ],
+                      height: 250,
+                      removePlugins: "elementspath",
+                      resize_enabled: false,
+                    }}
+                    onChange={(event) => {
+                      const editorData = event.editor.getData();
+                      setFormData((prev) => ({
+                        ...prev,
+                        blog_description: editorData,
+                      }));
+                      if (errors.blog_description) {
+                        setErrors((prev) => ({
+                          ...prev,
+                          blog_description: "",
+                        }));
+                      }
+                    }}
+                  />
+                </div>
                 {errors.blog_description && (
                   <p className="text-xs text-red-500">{errors.blog_description}</p>
                 )}

@@ -104,16 +104,6 @@ const BlogListPage = () => {
       ),
     },
     {
-      header: "Slug",
-      accessorKey: "blog_slug",
-      enableSorting: false,
-      cell: ({ row }) => (
-        <code className="text-xs bg-muted text-foreground px-2 py-1 rounded font-mono">
-          {row.original.blog_slug}
-        </code>
-      ),
-    },
-    {
       header: "Index",
       accessorKey: "blog_index",
       cell: ({ row }) => <YesNoBadge value={row.original.blog_index} />,
