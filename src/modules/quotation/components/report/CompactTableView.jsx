@@ -53,7 +53,8 @@ export default function CompactTableView({
   tableRows,
   items,
   grandTotal,
-  gstTax,
+  installationFee,
+  installPct = 5,
   netTotal,
   formatMoney,
 }) {
@@ -74,7 +75,7 @@ export default function CompactTableView({
           style={{ background: LIGHT.cardBg, borderColor: LIGHT.cardBorder, color: LIGHT.pageText }}
         >
           <CardHeader className="pb-2">
-            <CardDescription style={{ color: LIGHT.mutedText }}>Total Project Estimate</CardDescription>
+            <CardDescription style={{ color: LIGHT.mutedText }}>Hardware Subtotal</CardDescription>
             <CardTitle className="text-2xl font-bold" style={{ color: LIGHT.accent }}>{formatMoney(grandTotal)}</CardTitle>
           </CardHeader>
         </Card>
@@ -92,8 +93,8 @@ export default function CompactTableView({
           style={{ background: LIGHT.cardBg, borderColor: LIGHT.cardBorder, color: LIGHT.pageText }}
         >
           <CardHeader className="pb-2">
-            <CardDescription style={{ color: LIGHT.mutedText }}>Estimated Tax (GST 18%)</CardDescription>
-            <CardTitle className="text-2xl font-bold" style={{ color: LIGHT.gold }}>{formatMoney(gstTax)}</CardTitle>
+            <CardDescription style={{ color: LIGHT.mutedText }}>Transportation & Installation ({installPct}%)</CardDescription>
+            <CardTitle className="text-2xl font-bold" style={{ color: LIGHT.gold }}>{formatMoney(installationFee)}</CardTitle>
           </CardHeader>
         </Card>
         <Card
@@ -126,8 +127,8 @@ export default function CompactTableView({
               </div>
             </div>
             <div className="text-left text-sm md:text-right">
-              <div className="font-semibold" style={{ color: LIGHT.mutedText }}>Total Project</div>
-              <div className="text-xl font-bold" style={{ color: LIGHT.accent }}>{formatMoney(grandTotal)}</div>
+              <div className="font-semibold" style={{ color: LIGHT.mutedText }}>Net Project Value</div>
+              <div className="text-xl font-bold" style={{ color: LIGHT.accent }}>{formatMoney(netTotal)}</div>
             </div>
           </div>
         </CardHeader>
@@ -185,6 +186,9 @@ export default function CompactTableView({
               </TableBody>
             </Table>
           </div>
+          <p className="mt-3 text-right text-xs" style={{ color: LIGHT.mutedText }}>
+            All prices inclusive of applicable taxes, product, delivery and installation.
+          </p>
         </CardContent>
       </Card>
     </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldCheck, Sliders, Layers, Lock, Wifi, Video } from "lucide-react";
+import { Sliders, Layers, Lock, Wifi, Video } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 
 const SERVICES = [
@@ -71,19 +71,34 @@ export default function CoverPage({
           <img src={logoImg} alt="MAKc" style={{ height: "30px", objectFit: "contain", display: "block" }} />
         </div>
 
+        {/* Round ISO seal — top corner stamp (replaces text pill) */}
         <div
+          title="ISO 9001:2015 Certified"
           style={{
-            display: "flex", alignItems: "center", gap: "5px",
-            background: "#ecfdf5",
-            border: "1px solid #a7f3d0",
-            borderRadius: "999px",
-            padding: "4px 12px",
-            fontSize: "8.5px", fontWeight: 700, color: "#047857",
-            letterSpacing: "0.04em",
+            width: "52px", height: "52px", borderRadius: "50%",
+            border: "2px solid #047857",
+            background: "#ffffff",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+            boxShadow: "0 2px 8px rgba(4,120,87,0.15)",
           }}
         >
-          <ShieldCheck style={{ width: 11, height: 11, color: "#059669" }} />
-          ISO 9001:2015 Certified
+          <div
+            style={{
+              width: "44px", height: "44px", borderRadius: "50%",
+              border: "1px dashed #059669",
+              display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center",
+              lineHeight: 1,
+            }}
+          >
+            <span style={{ fontSize: "11px", fontWeight: 900, color: "#047857", letterSpacing: "0.04em" }}>
+              ISO
+            </span>
+            <span style={{ fontSize: "6.5px", fontWeight: 800, color: "#047857", letterSpacing: "0.02em", marginTop: "1px" }}>
+              9001:2015
+            </span>
+          </div>
         </div>
       </div>
 

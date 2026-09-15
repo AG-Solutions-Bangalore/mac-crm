@@ -81,7 +81,7 @@ export default function DynamicProposalDocument({
   formatMoney,
   grandTotal,
   installationFee,
-  gstTax,
+  installPct = 5,
   netTotal,
   paymentRows,
 }) {
@@ -334,14 +334,13 @@ export default function DynamicProposalDocument({
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
+                  gridTemplateColumns: "1fr 1fr",
                   gap: "10px",
                 }}
               >
                 {[
                   { label: "Hardware Subtotal", value: formatMoney(grandTotal), color: t.summaryRowVal },
-                  { label: "Transportation & Installation (5%)", value: formatMoney(installationFee), color: t.summaryRowSubVal },
-                  { label: "GST @ 18%", value: formatMoney(gstTax), color: t.summaryRowTaxVal },
+                  { label: `Transportation & Installation (${installPct}%)`, value: formatMoney(installationFee), color: t.summaryRowSubVal },
                 ].map((row, i) => (
                   <div
                     key={i}
@@ -394,7 +393,7 @@ export default function DynamicProposalDocument({
                 </span>
               </div>
               <p style={{ fontSize: "8px", color: t.notesText, margin: "6px 0 0", textAlign: "right" }}>
-                All prices inclusive of product, delivery &amp; installation.
+                All prices inclusive of applicable taxes, product, delivery and installation.
               </p>
             </div>
           </div>
@@ -524,7 +523,8 @@ export default function DynamicProposalDocument({
         <div
           className="break-inside-avoid"
           style={{
-            paddingTop: "16px",
+            paddingTop: "28px",
+            paddingBottom: "12px",
             display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px",
           }}
         >

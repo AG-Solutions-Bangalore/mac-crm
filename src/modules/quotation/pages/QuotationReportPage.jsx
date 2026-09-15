@@ -67,6 +67,8 @@ export default function QuotationReportPage() {
   const navigate = useNavigate();
   const isRevised = searchParams.get("type") === "rev";
   const [viewMode, setViewMode] = useState("presentation"); // 'presentation' | 'table'
+  // Dynamic Transportation & Installation charge % (editable from header bar)
+  const [installPct, setInstallPct] = useState(5);
 
   // Queries
   const { data: parentData, isLoading: parentLoading } = useQuotationQuery(
@@ -208,10 +210,10 @@ export default function QuotationReportPage() {
     });
   });
 
-  // Calculations
-  const installationFee = Math.round(grandTotal * 0.05);
-  const gstTax = Math.round((grandTotal + installationFee) * 0.18);
-  const netTotal = grandTotal + installationFee + gstTax;
+  // Totals — taxes are inclusive, so Net = Hardware + Installation only.
+  // No separate GST line item is shown anywhere in the proposal.
+  const installationFee = Math.round(grandTotal * (installPct / 100));
+  const netTotal = grandTotal + installationFee;
 
   // Client name — the API exposes `buyer_name` (see QuotationListPage),
   // not `client_name`, which is why the old lookup always hit the fallback.
@@ -259,10 +261,11 @@ export default function QuotationReportPage() {
     authUser?.phone ||
     "+91-7338504441";
 
+  // Milestones sum to the Net Project Value (inclusive of installation).
   const paymentRows = [
-    { section: "Payment Cycle", label: "Booking Confirmation", amount: grandTotal * 0.3, percentage: "30%" },
-    { section: "Payment Cycle", label: "Hardware Ordering & Dispatch", amount: grandTotal * 0.6, percentage: "60%" },
-    { section: "Payment Cycle", label: "Installation & Pre-Commissioning", amount: grandTotal * 0.1, percentage: "10%" },
+    { section: "Payment Cycle", label: "Booking Confirmation", amount: netTotal * 0.3, percentage: "30%" },
+    { section: "Payment Cycle", label: "Hardware Ordering & Dispatch", amount: netTotal * 0.6, percentage: "60%" },
+    { section: "Payment Cycle", label: "Installation & Pre-Commissioning", amount: netTotal * 0.1, percentage: "10%" },
   ];
 
   const handlePrint = () => {
@@ -395,13 +398,14 @@ export default function QuotationReportPage() {
         `}
       </style>
 
-      {/* Header Actions Component */}
+      {/* Header Actions Component (navigation + view + install % + export/print) */}
       <ReportHeaderActions
         quotationNo={quotationNo}
-        isRevised={isRevised}
         viewMode={viewMode}
         setViewMode={setViewMode}
         onNavigateBack={() => navigate(-1)}
+        installPct={installPct}
+        onInstallPctChange={setInstallPct}
         onExportExcel={handleExportExcel}
         onPrint={handlePrint}
       />
@@ -414,7 +418,8 @@ export default function QuotationReportPage() {
             tableRows={tableRows}
             items={items}
             grandTotal={grandTotal}
-            gstTax={gstTax}
+            installationFee={installationFee}
+            installPct={installPct}
             netTotal={netTotal}
             formatMoney={formatMoney}
           />
@@ -439,7 +444,7 @@ export default function QuotationReportPage() {
               formatMoney={formatMoney}
               grandTotal={grandTotal}
               installationFee={installationFee}
-              gstTax={gstTax}
+              installPct={installPct}
               netTotal={netTotal}
               paymentRows={paymentRows}
             />
