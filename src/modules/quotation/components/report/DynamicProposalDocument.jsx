@@ -222,7 +222,7 @@ export default function DynamicProposalDocument({
             <span style={{ fontSize: "8px", color: t.refLabel, display: "block", textTransform: "uppercase", letterSpacing: "0.09em", fontWeight: 600 }}>Proposal Ref</span>
             <span style={{ fontSize: "13px", fontWeight: 800, color: t.refNo, fontFamily: "monospace" }}>#{quotationNo}</span>
           </div>
-          <div style={{ background: "#ffffff", borderRadius: "10px", padding: "5px 12px", boxShadow: "0 4px 15px rgba(0,0,0,0.15)", border: isLight ? "1px solid #e2e8f0" : "none" }}>
+          <div style={{  borderRadius: "10px", padding: "5px 12px"}}>
             <img src={logoImg} alt="MAKc" style={{ height: "26px", objectFit: "contain", display: "block" }} />
           </div>
         </div>
