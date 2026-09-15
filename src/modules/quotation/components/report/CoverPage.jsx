@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldCheck, Sliders, Layers, Lock, Wifi, Video } from "lucide-react";
+import { Sliders, Layers, Lock, Wifi, Video } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 
 const SERVICES = [
@@ -10,6 +10,9 @@ const SERVICES = [
   { title: "CCTV & Security", icon: Video },
 ];
 
+// Light-only executive cover (theme switcher removed).
+// Text always sits on solid white — the photo lives inside its own framed
+// card with a controlled caption scrim, so no full-page overlay is needed.
 export default function CoverPage({
   clientName,
   projectAddress,
@@ -18,23 +21,20 @@ export default function CoverPage({
   contactPerson,
   contactPhone,
   bgImage,
-  pdfTheme = "dark",
 }) {
-  const isLight = pdfTheme === "light";
   return (
     <div
       className="makc-page makc-cover-page"
       style={{
-        background: isLight ? "#ffffff" : "#06090f",
-        color: isLight ? "#0f172a" : "#fff",
+        background: "#ffffff",
+        color: "#0f172a",
         fontFamily: "'Inter', sans-serif",
         display: "flex",
         flexDirection: "column",
-        justifyContent: "space-between",
         boxSizing: "border-box",
         overflow: "hidden",
         position: "relative",
-        padding: "0",
+        padding: 0,
         height: "297mm",
         maxHeight: "297mm",
         pageBreakInside: "avoid",
@@ -43,22 +43,12 @@ export default function CoverPage({
         breakAfter: "page",
       }}
     >
-      {/* Background photo */}
+      {/* Subtle decorative glow (solid, never fights text) */}
       <div
         style={{
-          position: "absolute", inset: 0, zIndex: 0,
-          backgroundImage: `url(${bgImage})`,
-          backgroundSize: "cover", backgroundPosition: "center",
-          filter: isLight ? "brightness(0.95) saturate(0.85)" : "brightness(0.75) saturate(1.05)",
-        }}
-      />
-      {/* Gradient overlay (minimal/subtle in dark mode) */}
-      <div
-        style={{
-          position: "absolute", inset: 0, zIndex: 1,
-          background: isLight
-            ? "linear-gradient(155deg, rgba(255,255,255,0.94) 0%, rgba(248,250,252,0.70) 50%, rgba(255,255,255,0.94) 100%)"
-            : "linear-gradient(to top, rgba(6,9,15,0.70) 0%, rgba(6,9,15,0.10) 40%, rgba(6,9,15,0.25) 100%)",
+          position: "absolute", top: 0, left: 0, right: 0, height: "120px", zIndex: 0,
+          background: "radial-gradient(60% 100% at 50% 0%, rgba(2,132,199,0.07) 0%, rgba(255,255,255,0) 100%)",
+          pointerEvents: "none",
         }}
       />
 
@@ -66,141 +56,178 @@ export default function CoverPage({
       <div
         style={{
           position: "relative", zIndex: 2,
-          display: "flex", justifyContent: "space-between", alignItems: "flex-start",
-          padding: "16px 24px 0",
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          padding: "16px 28px 0",
         }}
       >
-        {/* Logo */}
         <div
           style={{
-            background: "#fff", borderRadius: "8px",
-            padding: "4px 10px",
-            boxShadow: isLight ? "0 2px 10px rgba(0,0,0,0.1)" : "0 4px 16px rgba(0,0,0,0.5)",
-            border: isLight ? "1px solid #e2e8f0" : "none",
+            background: "#fff", borderRadius: "10px",
+            padding: "5px 12px",
+          
+          
           }}
         >
-          <img src={logoImg} alt="MAKc" style={{ height: "28px", objectFit: "contain", display: "block" }} />
+          <img src={logoImg} alt="MAKc" style={{ height: "30px", objectFit: "contain", display: "block" }} />
         </div>
 
-        {/* ISO badge */}
+        {/* Round ISO seal — top corner stamp (replaces text pill) */}
         <div
+          title="ISO 9001:2015 Certified"
           style={{
-            display: "flex", alignItems: "center", gap: "5px",
-            background: isLight ? "#ecfdf5" : "rgba(6,40,24,0.88)",
-            border: isLight ? "1px solid #a7f3d0" : "1px solid rgba(52,211,153,0.45)",
-            borderRadius: "999px",
-            padding: "3px 10px",
-            fontSize: "8.5px", fontWeight: 700, color: isLight ? "#047857" : "#6ee7b7",
-            letterSpacing: "0.04em",
+            width: "52px", height: "52px", borderRadius: "50%",
+            border: "2px solid #047857",
+            background: "#ffffff",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+            boxShadow: "0 2px 8px rgba(4,120,87,0.15)",
           }}
         >
-          <ShieldCheck style={{ width: 11, height: 11, color: isLight ? "#059669" : "#34d399" }} />
-          ISO 9001:2015 Certified
+          <div
+            style={{
+              width: "44px", height: "44px", borderRadius: "50%",
+              border: "1px dashed #059669",
+              display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center",
+              lineHeight: 1,
+            }}
+          >
+            <span style={{ fontSize: "11px", fontWeight: 900, color: "#047857", letterSpacing: "0.04em" }}>
+              ISO
+            </span>
+            <span style={{ fontSize: "6.5px", fontWeight: 800, color: "#047857", letterSpacing: "0.02em", marginTop: "1px" }}>
+              9001:2015
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* ── HERO CONTENT ── */}
+      {/* ── HERO TEXT (on solid white — always crisp) ── */}
       <div
         style={{
           position: "relative", zIndex: 2,
-          padding: "16px 24px",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          margin: "auto 0",
-          borderRadius: "12px",
-          maxWidth: "460px",
+          padding: "14px 28px 0",
         }}
       >
-        {/* Eyebrow label */}
         <div
           style={{
             display: "inline-flex", alignItems: "center",
-            background: isLight ? "#fef3c7" : "rgba(212,175,55,0.15)",
-            border: isLight ? "1px solid #fde047" : "1px solid rgba(212,175,55,0.4)",
+            background: "#fef3c7",
+            border: "1px solid #fde047",
             borderRadius: "4px",
             padding: "3px 10px",
             fontSize: "7.5px", fontWeight: 800, letterSpacing: "0.18em",
-            color: isLight ? "#b45309" : "#fbbf24", textTransform: "uppercase",
+            color: "#b45309", textTransform: "uppercase",
             width: "fit-content", marginBottom: "10px",
           }}
         >
           ✦ Bespoke Smart Automation Proposal
         </div>
 
-        {/* Main headline */}
         <h1
           style={{
-            fontSize: "32px", fontWeight: 900, lineHeight: 1.1,
+            fontSize: "34px", fontWeight: 900, lineHeight: 1.08,
             letterSpacing: "-0.02em", margin: "0 0 8px",
-            color: isLight ? "#0f172a" : "#ffffff",
-            textShadow: isLight ? "0 1px 2px rgba(255,255,255,0.9)" : "0 2px 10px rgba(0,0,0,0.9)",
+            color: "#0b1526",
           }}
         >
-          Experience the
+          Smart Home Automation
           <br />
-          <span
-            style={{
-              color: isLight ? "#0284c7" : "#38bdf8",
-              fontWeight: 900,
-              textShadow: isLight ? "0 1px 2px rgba(255,255,255,0.9)" : "0 2px 12px rgba(56,189,248,0.5)",
-            }}
-          >
-            Smart Living
+          <span className="italic" style={{ color: "#0284c7", fontWeight: 900 }}>
+            Company in Bangalore
           </span>
         </h1>
 
         <p
           style={{
-            fontSize: "10.5px", color: isLight ? "#1e293b" : "#e2e8f0", fontWeight: 500,
-            maxWidth: "380px", lineHeight: 1.55, margin: "0 0 14px",
-            textShadow: isLight ? "0 1px 2px rgba(255,255,255,0.9)" : "0 1px 6px rgba(0,0,0,0.8)",
+            fontSize: "10.5px", color: "#334155", fontWeight: 500,
+            maxWidth: "480px", lineHeight: 1.6, margin: "0 0 12px",
           }}
         >
-          Your premier home automation partner — transforming spaces into intelligent,
-          luxury environments with effortless one-touch control.
+          Smart homes are not about gadgets — they are about how you live. With almost a decade of
+          experience and 800+ projects delivered across homes and select commercial spaces,
+          here&apos;s what you can expect from us.
         </p>
 
-        {/* Gold separator */}
         <div
           style={{
             width: "44px", height: "2px",
             background: "linear-gradient(90deg,#d4af37,#f5d97e)",
-            marginBottom: "12px",
+            marginBottom: "10px",
           }}
         />
 
-        {/* Client dedication */}
         <div>
           <p
             style={{
-              fontSize: "8px", color: isLight ? "#475569" : "#cbd5e1", letterSpacing: "0.14em",
+              fontSize: "8px", color: "#64748b", letterSpacing: "0.14em",
               textTransform: "uppercase", margin: "0 0 2px", fontWeight: 700,
             }}
           >
             Exclusively Prepared For
           </p>
-          <p
-            style={{
-              fontSize: "16px", fontWeight: 900, color: isLight ? "#0f172a" : "#ffffff",
-              margin: 0, letterSpacing: "-0.01em",
-              textShadow: isLight ? "0 1px 2px rgba(255,255,255,0.9)" : "0 2px 8px rgba(0,0,0,0.9)",
-            }}
-          >
+          <p style={{ fontSize: "17px", fontWeight: 900, color: "#0b1526", margin: 0, letterSpacing: "-0.01em" }}>
             {clientName}
           </p>
         </div>
       </div>
 
-      {/* ── FOOTER WRAPPER: SERVICE PILLS + METADATA CARD ── */}
-      <div style={{ position: "relative", zIndex: 2, padding: "0 24px 14px" }}>
-        {/* Service Pills */}
+      {/* ── FRAMED PHOTO CARD (flexes to fill spare space, scrim lives only inside, under caption) ── */}
+      <div style={{ position: "relative", zIndex: 2, padding: "12px 28px 0", flex: "1 1 auto", display: "flex", minHeight: "60mm" }}>
         <div
           style={{
-            display: "flex", gap: "6px",
-            marginBottom: "8px",
+            position: "relative",
+            flex: 1,
+            minHeight: "60mm",
+            borderRadius: "14px",
+            overflow: "hidden",
+            border: "1px solid #cbd5e1",
+            boxShadow: "0 12px 32px rgba(15,23,42,0.14)",
           }}
         >
+          <img
+            src={bgImage}
+            alt="Smart home"
+            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          />
+          {/* Caption scrim — only the bottom of the photo */}
+          <div
+            style={{
+              position: "absolute", left: 0, right: 0, bottom: 0, height: "46%",
+              background: "linear-gradient(to top, rgba(8,15,28,0.88) 0%, rgba(8,15,28,0) 100%)",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute", left: "18px", right: "18px", bottom: "14px",
+              display: "flex", justifyContent: "space-between", alignItems: "flex-end",
+            }}
+          >
+            <div>
+              <p style={{ fontSize: "8px", fontWeight: 800, letterSpacing: "0.16em", color: "#7dd3fc", textTransform: "uppercase", margin: 0 }}>
+                Intelligent Craftsmanship
+              </p>
+              <p style={{ fontSize: "14px", fontWeight: 800, color: "#ffffff", margin: "3px 0 0" }}>
+                Seamless Control at Your Fingertips
+              </p>
+            </div>
+            <span
+              style={{
+                fontSize: "8.5px", fontWeight: 700, color: "#ffffff",
+                background: "rgba(255,255,255,0.16)",
+                border: "1px solid rgba(255,255,255,0.35)",
+                borderRadius: "6px", padding: "4px 10px", whiteSpace: "nowrap",
+              }}
+            >
+              800+ Projects
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── FOOTER WRAPPER: SERVICE PILLS + METADATA CARD ── */}
+      <div style={{ position: "relative", zIndex: 2, padding: "12px 28px 16px" }}>
+        <div style={{ display: "flex", gap: "6px", marginBottom: "10px" }}>
           {SERVICES.map((srv, i) => {
             const Icon = srv.icon;
             return (
@@ -208,25 +235,24 @@ export default function CoverPage({
                 key={i}
                 style={{
                   flex: 1,
-                  background: isLight ? "#f8fafc" : "rgba(15,23,42,0.88)",
-                  border: isLight ? "1px solid #cbd5e1" : "1px solid rgba(148,163,184,0.16)",
-                  borderRadius: "6px", padding: "5px 3px",
+                  background: "#f8fafc",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "8px", padding: "6px 3px",
                   display: "flex", flexDirection: "column",
-                  alignItems: "center", gap: "3px",
-                  boxShadow: isLight ? "0 2px 6px rgba(0,0,0,0.03)" : "none",
+                  alignItems: "center", gap: "4px",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.03)",
                 }}
               >
                 <div
                   style={{
-                    width: 20, height: 20, borderRadius: 4,
-                    background: isLight ? "#e0f2fe" : "rgba(56,189,248,0.12)",
-                    display: "flex", alignItems: "center", justifyItems: "center",
-                    justifyContent: "center",
+                    width: 22, height: 22, borderRadius: 5,
+                    background: "#e0f2fe",
+                    display: "flex", alignItems: "center", justifyContent: "center",
                   }}
                 >
-                  <Icon style={{ width: 10, height: 10, color: isLight ? "#0284c7" : "#38bdf8" }} />
+                  <Icon style={{ width: 11, height: 11, color: "#0284c7" }} />
                 </div>
-                <span style={{ fontSize: "8px", fontWeight: 600, color: isLight ? "#1e293b" : "#cbd5e1", textAlign: "center", lineHeight: 1.2 }}>
+                <span style={{ fontSize: "8px", fontWeight: 600, color: "#1e293b", textAlign: "center", lineHeight: 1.2 }}>
                   {srv.title}
                 </span>
               </div>
@@ -237,26 +263,19 @@ export default function CoverPage({
         {/* Metadata Card */}
         <div
           style={{
-            background: isLight ? "rgba(248,250,252,0.96)" : "rgba(15,23,42,0.94)",
-            border: isLight ? "1px solid #cbd5e1" : "1px solid rgba(148,163,184,0.16)",
-            borderRadius: "8px",
-            padding: "10px 14px",
+            background: "#f8fafc",
+            border: "1px solid #cbd5e1",
+            borderRadius: "10px",
+            padding: "12px 16px",
             display: "flex", justifyContent: "space-between", alignItems: "center",
-            boxShadow: isLight ? "0 4px 20px rgba(0,0,0,0.06)" : "0 4px 20px rgba(0,0,0,0.5)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
           }}
         >
-          {/* Fields grid */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "6px 20px",
-            }}
-          >
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "7px 24px" }}>
             {[
               { label: "Client / Project", value: clientName },
               { label: "Location", value: projectAddress },
-              { label: "Quotation Ref", value: `#${quotationNo}`, color: isLight ? "#0284c7" : "#38bdf8" },
+              { label: "Quotation Ref", value: `#${quotationNo}`, color: "#0284c7" },
               { label: "Proposal Date", value: quotationDate },
             ].map((f, i) => (
               <div key={i}>
@@ -268,37 +287,23 @@ export default function CoverPage({
                 >
                   {f.label}
                 </span>
-                <span
-                  style={{
-                    fontSize: "10px", fontWeight: 700,
-                    color: f.color || (isLight ? "#0f172a" : "#f1f5f9"),
-                    marginTop: "1px", display: "block",
-                  }}
-                >
+                <span style={{ fontSize: "10px", fontWeight: 700, color: f.color || "#0f172a", marginTop: "1px", display: "block" }}>
                   {f.value}
                 </span>
               </div>
             ))}
           </div>
 
-          {/* Divider */}
-          <div
-            style={{
-              width: "1px", height: "36px",
-              background: isLight ? "#cbd5e1" : "rgba(148,163,184,0.18)",
-              margin: "0 14px",
-            }}
-          />
+          <div style={{ width: "1px", height: "38px", background: "#cbd5e1", margin: "0 16px" }} />
 
-          {/* Contact */}
           <div style={{ textAlign: "right", flexShrink: 0 }}>
             <span style={{ fontSize: "7.5px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.07em", display: "block", fontWeight: 600 }}>
               Prepared By
             </span>
-            <span style={{ fontSize: "11px", fontWeight: 800, color: isLight ? "#0f172a" : "#fff", display: "block", marginTop: "1px" }}>
+            <span style={{ fontSize: "11px", fontWeight: 800, color: "#0f172a", display: "block", marginTop: "1px" }}>
               {contactPerson}
             </span>
-            <span style={{ fontSize: "9.5px", color: isLight ? "#0284c7" : "#38bdf8", fontWeight: 600, display: "block" }}>
+            <span style={{ fontSize: "9.5px", color: "#0284c7", fontWeight: 600, display: "block" }}>
               {contactPhone}
             </span>
             <span style={{ fontSize: "7.5px", color: "#64748b", display: "block", marginTop: "1px" }}>

@@ -22,8 +22,8 @@ const SERVICES = [
   "Architectural Lighting", "High-Speed Networking", "CCTV & Surveillance",
 ];
 
-export default function AboutWhyPage({ heroImage, clientName, pdfTheme = "dark" }) {
-  const isLight = pdfTheme === "light";
+export default function AboutWhyPage({ heroImage, clientName }) {
+  const isLight = true; // Light-only theme (theme switcher removed)
   return (
     <div
       className="makc-page makc-cover-page flex flex-col justify-between"
@@ -65,7 +65,7 @@ export default function AboutWhyPage({ heroImage, clientName, pdfTheme = "dark" 
           <div style={{ display: "flex", alignItems: "center", gap: "5px", background: isLight ? "#fef3c7" : "rgba(30,20,5,0.85)", border: isLight ? "1px solid #fde047" : "1px solid rgba(212,175,55,0.4)", borderRadius: "999px", padding: "5px 12px", fontSize: "9px", fontWeight: 700, color: isLight ? "#b45309" : "#d4af37" }}>
             <Award style={{ width: 12, height: 12 }} /> Award Winning
           </div>
-          <div style={{ background: "#fff", borderRadius: "10px", padding: "5px 12px", boxShadow: isLight ? "0 2px 12px rgba(0,0,0,0.1)" : "0 2px 12px rgba(0,0,0,0.4)", border: isLight ? "1px solid #e2e8f0" : "none" }}>
+          <div style={{ background: "#fff", borderRadius: "10px", padding: "5px 12px", }}>
             <img src={logoImg} alt="MAKc" style={{ height: "28px", objectFit: "contain" }} />
           </div>
         </div>
@@ -202,7 +202,7 @@ export default function AboutWhyPage({ heroImage, clientName, pdfTheme = "dark" 
         }}
       >
         <span>MAKc Automation and Solutions LLP · ISO 9001:2015 Certified</span>
-        <span style={{ color: isLight ? "#b45309" : "#d4af37", fontWeight: 600 }}>Page 2 — Company Overview</span>
+        <span style={{ color: isLight ? "#b45309" : "#d4af37", fontWeight: 600 }}>Company Overview</span>
       </div>
     </div>
   );
