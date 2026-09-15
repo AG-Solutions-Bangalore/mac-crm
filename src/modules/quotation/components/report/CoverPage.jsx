@@ -18,9 +18,8 @@ export default function CoverPage({
   contactPerson,
   contactPhone,
   bgImage,
-  pdfTheme = "dark",
 }) {
-  const isLight = pdfTheme === "light";
+  const isLight = true; // Light-only theme (theme switcher removed)
   return (
     <div
       className="makc-page makc-cover-page"
@@ -137,7 +136,7 @@ export default function CoverPage({
             textShadow: isLight ? "0 1px 2px rgba(255,255,255,0.9)" : "0 2px 10px rgba(0,0,0,0.9)",
           }}
         >
-          Experience the
+          Smart Home Automation
           <br />
           <span
             style={{
@@ -145,8 +144,9 @@ export default function CoverPage({
               fontWeight: 900,
               textShadow: isLight ? "0 1px 2px rgba(255,255,255,0.9)" : "0 2px 12px rgba(56,189,248,0.5)",
             }}
+            className="italic"
           >
-            Smart Living
+            Company in Bangalore
           </span>
         </h1>
 
@@ -157,8 +157,7 @@ export default function CoverPage({
             textShadow: isLight ? "0 1px 2px rgba(255,255,255,0.9)" : "0 1px 6px rgba(0,0,0,0.8)",
           }}
         >
-          Your premier home automation partner — transforming spaces into intelligent,
-          luxury environments with effortless one-touch control.
+          Smart homes are not about gadgets — they are about how you live. With almost a decade of experience and 800+ projects delivered across homes and select commercial spaces, here's what you can expect from us.
         </p>
 
         {/* Gold separator */}

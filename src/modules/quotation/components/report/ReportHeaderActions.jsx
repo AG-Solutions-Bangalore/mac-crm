@@ -5,8 +5,6 @@ import {
   Printer,
   LayoutGrid,
   Layers,
-  Moon,
-  Sun,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -15,8 +13,6 @@ export default function ReportHeaderActions({
   isRevised,
   viewMode,
   setViewMode,
-  pdfTheme = "light",
-  setPdfTheme,
   onNavigateBack,
   onExportExcel,
   onPrint,
@@ -36,14 +32,12 @@ export default function ReportHeaderActions({
         <div>
           <h1 className="text-xl md:text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
             Quotation #{quotationNo}
-            <span className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-medium">
-              ISO 9001:2015
-            </span>
+
           </h1>
         </div>
       </div>
 
-      {/* Action Buttons (Light & Dark Mode Compatible Tabs) */}
+      {/* Action Buttons */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Tab View Switcher */}
         <div className="bg-muted p-1 rounded-lg border border-border flex items-center mr-1">
@@ -51,11 +45,10 @@ export default function ReportHeaderActions({
             variant="ghost"
             size="sm"
             onClick={() => setViewMode("presentation")}
-            className={`text-xs font-semibold transition-all ${
-              viewMode === "presentation"
+            className={`text-xs font-semibold transition-all ${viewMode === "presentation"
                 ? "bg-background text-foreground shadow-sm border border-border"
                 : "text-muted-foreground hover:text-foreground hover:bg-transparent"
-            }`}
+              }`}
           >
             <LayoutGrid className="w-3.5 h-3.5 mr-1.5 text-sky-500" /> PDF Presentation
           </Button>
@@ -63,47 +56,14 @@ export default function ReportHeaderActions({
             variant="ghost"
             size="sm"
             onClick={() => setViewMode("table")}
-            className={`text-xs font-semibold transition-all ${
-              viewMode === "table"
+            className={`text-xs font-semibold transition-all ${viewMode === "table"
                 ? "bg-background text-foreground shadow-sm border border-border"
                 : "text-muted-foreground hover:text-foreground hover:bg-transparent"
-            }`}
+              }`}
           >
             <Layers className="w-3.5 h-3.5 mr-1.5 text-sky-500" /> Compact Data Table
           </Button>
         </div>
-
-        {/* PDF Theme Switcher (Dark vs Light) */}
-        {setPdfTheme && (
-          <div className="bg-muted p-1 rounded-lg border border-border flex items-center mr-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setPdfTheme("dark")}
-              className={`text-xs font-semibold transition-all ${
-                pdfTheme === "dark"
-                  ? "bg-slate-900 text-sky-400 shadow-sm border border-slate-700 font-bold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-transparent"
-              }`}
-              title="Dark Luxury PDF Export Mode"
-            >
-              <Moon className="w-3.5 h-3.5 mr-1 text-sky-400" /> Dark PDF
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setPdfTheme("light")}
-              className={`text-xs font-semibold transition-all ${
-                pdfTheme === "light"
-                  ? "bg-white text-slate-900 shadow-sm border border-slate-300 font-bold"
-                  : "text-muted-foreground hover:text-foreground hover:bg-transparent"
-              }`}
-              title="Light Executive PDF Export Mode"
-            >
-              <Sun className="w-3.5 h-3.5 mr-1 text-amber-500" /> Light PDF
-            </Button>
-          </div>
-        )}
 
         <Button
           variant="outline"

@@ -84,7 +84,6 @@ export default function DynamicProposalDocument({
   gstTax,
   netTotal,
   paymentRows,
-  pdfTheme = "dark",
 }) {
   // Group items by Application and Floor -> Area
   const groups = {};
@@ -116,7 +115,7 @@ export default function DynamicProposalDocument({
 
   const groupEntries = Object.values(groups);
 
-  const isLight = pdfTheme === "light";
+  const isLight = true; // Light-only theme (theme switcher removed)
 
   const t = {
     docBg: isLight ? "#ffffff" : "#080c14",
@@ -319,46 +318,56 @@ export default function DynamicProposalDocument({
             </table>
           </div>
 
-          {/* Totals Summary Card */}
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "14px" }}>
+          {/* Totals Summary Card (full width) */}
+          <div style={{ marginTop: "14px" }}>
             <div
               className="break-inside-avoid"
               style={{
-                width: "360px",
-                maxWidth: "100%",
+                width: "100%",
                 background: t.summaryCardBg,
                 border: t.summaryCardBorder,
                 borderRadius: "12px",
-                padding: "14px 16px",
+                padding: "14px 18px",
                 boxShadow: t.summaryCardShadow,
               }}
             >
-              {[
-                { label: "Hardware Subtotal", value: formatMoney(grandTotal), color: t.summaryRowVal },
-                { label: "Transportation & Installation (5%)", value: formatMoney(installationFee), color: t.summaryRowSubVal },
-                { label: "GST @ 18%", value: formatMoney(gstTax), color: t.summaryRowTaxVal },
-              ].map((row, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "10px",
-                    padding: "5px 0",
-                    borderBottom: t.summaryRowBorder,
-                  }}
-                >
-                  <span style={{ color: t.summaryRowLabel }}>{row.label}</span>
-                  <span style={{ fontWeight: 700, color: row.color }}>{row.value}</span>
-                </div>
-              ))}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 1fr",
+                  gap: "10px",
+                }}
+              >
+                {[
+                  { label: "Hardware Subtotal", value: formatMoney(grandTotal), color: t.summaryRowVal },
+                  { label: "Transportation & Installation (5%)", value: formatMoney(installationFee), color: t.summaryRowSubVal },
+                  { label: "GST @ 18%", value: formatMoney(gstTax), color: t.summaryRowTaxVal },
+                ].map((row, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "4px",
+                      fontSize: "10px",
+                      padding: "10px 12px",
+                      border: t.summaryRowBorder,
+                      borderRadius: "8px",
+                    }}
+                  >
+                    <span style={{ color: t.summaryRowLabel }}>{row.label}</span>
+                    <span style={{ fontWeight: 800, fontSize: "13px", color: row.color }}>{row.value}</span>
+                  </div>
+                ))}
+              </div>
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  paddingTop: "10px",
-                  marginTop: "6px",
+                  paddingTop: "12px",
+                  marginTop: "12px",
+                  borderTop: t.summaryRowBorder,
                 }}
               >
                 <span
@@ -524,7 +533,7 @@ export default function DynamicProposalDocument({
             <p style={{ fontSize: "8.5px", color: t.signLabelText, textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 4px", fontWeight: 600 }}>
               Prepared &amp; Authorised By
             </p>
-            <p style={{ fontSize: "11.5px", fontWeight: 800, color: t.signNameText, margin: "0 0 18px" }}>
+            <p style={{ fontSize: "11.5px", fontWeight: 800, color: t.signNameText, margin: "0 0 32px" }}>
               MAKc Automation and Solutions LLP
             </p>
             <div style={{ borderBottom: t.signLineBorder, width: "170px" }} />
@@ -538,7 +547,7 @@ export default function DynamicProposalDocument({
             <p style={{ fontSize: "8.5px", color: t.signLabelText, textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 4px", fontWeight: 600 }}>
               Client Acceptance Signature
             </p>
-            <p style={{ fontSize: "11.5px", fontWeight: 800, color: t.signNameText, margin: "0 0 18px" }}>{clientName}</p>
+            <p style={{ fontSize: "11.5px", fontWeight: 800, color: t.signNameText, margin: "0 0 32px" }}>{clientName}</p>
             <div style={{ borderBottom: t.signClientLine, width: "170px", marginLeft: "auto" }} />
             <p style={{ fontSize: "8.5px", color: t.signLabelText, marginTop: "4px", fontWeight: 500 }}>
               Signature &amp; Date

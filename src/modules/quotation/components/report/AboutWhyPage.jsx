@@ -22,8 +22,8 @@ const SERVICES = [
   "Architectural Lighting", "High-Speed Networking", "CCTV & Surveillance",
 ];
 
-export default function AboutWhyPage({ heroImage, clientName, pdfTheme = "dark" }) {
-  const isLight = pdfTheme === "light";
+export default function AboutWhyPage({ heroImage, clientName }) {
+  const isLight = true; // Light-only theme (theme switcher removed)
   return (
     <div
       className="makc-page makc-cover-page flex flex-col justify-between"
@@ -202,7 +202,7 @@ export default function AboutWhyPage({ heroImage, clientName, pdfTheme = "dark" 
         }}
       >
         <span>MAKc Automation and Solutions LLP · ISO 9001:2015 Certified</span>
-        <span style={{ color: isLight ? "#b45309" : "#d4af37", fontWeight: 600 }}>Page 2 — Company Overview</span>
+        <span style={{ color: isLight ? "#b45309" : "#d4af37", fontWeight: 600 }}>Company Overview</span>
       </div>
     </div>
   );

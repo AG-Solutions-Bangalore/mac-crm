@@ -8,6 +8,7 @@ if (typeof document !== 'undefined' && !document.getElementById('makc-inter-font
   document.head.appendChild(l);
 }
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import LoadingBar from "@/components/loader/loading-bar";
@@ -20,6 +21,7 @@ import { useActiveFloorsQuery } from "../../floor/hooks/useFloor";
 import { useActiveAreasQuery } from "../../area/hooks/useArea";
 import { useActiveServicesQuery } from "../../service/hooks/useService";
 import { useActiveBrandsQuery } from "../../brand/hooks/useBrand";
+import { useBuyerQuery } from "../../buyer/hooks/useBuyer";
 
 import ReportHeaderActions from "../components/report/ReportHeaderActions";
 import CoverPage from "../components/report/CoverPage";
@@ -54,7 +56,7 @@ const formatMoney = (value) => {
 // High resolution dark luxury architecture mockup images
 const MOCK_IMAGES = {
   coverBg:
-    "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1600&auto=format&fit=crop",
+    "https://makcautomations.com/images/hero_bg.webp",
   page2Hero:
     "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1600&auto=format&fit=crop",
 };
@@ -65,7 +67,6 @@ export default function QuotationReportPage() {
   const navigate = useNavigate();
   const isRevised = searchParams.get("type") === "rev";
   const [viewMode, setViewMode] = useState("presentation"); // 'presentation' | 'table'
-  const [pdfTheme, setPdfTheme] = useState("light"); // 'dark' | 'light'
 
   // Queries
   const { data: parentData, isLoading: parentLoading } = useQuotationQuery(
@@ -84,6 +85,21 @@ export default function QuotationReportPage() {
 
   const quotationDetail = isRevised ? revData?.data : parentData?.data;
 
+  // Logged-in user (fallback for "Prepared By")
+  const authUser = useSelector((state) => state.auth?.user);
+
+  // Buyer lookup — the quotation list/detail API exposes `buyer_name`,
+  // but fetch the buyer record too so name / mobile / address are correct
+  // even when the detail payload only carries `quotation_buyer_id`.
+  const buyerId = quotationDetail?.quotation_buyer_id;
+  const needsBuyerFetch =
+    Boolean(buyerId) && !quotationDetail?.buyer_name;
+  const { data: buyerData, isLoading: buyerLoading } = useBuyerQuery(
+    buyerId,
+    needsBuyerFetch
+  );
+  const buyer = buyerData?.data || {};
+
   const { data: productsData, isLoading: productsLoading } =
     useGetProductsForQuotationQuery(
       quotationDetail?.quotation_category_id,
@@ -101,7 +117,8 @@ export default function QuotationReportPage() {
     areasLoading ||
     servicesLoading ||
     brandsLoading ||
-    productsLoading;
+    productsLoading ||
+    (needsBuyerFetch && buyerLoading);
 
   if (isLoading) return <LoadingBar />;
 
@@ -196,22 +213,51 @@ export default function QuotationReportPage() {
   const gstTax = Math.round((grandTotal + installationFee) * 0.18);
   const netTotal = grandTotal + installationFee + gstTax;
 
+  // Client name — the API exposes `buyer_name` (see QuotationListPage),
+  // not `client_name`, which is why the old lookup always hit the fallback.
   const clientName =
+    quotationDetail.buyer_name ||
+    buyer.buyer_name ||
+    quotationDetail.buyer?.buyer_name ||
     quotationDetail.client_name ||
     quotationDetail.lead_name ||
     quotationDetail.customer_name ||
     "Valued Client";
-  const projectAddress = quotationDetail.address || "Bangalore, India";
+  // Location — prefer the property, then the buyer's address.
+  const projectAddress =
+    quotationDetail.property_address ||
+    quotationDetail.property_name ||
+    quotationDetail.property?.property_address ||
+    buyer.buyer_address ||
+    quotationDetail.buyer?.buyer_address ||
+    quotationDetail.address ||
+    "Bangalore, India";
   const quotationNo = quotationDetail.quotation_no || quotationDetail.id || "2894";
-  const quotationDate = quotationDetail.created_at
-    ? new Date(quotationDetail.created_at).toLocaleDateString("en-US", {
+  const quotationDateRaw =
+    quotationDetail.quotation_date || quotationDetail.created_at;
+  const quotationDate = quotationDateRaw
+    ? new Date(quotationDateRaw).toLocaleDateString("en-US", {
       month: "long",
       day: "numeric",
       year: "numeric",
     })
     : "August 7, 2026";
-  const contactPerson = quotationDetail.sales_person || "Vinod Kumar";
-  const contactPhone = quotationDetail.contact_no || "+91-7338504441";
+  // Prepared-by — prefer whoever created the quotation, then the logged-in user.
+  const contactPerson =
+    quotationDetail.sales_person ||
+    quotationDetail.prepared_by ||
+    quotationDetail.created_by_name ||
+    quotationDetail.user_name ||
+    quotationDetail.employee_name ||
+    authUser?.name ||
+    "Vinod Kumar";
+  const contactPhone =
+    quotationDetail.contact_no ||
+    quotationDetail.mobile ||
+    quotationDetail.phone ||
+    authUser?.mobile ||
+    authUser?.phone ||
+    "+91-7338504441";
 
   const paymentRows = [
     { section: "Payment Cycle", label: "Booking Confirmation", amount: grandTotal * 0.3, percentage: "30%" },
@@ -228,10 +274,10 @@ export default function QuotationReportPage() {
     downloadBlob(workbook, `MAKc_Quotation_${quotationNo}.xlsx`);
   };
 
-  const isLight = pdfTheme === "light";
-  const printBgColor = isLight ? "#ffffff" : "#06090f";
-  const printFgColor = isLight ? "#0f172a" : "#f8fafc";
-  const previewCardBg = isLight ? "#ffffff" : "#06090f";
+  // Light-only theme (theme switcher removed)
+  const printBgColor = "#ffffff";
+  const printFgColor = "#0f172a";
+  const previewCardBg = "#ffffff";
 
   return (
     <div className="quotation-report-root flex-1 space-y-4 p-2 md:p-6 bg-background text-foreground min-h-screen">
@@ -296,6 +342,12 @@ export default function QuotationReportPage() {
               break-after: auto !important;
               overflow: visible !important;
             }
+            /* Compact data table: full-width fluid, never A4-constrained */
+            .makc-compact-view {
+              width: 100% !important;
+              max-width: 100% !important;
+              overflow: visible !important;
+            }
             .break-inside-avoid, tr {
               break-inside: avoid !important;
               page-break-inside: avoid !important;
@@ -310,14 +362,14 @@ export default function QuotationReportPage() {
             }
           }
 
-          /* Web PDF preview styling */
+          /* Web PDF preview styling (light only) */
           .makc-page {
             width: 210mm;
             background: ${previewCardBg};
             position: relative;
-            box-shadow: ${isLight ? "0 10px 40px -10px rgba(0,0,0,0.15)" : "0 25px 60px -12px rgba(0, 0, 0, 0.8)"};
+            box-shadow: 0 10px 40px -10px rgba(0,0,0,0.15);
             margin: 0 auto 2rem auto;
-            border: 1px solid ${isLight ? "rgba(0, 0, 0, 0.1)" : "rgba(255, 255, 255, 0.07)"};
+            border: 1px solid rgba(0, 0, 0, 0.1);
             box-sizing: border-box;
             overflow: hidden;
           }
@@ -330,6 +382,16 @@ export default function QuotationReportPage() {
             height: auto;
             overflow: visible;
           }
+          /* Compact data table: full-width fluid on screen (not A4 width) */
+          .makc-compact-view {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            overflow: visible;
+          }
+          .makc-compact-view table {
+            width: 100%;
+          }
         `}
       </style>
 
@@ -339,8 +401,6 @@ export default function QuotationReportPage() {
         isRevised={isRevised}
         viewMode={viewMode}
         setViewMode={setViewMode}
-        pdfTheme={pdfTheme}
-        setPdfTheme={setPdfTheme}
         onNavigateBack={() => navigate(-1)}
         onExportExcel={handleExportExcel}
         onPrint={handlePrint}
@@ -369,14 +429,6 @@ export default function QuotationReportPage() {
               contactPerson={contactPerson}
               contactPhone={contactPhone}
               bgImage={MOCK_IMAGES.coverBg}
-              pdfTheme={pdfTheme}
-            />
-
-            {/* Page 2: About MAKc & Awards Overview */}
-            <AboutWhyPage
-              heroImage={MOCK_IMAGES.page2Hero}
-              clientName={clientName}
-              pdfTheme={pdfTheme}
             />
 
             {/* Dynamic Continuous Proposal Document (Scope, Pricing, Milestones, Terms & Approval) */}
@@ -390,7 +442,12 @@ export default function QuotationReportPage() {
               gstTax={gstTax}
               netTotal={netTotal}
               paymentRows={paymentRows}
-              pdfTheme={pdfTheme}
+            />
+
+            {/* Last Page: About MAKc & Awards Overview */}
+            <AboutWhyPage
+              heroImage={MOCK_IMAGES.page2Hero}
+              clientName={clientName}
             />
           </div>
         )}
