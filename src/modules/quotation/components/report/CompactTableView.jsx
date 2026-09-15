@@ -119,7 +119,7 @@ export default function CompactTableView({
                 className="p-2 rounded-xl border shadow-sm"
                 style={{ background: LIGHT.cardBg, borderColor: LIGHT.cardBorder }}
               >
-                <img src={logoImg} alt="MAKc Logo" className="h-8 w-auto object-contain" />
+                <img src={logoImg} alt="MAKc Logo" className="h-12 w-auto object-contain" />
               </div>
               <div>
                 <CardTitle className="text-2xl" style={{ color: LIGHT.headingText }}>Experience The Smart Living</CardTitle>

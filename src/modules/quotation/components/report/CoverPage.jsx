@@ -10,9 +10,9 @@ const SERVICES = [
   { title: "CCTV & Security", icon: Video },
 ];
 
-// Light-only executive cover (theme switcher removed).
-// Text always sits on solid white — the photo lives inside its own framed
-// card with a controlled caption scrim, so no full-page overlay is needed.
+// Light executive cover — white hero photo is the page background (≈72% height).
+// Header logo, ISO seal, headline and caption all layer above it with a soft
+// white veil so dark text stays crisp over the bright villa photo.
 export default function CoverPage({
   clientName,
   projectAddress,
@@ -43,66 +43,78 @@ export default function CoverPage({
         breakAfter: "page",
       }}
     >
-      {/* Subtle decorative glow (solid, never fights text) */}
+      {/* ── HERO BACKGROUND — white villa photo, top 72% of page ── */}
       <div
         style={{
-          position: "absolute", top: 0, left: 0, right: 0, height: "120px", zIndex: 0,
-          background: "radial-gradient(60% 100% at 50% 0%, rgba(2,132,199,0.07) 0%, rgba(255,255,255,0) 100%)",
-          pointerEvents: "none",
+          position: "absolute", top: 0, left: 0, right: 0, height: "72%", zIndex: 0,
+          overflow: "hidden",
         }}
-      />
+      >
+        <img
+          src={bgImage}
+          alt="Smart home"
+          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 35%", display: "block" }}
+        />
+        {/* Soft white veil — keeps dark overlay text crisp while photo shows through */}
+        <div
+          style={{
+            position: "absolute", inset: 0,
+            background: "linear-gradient(to bottom, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.72) 32%, rgba(255,255,255,0.28) 58%, rgba(255,255,255,0.55) 82%, #ffffff 100%)",
+          }}
+        />
+      </div>
 
-      {/* ── HEADER ── */}
+      {/* ── HEADER (layered over hero) ── */}
       <div
         style={{
           position: "relative", zIndex: 2,
           display: "flex", justifyContent: "space-between", alignItems: "center",
-          padding: "16px 28px 0",
+          padding: "18px 28px 0",
         }}
       >
         <div
           style={{
-            background: "#fff", borderRadius: "10px",
-            padding: "5px 12px",
-          
-          
+            background: "#fff", borderRadius: "12px",
+            padding: "8px 18px",
+            border: "1px solid #e2e8f0",
+            boxShadow: "0 4px 16px rgba(15,23,42,0.12)",
           }}
         >
-          <img src={logoImg} alt="MAKc" style={{ height: "30px", objectFit: "contain", display: "block" }} />
+          <img src={logoImg} alt="MAKc" style={{ height: "46px", objectFit: "contain", display: "block" }} />
         </div>
 
-        {/* Round ISO seal — top corner stamp (replaces text pill) */}
+        {/* Enlarged ISO seal — clearly visible stamp */}
         <div
           title="ISO 9001:2015 Certified"
           style={{
-            width: "52px", height: "52px", borderRadius: "50%",
-            border: "2px solid #047857",
+            width: "68px", height: "68px", borderRadius: "50%",
+            border: "2.5px solid #047857",
             background: "#ffffff",
             display: "flex", alignItems: "center", justifyContent: "center",
             flexShrink: 0,
-            boxShadow: "0 2px 8px rgba(4,120,87,0.15)",
+            boxShadow: "0 4px 14px rgba(4,120,87,0.22)",
           }}
         >
           <div
             style={{
-              width: "44px", height: "44px", borderRadius: "50%",
-              border: "1px dashed #059669",
+              width: "58px", height: "58px", borderRadius: "50%",
+              border: "1.5px dashed #059669",
               display: "flex", flexDirection: "column",
               alignItems: "center", justifyContent: "center",
               lineHeight: 1,
             }}
           >
-            <span style={{ fontSize: "11px", fontWeight: 900, color: "#047857", letterSpacing: "0.04em" }}>
+            <span style={{ fontSize: "14px", fontWeight: 900, color: "#047857", letterSpacing: "0.04em" }}>
               ISO
             </span>
-            <span style={{ fontSize: "6.5px", fontWeight: 800, color: "#047857", letterSpacing: "0.02em", marginTop: "1px" }}>
+            <span style={{ fontSize: "8px", fontWeight: 800, color: "#047857", letterSpacing: "0.02em", marginTop: "2px" }}>
               9001:2015
             </span>
           </div>
         </div>
       </div>
 
-      {/* ── HERO TEXT (on solid white — always crisp) ── */}
+      {/* ── HERO TEXT (layered over hero photo, dark text over white veil) ── */}
       <div
         style={{
           position: "relative", zIndex: 2,
@@ -172,61 +184,43 @@ export default function CoverPage({
         </div>
       </div>
 
-      {/* ── FRAMED PHOTO CARD (flexes to fill spare space, scrim lives only inside, under caption) ── */}
-      <div style={{ position: "relative", zIndex: 2, padding: "12px 28px 0", flex: "1 1 auto", display: "flex", minHeight: "60mm" }}>
+      {/* ── CAPTION OVER HERO (bottom edge of the 72% photo zone) ── */}
+      <div style={{ position: "relative", zIndex: 2, padding: "0 28px", flex: "1 1 auto", display: "flex", alignItems: "flex-end", paddingBottom: "10px", minHeight: "52mm" }}>
         <div
           style={{
-            position: "relative",
-            flex: 1,
-            minHeight: "60mm",
-            borderRadius: "14px",
-            overflow: "hidden",
-            border: "1px solid #cbd5e1",
-            boxShadow: "0 12px 32px rgba(15,23,42,0.14)",
+            width: "100%",
+            display: "flex", justifyContent: "space-between", alignItems: "flex-end",
+            background: "rgba(255,255,255,0.82)",
+            backdropFilter: "blur(6px)",
+            border: "1px solid rgba(203,213,225,0.9)",
+            borderRadius: "12px",
+            padding: "10px 16px",
+            boxShadow: "0 8px 24px rgba(15,23,42,0.10)",
           }}
         >
-          <img
-            src={bgImage}
-            alt="Smart home"
-            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-          />
-          {/* Caption scrim — only the bottom of the photo */}
-          <div
+          <div>
+            <p style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.16em", color: "#0284c7", textTransform: "uppercase", margin: 0 }}>
+              Intelligent Craftsmanship
+            </p>
+            <p style={{ fontSize: "18px", fontWeight: 800, color: "#0b1526", margin: "3px 0 0" }}>
+              Seamless Control at Your Fingertips
+            </p>
+          </div>
+          <span
             style={{
-              position: "absolute", left: 0, right: 0, bottom: 0, height: "46%",
-              background: "linear-gradient(to top, rgba(8,15,28,0.88) 0%, rgba(8,15,28,0) 100%)",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute", left: "18px", right: "18px", bottom: "14px",
-              display: "flex", justifyContent: "space-between", alignItems: "flex-end",
+              fontSize: "11.5px", fontWeight: 700, color: "#0b1526",
+              background: "#fef3c7",
+              border: "1px solid #fde047",
+              borderRadius: "6px", padding: "6px 14px", whiteSpace: "nowrap",
             }}
           >
-            <div>
-              <p style={{ fontSize: "8px", fontWeight: 800, letterSpacing: "0.16em", color: "#7dd3fc", textTransform: "uppercase", margin: 0 }}>
-                Intelligent Craftsmanship
-              </p>
-              <p style={{ fontSize: "14px", fontWeight: 800, color: "#ffffff", margin: "3px 0 0" }}>
-                Seamless Control at Your Fingertips
-              </p>
-            </div>
-            <span
-              style={{
-                fontSize: "8.5px", fontWeight: 700, color: "#ffffff",
-                background: "rgba(255,255,255,0.16)",
-                border: "1px solid rgba(255,255,255,0.35)",
-                borderRadius: "6px", padding: "4px 10px", whiteSpace: "nowrap",
-              }}
-            >
-              800+ Projects
-            </span>
-          </div>
+            800+ Projects
+          </span>
         </div>
       </div>
 
-      {/* ── FOOTER WRAPPER: SERVICE PILLS + METADATA CARD ── */}
-      <div style={{ position: "relative", zIndex: 2, padding: "12px 28px 16px" }}>
+      {/* ── FOOTER WRAPPER: SERVICE PILLS + METADATA CARD (solid white, below hero) ── */}
+      <div style={{ position: "relative", zIndex: 2, padding: "6px 28px 16px", background: "#ffffff" }}>
         <div style={{ display: "flex", gap: "6px", marginBottom: "10px" }}>
           {SERVICES.map((srv, i) => {
             const Icon = srv.icon;
@@ -237,22 +231,22 @@ export default function CoverPage({
                   flex: 1,
                   background: "#f8fafc",
                   border: "1px solid #cbd5e1",
-                  borderRadius: "8px", padding: "6px 3px",
+                  borderRadius: "8px", padding: "9px 4px",
                   display: "flex", flexDirection: "column",
-                  alignItems: "center", gap: "4px",
+                  alignItems: "center", gap: "6px",
                   boxShadow: "0 2px 6px rgba(0,0,0,0.03)",
                 }}
               >
                 <div
                   style={{
-                    width: 22, height: 22, borderRadius: 5,
+                    width: 28, height: 28, borderRadius: 6,
                     background: "#e0f2fe",
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}
                 >
-                  <Icon style={{ width: 11, height: 11, color: "#0284c7" }} />
+                  <Icon style={{ width: 14, height: 14, color: "#0284c7" }} />
                 </div>
-                <span style={{ fontSize: "8px", fontWeight: 600, color: "#1e293b", textAlign: "center", lineHeight: 1.2 }}>
+                <span style={{ fontSize: "10.5px", fontWeight: 700, color: "#1e293b", textAlign: "center", lineHeight: 1.2 }}>
                   {srv.title}
                 </span>
               </div>
@@ -260,18 +254,18 @@ export default function CoverPage({
           })}
         </div>
 
-        {/* Metadata Card */}
+        {/* Metadata Card — enlarged type for Client / Location / Ref / Prepared By */}
         <div
           style={{
             background: "#f8fafc",
             border: "1px solid #cbd5e1",
             borderRadius: "10px",
-            padding: "12px 16px",
+            padding: "16px 20px",
             display: "flex", justifyContent: "space-between", alignItems: "center",
             boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
           }}
         >
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "7px 24px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 28px" }}>
             {[
               { label: "Client / Project", value: clientName },
               { label: "Location", value: projectAddress },
@@ -281,32 +275,32 @@ export default function CoverPage({
               <div key={i}>
                 <span
                   style={{
-                    fontSize: "7.5px", color: "#64748b",
-                    textTransform: "uppercase", letterSpacing: "0.07em", display: "block", fontWeight: 600,
+                    fontSize: "10.5px", color: "#64748b",
+                    textTransform: "uppercase", letterSpacing: "0.07em", display: "block", fontWeight: 700,
                   }}
                 >
                   {f.label}
                 </span>
-                <span style={{ fontSize: "10px", fontWeight: 700, color: f.color || "#0f172a", marginTop: "1px", display: "block" }}>
+                <span style={{ fontSize: "14px", fontWeight: 700, color: f.color || "#0f172a", marginTop: "2px", display: "block" }}>
                   {f.value}
                 </span>
               </div>
             ))}
           </div>
 
-          <div style={{ width: "1px", height: "38px", background: "#cbd5e1", margin: "0 16px" }} />
+          <div style={{ width: "1px", height: "54px", background: "#cbd5e1", margin: "0 18px" }} />
 
           <div style={{ textAlign: "right", flexShrink: 0 }}>
-            <span style={{ fontSize: "7.5px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.07em", display: "block", fontWeight: 600 }}>
+            <span style={{ fontSize: "10.5px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.07em", display: "block", fontWeight: 700 }}>
               Prepared By
             </span>
-            <span style={{ fontSize: "11px", fontWeight: 800, color: "#0f172a", display: "block", marginTop: "1px" }}>
+            <span style={{ fontSize: "15px", fontWeight: 800, color: "#0f172a", display: "block", marginTop: "2px" }}>
               {contactPerson}
             </span>
-            <span style={{ fontSize: "9.5px", color: "#0284c7", fontWeight: 600, display: "block" }}>
+            <span style={{ fontSize: "12.5px", color: "#0284c7", fontWeight: 700, display: "block" }}>
               {contactPhone}
             </span>
-            <span style={{ fontSize: "7.5px", color: "#64748b", display: "block", marginTop: "1px" }}>
+            <span style={{ fontSize: "10.5px", color: "#64748b", display: "block", marginTop: "2px" }}>
               MAKc Automation &amp; Solutions LLP
             </span>
           </div>
