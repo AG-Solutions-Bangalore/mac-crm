@@ -16,6 +16,17 @@ import {
 } from "@/components/ui/table";
 import logoImg from "@/assets/logo.png";
 
+const formatWarranty = (val) => {
+  if (!val || val === "-" || val === "null" || val === "undefined") return "-";
+  const str = String(val).trim();
+  const num = parseFloat(str);
+  if (!isNaN(num) && /^\d+(\.\d+)?$/.test(str)) {
+    const intOrFloat = num % 1 === 0 ? num.toFixed(0) : num;
+    return `${intOrFloat} ${intOrFloat === 1 ? "Yr" : "Yrs"}`;
+  }
+  return str;
+};
+
 export default function CompactTableView({
   headers,
   tableRows,
@@ -92,12 +103,12 @@ export default function CompactTableView({
                       <TableCell className="font-medium text-slate-200">{row.application || "-"}</TableCell>
                       <TableCell className="text-slate-300">{row.floor || "-"}</TableCell>
                       <TableCell className="text-slate-300">{row.area || "-"}</TableCell>
-                      <TableCell className="font-semibold text-white">{row.product}</TableCell>
-                      <TableCell className="text-slate-300 text-center">{row.quantity || "-"}</TableCell>
+                      <TableCell className="font-bold text-white">{row.product}</TableCell>
+                      <TableCell className="text-sky-400 font-bold text-center">{row.quantity || "-"}</TableCell>
                       <TableCell className="text-slate-300">{formatMoney(row.price)}</TableCell>
                       <TableCell className="font-bold text-sky-400">{formatMoney(row.totalPrice)}</TableCell>
-                      <TableCell className="text-slate-300">{row.brand || "-"}</TableCell>
-                      <TableCell className="text-slate-300">{row.warranty || "-"}</TableCell>
+                      <TableCell className="font-bold text-slate-100">{row.brand || "-"}</TableCell>
+                      <TableCell className="font-bold text-emerald-400">{formatWarranty(row.warranty)}</TableCell>
                     </TableRow>
                   ) : (
                     <TableRow key={`${row.label}-${index}`} className="bg-slate-950 font-bold border-slate-800">

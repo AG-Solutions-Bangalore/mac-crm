@@ -15,7 +15,7 @@ export default function ReportHeaderActions({
   isRevised,
   viewMode,
   setViewMode,
-  pdfTheme = "dark",
+  pdfTheme = "light",
   setPdfTheme,
   onNavigateBack,
   onExportExcel,

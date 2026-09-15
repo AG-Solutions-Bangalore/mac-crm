@@ -45,7 +45,7 @@ const formatMoney = (value) => {
   const number = Number(value);
   if (Number.isNaN(number)) return value;
   const hasDecimals = Math.abs(number % 1) > 0.001;
-  return `₹${number.toLocaleString("en-IN", {
+  return `₹ ${number.toLocaleString("en-IN", {
     minimumFractionDigits: hasDecimals ? 2 : 0,
     maximumFractionDigits: 2,
   })}`;
@@ -65,7 +65,7 @@ export default function QuotationReportPage() {
   const navigate = useNavigate();
   const isRevised = searchParams.get("type") === "rev";
   const [viewMode, setViewMode] = useState("presentation"); // 'presentation' | 'table'
-  const [pdfTheme, setPdfTheme] = useState("dark"); // 'dark' | 'light'
+  const [pdfTheme, setPdfTheme] = useState("light"); // 'dark' | 'light'
 
   // Queries
   const { data: parentData, isLoading: parentLoading } = useQuotationQuery(
@@ -90,7 +90,7 @@ export default function QuotationReportPage() {
       quotationDetail?.quotation_service_id,
       Boolean(
         quotationDetail?.quotation_category_id &&
-          quotationDetail?.quotation_service_id
+        quotationDetail?.quotation_service_id
       )
     );
 
@@ -205,10 +205,10 @@ export default function QuotationReportPage() {
   const quotationNo = quotationDetail.quotation_no || quotationDetail.id || "2894";
   const quotationDate = quotationDetail.created_at
     ? new Date(quotationDetail.created_at).toLocaleDateString("en-US", {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    })
     : "August 7, 2026";
   const contactPerson = quotationDetail.sales_person || "Vinod Kumar";
   const contactPhone = quotationDetail.contact_no || "+91-7338504441";

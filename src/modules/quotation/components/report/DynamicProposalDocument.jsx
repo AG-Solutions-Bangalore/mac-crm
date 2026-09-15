@@ -30,12 +30,23 @@ function SectionHeading({ number, title, subtitle, isLight }) {
   );
 }
 
+const formatWarranty = (val) => {
+  if (!val || val === "-" || val === "null" || val === "undefined") return "-";
+  const str = String(val).trim();
+  const num = parseFloat(str);
+  if (!isNaN(num) && /^\d+(\.\d+)?$/.test(str)) {
+    const intOrFloat = num % 1 === 0 ? num.toFixed(0) : num;
+    return `${intOrFloat} ${intOrFloat === 1 ? "Yr" : "Yrs"}`;
+  }
+  return str;
+};
+
 // ─── Table Head Cell ───────────────────────────────────────────────────────
 function TH({ children, align = "left", width, isLight }) {
   return (
     <th
       style={{
-        textAlign: align, padding: "7px 10px",
+        textAlign: align, padding: "8px 10px",
         fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em",
         color: isLight ? "#475569" : "#94a3b8", textTransform: "uppercase",
         borderBottom: isLight ? "1px solid #e2e8f0" : "1px solid rgba(255,255,255,0.1)",
@@ -52,7 +63,7 @@ function TD({ children, align = "left", style: s, isLight }) {
   return (
     <td
       style={{
-        textAlign: align, padding: "7px 10px",
+        textAlign: align, padding: "8px 10px",
         fontSize: "10.5px", color: isLight ? "#1e293b" : "#e2e8f0",
         borderBottom: isLight ? "1px solid #f1f5f9" : "1px solid rgba(255,255,255,0.05)",
         ...s,
@@ -75,15 +86,35 @@ export default function DynamicProposalDocument({
   paymentRows,
   pdfTheme = "dark",
 }) {
-  // Group items by application (service category)
+  // Group items by Application and Floor -> Area
   const groups = {};
   items.forEach((item) => {
-    const key = item.application;
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(item);
+    const hasFloor = item.floor && item.floor !== "-";
+    const hasArea = item.area && item.area !== "-";
+    let locationStr = "";
+    if (hasFloor && hasArea) {
+      locationStr = `(${item.floor} -> ${item.area})`;
+    } else if (hasFloor) {
+      locationStr = `(${item.floor})`;
+    } else if (hasArea) {
+      locationStr = `(${item.area})`;
+    }
+
+    const groupKey = locationStr 
+      ? `${item.application} - ${locationStr}`
+      : item.application;
+
+    if (!groups[groupKey]) {
+      groups[groupKey] = {
+        title: groupKey,
+        appName: item.application,
+        items: [],
+      };
+    }
+    groups[groupKey].items.push(item);
   });
 
-  const groupEntries = Object.entries(groups);
+  const groupEntries = Object.values(groups);
 
   const isLight = pdfTheme === "light";
 
@@ -99,28 +130,21 @@ export default function DynamicProposalDocument({
     subtitleText: isLight ? "#0284c7" : "#38bdf8",
     refLabel: isLight ? "#64748b" : "#94a3b8",
     refNo: isLight ? "#0284c7" : "#38bdf8",
-    cardBg: isLight ? "#f8fafc" : "rgba(15,23,42,0.85)",
+    cardBg: isLight ? "#ffffff" : "rgba(15,23,42,0.85)",
     cardBorder: isLight ? "1px solid #e2e8f0" : "1px solid rgba(255,255,255,0.08)",
     cardShadow: isLight ? "0 4px 16px rgba(0,0,0,0.04)" : "0 4px 20px rgba(0,0,0,0.3)",
-    tableHeadBg: isLight ? "#f1f5f9" : "rgba(10,16,28,0.95)",
-    groupRowBg: isLight
-      ? "linear-gradient(90deg, rgba(14,165,233,0.1) 0%, rgba(248,250,252,0.6) 100%)"
-      : "linear-gradient(90deg, rgba(14,165,233,0.12) 0%, rgba(15,23,42,0.4) 100%)",
-    groupRowText: isLight ? "#0284c7" : "#38bdf8",
-    groupRowBorder: isLight ? "1px solid #bae6fd" : "1px solid rgba(14,165,233,0.25)",
+    tableHeadBg: isLight ? "#f8fafc" : "rgba(10,16,28,0.95)",
+    groupRowBg: isLight ? "rgba(2,132,199,0.03)" : "rgba(14,165,233,0.07)",
+    groupRowText: isLight ? "#1d64a6" : "#38bdf8",
+    groupRowBorder: isLight ? "1.5px solid #b9d5ec" : "1.5px solid rgba(14,165,233,0.35)",
     rowZebraBg: isLight ? "#f8fafc" : "rgba(15,23,42,0.45)",
     productText: isLight ? "#0f172a" : "#f8fafc",
     notesText: isLight ? "#64748b" : "#94a3b8",
-    tagBg: isLight ? "#f1f5f9" : "rgba(30,41,59,0.8)",
-    tagBorder: isLight ? "1px solid #cbd5e1" : "1px solid rgba(148,163,184,0.2)",
-    tagText: isLight ? "#0369a1" : "#a5f3fc",
     qtyText: isLight ? "#0284c7" : "#38bdf8",
-    brandText: isLight ? "#334155" : "#cbd5e1",
-    warrantyBg: isLight ? "rgba(16,185,129,0.08)" : "rgba(16,185,129,0.12)",
-    warrantyBorder: isLight ? "1px solid rgba(16,185,129,0.3)" : "1px solid rgba(16,185,129,0.3)",
-    warrantyText: isLight ? "#059669" : "#34d399",
-    unitPriceText: isLight ? "#475569" : "#cbd5e1",
-    totalAmountText: isLight ? "#0284c7" : "#7dd3fc",
+    unitPriceText: isLight ? "#334155" : "#cbd5e1",
+    totalAmountText: isLight ? "#0284c7" : "#38bdf8",
+    brandText: isLight ? "#0f172a" : "#f8fafc",
+    warrantyText: isLight ? "#16a34a" : "#34d399",
     summaryCardBg: isLight
       ? "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)"
       : "linear-gradient(180deg, rgba(15,23,42,0.95) 0%, rgba(10,16,28,0.95) 100%)",
@@ -208,14 +232,20 @@ export default function DynamicProposalDocument({
       {/* ─── MAIN CONTENT ─── */}
       <div style={{ padding: "20px 36px", display: "flex", flexDirection: "column", gap: "18px" }}>
 
-        {/* ── SECTION 1: Scope of Work ── */}
+        {/* ── SECTION 1: Itemized Scope & Investment Schedule ── */}
         <div>
-          <SectionHeading number="01" title="Itemized Scope of Work" subtitle={`${items.length} products configured across property zones`} isLight={isLight} />
+          <SectionHeading
+            number="01"
+            title="Itemized Scope & Investment Schedule"
+            subtitle={`${items.length} products configured across property zones with specifications, pricing & warranty`}
+            isLight={isLight}
+          />
 
           <div
             style={{
               border: t.cardBorder,
-              borderRadius: "12px", overflow: "hidden",
+              borderRadius: "12px",
+              overflow: "hidden",
               background: t.cardBg,
               boxShadow: t.cardShadow,
             }}
@@ -223,139 +253,83 @@ export default function DynamicProposalDocument({
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead style={{ background: t.tableHeadBg }}>
                 <tr>
-                  <TH width="32px" isLight={isLight}>#</TH>
-                  <TH isLight={isLight}>Product / System Specification</TH>
-                  <TH isLight={isLight}>Application &amp; Location</TH>
-                  <TH align="center" width="42px" isLight={isLight}>Qty</TH>
-                  <TH isLight={isLight}>Brand</TH>
-                  <TH isLight={isLight}>Warranty</TH>
+                  <TH width="36%" isLight={isLight}>Product / System Specification</TH>
+                  <TH align="center" width="8%" isLight={isLight}>Qty</TH>
+                  <TH align="right" width="14%" isLight={isLight}>Unit Price</TH>
+                  <TH align="right" width="16%" isLight={isLight}>Total Price</TH>
+                  <TH align="left" width="14%" isLight={isLight}>Brand</TH>
+                  <TH align="center" width="12%" isLight={isLight}>Warranty</TH>
                 </tr>
               </thead>
               <tbody>
-                {groupEntries.map(([appName, appItems], gi) => (
+                {groupEntries.map((group, gi) => (
                   <React.Fragment key={gi}>
                     {/* Group header row */}
                     <tr style={{ background: t.groupRowBg }} className="break-inside-avoid">
                       <td
                         colSpan={6}
                         style={{
-                          padding: "6px 10px",
-                          fontSize: "9px", fontWeight: 800, letterSpacing: "0.12em",
-                          color: t.groupRowText, textTransform: "uppercase",
+                          padding: "10px 12px 7px",
+                          fontSize: "12px",
+                          fontWeight: 800,
+                          color: t.groupRowText,
                           borderBottom: t.groupRowBorder,
+                          letterSpacing: "0.01em",
                         }}
                       >
-                        ▸ {appName}
+                        {group.title}
                       </td>
                     </tr>
-                    {appItems.map((item, idx) => {
-                      const globalIdx = items.indexOf(item) + 1;
-                      return (
-                        <tr key={idx} className="break-inside-avoid" style={{ background: idx % 2 === 0 ? "transparent" : t.rowZebraBg }}>
-                          <TD isLight={isLight} style={{ color: t.refLabel, fontFamily: "monospace", fontSize: "9.5px", fontWeight: 600 }}>{globalIdx}</TD>
-                          <TD isLight={isLight}>
-                            <div style={{ fontWeight: 700, color: t.productText, fontSize: "10.5px" }}>{item.product}</div>
-                            {item.notes && <div style={{ fontSize: "8.5px", color: t.notesText, marginTop: "2px" }}>{item.notes}</div>}
-                          </TD>
-                          <TD isLight={isLight}>
-                            <span
-                              style={{
-                                display: "inline-block",
-                                background: t.tagBg, border: t.tagBorder,
-                                borderRadius: "5px", padding: "2px 7px",
-                                fontSize: "8.5px", fontWeight: 600, color: t.tagText,
-                              }}
-                            >
-                              {item.floor} · {item.area}
-                            </span>
-                          </TD>
-                          <TD isLight={isLight} align="center" style={{ fontWeight: 900, color: t.qtyText, fontSize: "11px" }}>{item.quantity}</TD>
-                          <TD isLight={isLight} style={{ color: t.brandText, fontSize: "10px", fontWeight: 500 }}>{item.brand}</TD>
-                          <TD isLight={isLight}>
-                            <span
-                              style={{
-                                display: "inline-block",
-                                background: t.warrantyBg, border: t.warrantyBorder,
-                                borderRadius: "4px", padding: "1px 6px",
-                                color: t.warrantyText, fontWeight: 700, fontSize: "9px",
-                              }}
-                            >
-                              {item.warranty}
-                            </span>
-                          </TD>
-                        </tr>
-                      );
-                    })}
+                    {group.items.map((item, idx) => (
+                      <tr
+                        key={idx}
+                        className="break-inside-avoid"
+                        style={{
+                          background: idx % 2 === 0 ? "transparent" : t.rowZebraBg,
+                        }}
+                      >
+                        <TD isLight={isLight} style={{ fontWeight: 700, color: t.productText, fontSize: "11px" }}>
+                          {item.product}
+                          {item.notes && item.notes !== `${item.floor} - ${item.area}` && (
+                            <div style={{ fontSize: "8.5px", color: t.notesText, marginTop: "2px", fontWeight: 400 }}>
+                              {item.notes}
+                            </div>
+                          )}
+                        </TD>
+                        <TD isLight={isLight} align="center" style={{ fontWeight: 800, color: t.qtyText, fontSize: "11.5px" }}>
+                          {item.quantity}
+                        </TD>
+                        <TD isLight={isLight} align="right" style={{ color: t.unitPriceText, fontSize: "11px", fontWeight: 500 }}>
+                          {formatMoney(item.price)}
+                        </TD>
+                        <TD isLight={isLight} align="right" style={{ fontWeight: 800, color: t.totalAmountText, fontSize: "11.5px" }}>
+                          {formatMoney(item.totalPrice)}
+                        </TD>
+                        <TD isLight={isLight} align="left" style={{ fontWeight: 700, color: t.brandText, fontSize: "11px" }}>
+                          {item.brand || "-"}
+                        </TD>
+                        <TD isLight={isLight} align="center" style={{ fontWeight: 700, color: t.warrantyText, fontSize: "11px" }}>
+                          {formatWarranty(item.warranty)}
+                        </TD>
+                      </tr>
+                    ))}
                   </React.Fragment>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
 
-        {/* ── SECTION 2: Commercial Pricing & Totals Card ── */}
-        <div>
-          <SectionHeading number="02" title="Commercial Investment Breakdown" subtitle="Unit pricing, quantities & total investment per product" isLight={isLight} />
-
-          <div style={{ display: "grid", gridTemplateColumns: items.length <= 4 ? "1fr 290px" : "1fr", gap: "14px", alignItems: "start" }}>
-            {/* Table */}
-            <div
-              style={{
-                border: t.cardBorder,
-                borderRadius: "12px", overflow: "hidden",
-                background: t.cardBg,
-                boxShadow: t.cardShadow,
-              }}
-            >
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead style={{ background: t.tableHeadBg }}>
-                  <tr>
-                    <TH isLight={isLight}>Item Description</TH>
-                    <TH align="center" width="45px" isLight={isLight}>Qty</TH>
-                    <TH align="right" isLight={isLight}>Unit Price</TH>
-                    <TH align="right" isLight={isLight}>Total Amount</TH>
-                  </tr>
-                </thead>
-                <tbody>
-                  {groupEntries.map(([appName, appItems], gi) => {
-                    const groupSum = appItems.reduce((s, x) => s + x.totalPrice, 0);
-                    return (
-                      <React.Fragment key={gi}>
-                        <tr style={{ background: t.groupRowBg }} className="break-inside-avoid">
-                          <td
-                            colSpan={4}
-                            style={{
-                              padding: "6px 10px",
-                              fontSize: "9px", fontWeight: 800, letterSpacing: "0.12em",
-                              color: t.groupRowText, textTransform: "uppercase",
-                              borderBottom: t.groupRowBorder,
-                            }}
-                          >
-                            ▸ {appName}
-                          </td>
-                        </tr>
-                        {appItems.map((item, idx) => (
-                          <tr key={idx} className="break-inside-avoid" style={{ background: idx % 2 === 0 ? "transparent" : t.rowZebraBg }}>
-                            <TD isLight={isLight} style={{ fontWeight: 600, color: t.productText }}>{item.product}</TD>
-                            <TD isLight={isLight} align="center" style={{ fontWeight: 800, color: t.qtyText, fontSize: "11px" }}>{item.quantity}</TD>
-                            <TD isLight={isLight} align="right" style={{ color: t.unitPriceText }}>{formatMoney(item.price)}</TD>
-                            <TD isLight={isLight} align="right" style={{ fontWeight: 800, color: t.totalAmountText }}>{formatMoney(item.totalPrice)}</TD>
-                          </tr>
-                        ))}
-                      </React.Fragment>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Totals Summary Card */}
+          {/* Totals Summary Card */}
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "14px" }}>
             <div
               className="break-inside-avoid"
               style={{
+                width: "360px",
+                maxWidth: "100%",
                 background: t.summaryCardBg,
                 border: t.summaryCardBorder,
-                borderRadius: "12px", padding: "14px 16px",
+                borderRadius: "12px",
+                padding: "14px 16px",
                 boxShadow: t.summaryCardShadow,
               }}
             >
@@ -367,8 +341,10 @@ export default function DynamicProposalDocument({
                 <div
                   key={i}
                   style={{
-                    display: "flex", justifyContent: "space-between",
-                    fontSize: "10px", padding: "5px 0",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "10px",
+                    padding: "5px 0",
                     borderBottom: t.summaryRowBorder,
                   }}
                 >
@@ -378,17 +354,31 @@ export default function DynamicProposalDocument({
               ))}
               <div
                 style={{
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                  paddingTop: "10px", marginTop: "6px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  paddingTop: "10px",
+                  marginTop: "6px",
                 }}
               >
-                <span style={{ fontSize: "10.5px", fontWeight: 800, color: t.netValLabel, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                <span
+                  style={{
+                    fontSize: "10.5px",
+                    fontWeight: 800,
+                    color: t.netValLabel,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.04em",
+                  }}
+                >
                   Net Project Value
                 </span>
                 <span
                   style={{
-                    fontSize: "18px", fontWeight: 900, color: t.netValText,
-                    letterSpacing: "-0.01em", textShadow: isLight ? "none" : "0 0 12px rgba(56,189,248,0.3)",
+                    fontSize: "18px",
+                    fontWeight: 900,
+                    color: t.netValText,
+                    letterSpacing: "-0.01em",
+                    textShadow: isLight ? "none" : "0 0 12px rgba(56,189,248,0.3)",
                   }}
                 >
                   {formatMoney(netTotal)}
@@ -401,9 +391,9 @@ export default function DynamicProposalDocument({
           </div>
         </div>
 
-        {/* ── SECTION 3: Payment Milestones ── */}
+        {/* ── SECTION 2: Payment Milestones ── */}
         <div>
-          <SectionHeading number="03" title="Payment Milestones" subtitle="Structured payment schedule for seamless project execution" isLight={isLight} />
+          <SectionHeading number="02" title="Payment Milestones" subtitle="Structured payment schedule for seamless project execution" isLight={isLight} />
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
             {paymentRows.map((pay, i) => (
@@ -426,9 +416,9 @@ export default function DynamicProposalDocument({
           </div>
         </div>
 
-        {/* ── SECTION 4: Warranty & Terms ── */}
+        {/* ── SECTION 3: Warranty & Terms ── */}
         <div>
-          <SectionHeading number="04" title="Warranty Coverage & Governance" subtitle="Comprehensive protection and project scope" isLight={isLight} />
+          <SectionHeading number="03" title="Warranty Coverage & Governance" subtitle="Comprehensive protection and project scope" isLight={isLight} />
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
             <div
@@ -481,9 +471,9 @@ export default function DynamicProposalDocument({
           </div>
         </div>
 
-        {/* ── SECTION 5: Bank Details ── */}
+        {/* ── SECTION 4: Bank Details ── */}
         <div>
-          <SectionHeading number="05" title="Bank Transfer Details" subtitle="NEFT / RTGS / IMPS payment information" isLight={isLight} />
+          <SectionHeading number="04" title="Bank Transfer Details" subtitle="NEFT / RTGS / IMPS payment information" isLight={isLight} />
 
           <div
             className="break-inside-avoid"
