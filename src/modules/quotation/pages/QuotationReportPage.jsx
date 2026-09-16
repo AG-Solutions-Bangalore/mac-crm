@@ -53,10 +53,10 @@ const formatMoney = (value) => {
   })}`;
 };
 
-// High resolution dark luxury architecture mockup images
+// Bright white villa hero (covers ~72% of the cover page background)
 const MOCK_IMAGES = {
   coverBg:
-    "https://makcautomations.com/images/hero_bg.webp",
+    "https://makcautomations.com/images/hero_bg-light-1392.webp",
   page2Hero:
     "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1600&auto=format&fit=crop",
 };

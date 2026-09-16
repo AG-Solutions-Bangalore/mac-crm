@@ -65,8 +65,8 @@ export default function AboutWhyPage({ heroImage, clientName }) {
           <div style={{ display: "flex", alignItems: "center", gap: "5px", background: isLight ? "#fef3c7" : "rgba(30,20,5,0.85)", border: isLight ? "1px solid #fde047" : "1px solid rgba(212,175,55,0.4)", borderRadius: "999px", padding: "5px 12px", fontSize: "9px", fontWeight: 700, color: isLight ? "#b45309" : "#d4af37" }}>
             <Award style={{ width: 12, height: 12 }} /> Award Winning
           </div>
-          <div style={{ background: "#fff", borderRadius: "10px", padding: "5px 12px", }}>
-            <img src={logoImg} alt="MAKc" style={{ height: "28px", objectFit: "contain" }} />
+          <div style={{ background: "#fff", borderRadius: "14px", padding: "8px 20px", border: "2px solid #f59e0b", boxShadow: "0 6px 20px rgba(245,158,11,0.25), 0 2px 8px rgba(15,23,42,0.10)" }}>
+            <img src={logoImg} alt="MAKc" style={{ height: "46px", objectFit: "contain" }} />
           </div>
         </div>
       </div>

@@ -14,7 +14,7 @@ export default function AboutPage({ heroImage, clientName }) {
           </p>
         </div>
         <div className="bg-white/95 p-2 rounded-xl border border-white/40 shadow-sm">
-          <img src={logoImg} alt="MAKc Logo" className="h-8 w-auto object-contain" />
+          <img src={logoImg} alt="MAKc Logo" className="h-12 w-auto object-contain" />
         </div>
       </div>
 

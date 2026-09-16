@@ -1,5 +1,5 @@
 import React from "react";
-import { Building2, MapPin, Phone, Mail, CheckCircle2, ShieldCheck, AlertTriangle } from "lucide-react";
+import { MapPin, Phone, Mail, Home, Layers } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 
 // ─── Section Heading Component ─────────────────────────────────────────────
@@ -41,16 +41,19 @@ const formatWarranty = (val) => {
   return str;
 };
 
-// ─── Table Head Cell ───────────────────────────────────────────────────────
+// ─── Table Head Cell (category tables) ─────────────────────────────────────
 function TH({ children, align = "left", width, isLight }) {
   return (
     <th
       style={{
-        textAlign: align, padding: "8px 10px",
-        fontSize: "9px", fontWeight: 700, letterSpacing: "0.08em",
-        color: isLight ? "#475569" : "#94a3b8", textTransform: "uppercase",
-        borderBottom: isLight ? "1px solid #e2e8f0" : "1px solid rgba(255,255,255,0.1)",
+        textAlign: align, padding: "9px 10px",
+        fontSize: "10px", fontWeight: 700, letterSpacing: "0.02em",
+        color: "#1e4a7a",
+        borderBottom: "1px solid #c9dcee",
+        borderRight: "1px solid #e2e8f0",
+        background: "transparent",
         width: width,
+        overflowWrap: "break-word",
       }}
     >
       {children}
@@ -59,17 +62,69 @@ function TH({ children, align = "left", width, isLight }) {
 }
 
 // ─── Table Data Cell ──────────────────────────────────────────────────────
-function TD({ children, align = "left", style: s, isLight }) {
+function TD({ children, align = "left", style: s, isLight, rowSpan }) {
   return (
     <td
+      rowSpan={rowSpan}
       style={{
         textAlign: align, padding: "8px 10px",
         fontSize: "10.5px", color: isLight ? "#1e293b" : "#e2e8f0",
         borderBottom: isLight ? "1px solid #f1f5f9" : "1px solid rgba(255,255,255,0.05)",
+        borderRight: isLight ? "1px solid #eef2f7" : undefined,
+        overflowWrap: "break-word",
         ...s,
       }}
     >
       {children}
+    </td>
+  );
+}
+
+// ─── Main category header (ONE per application, e.g. "Smart Switches") ────
+// Compact dark banner — minimal height per layout feedback.
+function QuotationCategoryHeader({ title }) {
+  return (
+    <div
+      style={{
+        background: "#1e4a7a",
+        color: "#ffffff",
+        padding: "4px 18px",
+        fontSize: "13px",
+        fontWeight: 800,
+        letterSpacing: "0.01em",
+        lineHeight: 1.25,
+        pageBreakAfter: "avoid",
+        breakAfter: "avoid",
+      }}
+    >
+      {title}
+    </div>
+  );
+}
+
+// ─── Floor-level subheader (ONE per floor, e.g. "Ground Floor") ────────────
+// Compact floor strip — minimal height per layout feedback.
+function FloorSectionHeader({ floorName }) {
+  const isGround = /ground/i.test(floorName || "");
+  const Icon = isGround ? Home : Layers;
+  return (
+    <td
+      colSpan={7}
+      style={{
+        padding: "2px 14px",
+        fontSize: "11px",
+        fontWeight: 800,
+        color: "#1e4a7a",
+        background: "#d7e9f7",
+        borderBottom: "1px solid #bcd7ef",
+        letterSpacing: "0.01em",
+        lineHeight: 1.3,
+      }}
+    >
+      <span style={{ display: "inline-flex", alignItems: "center", gap: "7px" }}>
+        <Icon style={{ width: 13, height: 13, color: "#1e6fb5" }} />
+        {floorName}
+      </span>
     </td>
   );
 }
@@ -85,35 +140,41 @@ export default function DynamicProposalDocument({
   netTotal,
   paymentRows,
 }) {
-  // Group items by Application and Floor -> Area
-  const groups = {};
+  // Group items data-driven: application -> floor -> area -> products.
+  // Insertion order is preserved so floors/rooms render in quotation order.
+  // Nothing is hardcoded — new rooms, floors, products or price/qty/warranty
+  // changes flow through automatically.
+  const appGroups = [];
+  const appIndex = new Map();
   items.forEach((item) => {
-    const hasFloor = item.floor && item.floor !== "-";
-    const hasArea = item.area && item.area !== "-";
-    let locationStr = "";
-    if (hasFloor && hasArea) {
-      locationStr = `(${item.floor} -> ${item.area})`;
-    } else if (hasFloor) {
-      locationStr = `(${item.floor})`;
-    } else if (hasArea) {
-      locationStr = `(${item.area})`;
-    }
+    const appName = (item.application && item.application !== "-")
+      ? item.application
+      : "General";
+    const floorName = (item.floor && item.floor !== "-") ? item.floor : "";
+    const areaName = (item.area && item.area !== "-") ? item.area : "-";
 
-    const groupKey = locationStr 
-      ? `${item.application} - ${locationStr}`
-      : item.application;
-
-    if (!groups[groupKey]) {
-      groups[groupKey] = {
-        title: groupKey,
-        appName: item.application,
-        items: [],
-      };
+    let app = appIndex.get(appName);
+    if (!app) {
+      app = { title: appName, floors: [], floorIndex: new Map() };
+      appIndex.set(appName, app);
+      appGroups.push(app);
     }
-    groups[groupKey].items.push(item);
+    let floor = app.floorIndex.get(floorName);
+    if (!floor) {
+      floor = { name: floorName, areas: [], areaIndex: new Map() };
+      app.floorIndex.set(floorName, floor);
+      app.floors.push(floor);
+    }
+    let area = floor.areaIndex.get(areaName);
+    if (!area) {
+      area = { name: areaName, items: [] };
+      floor.areaIndex.set(areaName, area);
+      floor.areas.push(area);
+    }
+    area.items.push(item);
   });
 
-  const groupEntries = Object.values(groups);
+  const groupEntries = appGroups;
 
   const isLight = true; // Light-only theme (theme switcher removed)
 
@@ -211,10 +272,10 @@ export default function DynamicProposalDocument({
             ✦ Commercial Proposal &amp; Schedule
           </p>
           <h2 style={{ fontSize: "22px", fontWeight: 900, margin: 0, letterSpacing: "-0.02em", color: t.titleText }}>
-            Scope of Work &amp; Investment
+            Scope of Work
           </h2>
           <p style={{ fontSize: "10px", color: t.subtitleText, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", margin: "3px 0 0" }}>
-            Itemized Scope · Pricing · Milestones · Governance
+            Itemized Scope · Pricing · Milestones
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -222,8 +283,8 @@ export default function DynamicProposalDocument({
             <span style={{ fontSize: "8px", color: t.refLabel, display: "block", textTransform: "uppercase", letterSpacing: "0.09em", fontWeight: 600 }}>Proposal Ref</span>
             <span style={{ fontSize: "13px", fontWeight: 800, color: t.refNo, fontFamily: "monospace" }}>#{quotationNo}</span>
           </div>
-          <div style={{  borderRadius: "10px", padding: "5px 12px"}}>
-            <img src={logoImg} alt="MAKc" style={{ height: "26px", objectFit: "contain", display: "block" }} />
+          <div style={{ background: "#fff", borderRadius: "10px", padding: "8px 18px", border: "1px solid #e2e8f0", boxShadow: "0 4px 16px rgba(15,23,42,0.12)" }}>
+            <img src={logoImg} alt="MAKc" style={{ height: "46px", objectFit: "contain", display: "block" }} />
           </div>
         </div>
       </div>
@@ -231,91 +292,121 @@ export default function DynamicProposalDocument({
       {/* ─── MAIN CONTENT ─── */}
       <div style={{ padding: "20px 36px", display: "flex", flexDirection: "column", gap: "18px" }}>
 
-        {/* ── SECTION 1: Itemized Scope & Investment Schedule ── */}
+        {/* ── SECTION 1: Itemized Scope Schedule ── */}
         <div>
           <SectionHeading
             number="01"
-            title="Itemized Scope & Investment Schedule"
+            title="Itemized Scope Schedule"
             subtitle={`${items.length} products configured across property zones with specifications, pricing & warranty`}
             isLight={isLight}
           />
 
-          <div
-            style={{
-              border: t.cardBorder,
-              borderRadius: "12px",
-              overflow: "hidden",
-              background: t.cardBg,
-              boxShadow: t.cardShadow,
-            }}
-          >
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead style={{ background: t.tableHeadBg }}>
-                <tr>
-                  <TH width="36%" isLight={isLight}>Product / System Specification</TH>
-                  <TH align="center" width="8%" isLight={isLight}>Qty</TH>
-                  <TH align="right" width="14%" isLight={isLight}>Unit Price</TH>
-                  <TH align="right" width="16%" isLight={isLight}>Total Price</TH>
-                  <TH align="left" width="14%" isLight={isLight}>Brand</TH>
-                  <TH align="center" width="12%" isLight={isLight}>Warranty</TH>
-                </tr>
-              </thead>
-              <tbody>
-                {groupEntries.map((group, gi) => (
-                  <React.Fragment key={gi}>
-                    {/* Group header row */}
-                    <tr style={{ background: t.groupRowBg }} className="break-inside-avoid">
-                      <td
-                        colSpan={6}
-                        style={{
-                          padding: "10px 12px 7px",
-                          fontSize: "12px",
-                          fontWeight: 800,
-                          color: t.groupRowText,
-                          borderBottom: t.groupRowBorder,
-                          letterSpacing: "0.01em",
-                        }}
-                      >
-                        {group.title}
-                      </td>
-                    </tr>
-                    {group.items.map((item, idx) => (
-                      <tr
-                        key={idx}
-                        className="break-inside-avoid"
-                        style={{
-                          background: idx % 2 === 0 ? "transparent" : t.rowZebraBg,
-                        }}
-                      >
-                        <TD isLight={isLight} style={{ fontWeight: 700, color: t.productText, fontSize: "11px" }}>
-                          {item.product}
-                          {item.notes && item.notes !== `${item.floor} - ${item.area}` && (
-                            <div style={{ fontSize: "8.5px", color: t.notesText, marginTop: "2px", fontWeight: 400 }}>
-                              {item.notes}
-                            </div>
-                          )}
-                        </TD>
-                        <TD isLight={isLight} align="center" style={{ fontWeight: 800, color: t.qtyText, fontSize: "11.5px" }}>
-                          {item.quantity}
-                        </TD>
-                        <TD isLight={isLight} align="right" style={{ color: t.unitPriceText, fontSize: "11px", fontWeight: 500 }}>
-                          {formatMoney(item.price)}
-                        </TD>
-                        <TD isLight={isLight} align="right" style={{ fontWeight: 800, color: t.totalAmountText, fontSize: "11.5px" }}>
-                          {formatMoney(item.totalPrice)}
-                        </TD>
-                        <TD isLight={isLight} align="left" style={{ fontWeight: 700, color: t.brandText, fontSize: "11px" }}>
-                          {item.brand || "-"}
-                        </TD>
-                        <TD isLight={isLight} align="center" style={{ fontWeight: 700, color: t.warrantyText, fontSize: "11px" }}>
-                          {formatWarranty(item.warranty)}
-                        </TD>
+          {/* ── One category card per application (e.g. Smart Switches, Door Automation).
+              Each card: ONE dark category header → column headers → ONE floor
+              subheader per floor → continuous rows with Area/Room as a column.
+              Rooms with multiple products use rowspan so the room name
+              appears once per group. ── */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            {groupEntries.map((group, gi) => (
+              <div
+                key={gi}
+                style={{
+                  border: t.cardBorder,
+                  borderRadius: "10px",
+                  overflow: "hidden",
+                  background: t.cardBg,
+                  boxShadow: t.cardShadow,
+                }}
+              >
+                {/* MAIN category header — rendered once per application */}
+                <QuotationCategoryHeader title={group.title} />
+
+                {/* Fluid table — fills the section width with wrapping text,
+                    so no per-section scrollbar is needed on any screen size */}
+                <div>
+                  <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+                    <thead style={{ background: "#e9f1f8" }}>
+                      <tr>
+                        <TH width="15%" isLight={isLight}>Area / Room</TH>
+                        <TH width="28%" isLight={isLight}>Product / System Specification</TH>
+                        <TH align="center" width="7%" isLight={isLight}>Qty</TH>
+                        <TH align="right" width="13%" isLight={isLight}>Unit Price</TH>
+                        <TH align="right" width="13%" isLight={isLight}>Total Price</TH>
+                        <TH align="left" width="12%" isLight={isLight}>Brand</TH>
+                        <TH align="center" width="12%" isLight={isLight}>Warranty</TH>
                       </tr>
-                    ))}
-                  </React.Fragment>
-                ))}
-              </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                      {group.floors.map((floor, fi) => (
+                        <React.Fragment key={fi}>
+                          {/* FLOOR subheader — rendered once per floor */}
+                          {floor.name !== "" && (
+                            <tr style={{ background: "#d7e9f7" }} className="break-inside-avoid">
+                              <FloorSectionHeader floorName={floor.name} />
+                            </tr>
+                          )}
+                          {floor.areas.map((area, ai) => (
+                            <React.Fragment key={ai}>
+                              {area.items.map((item, idx) => (
+                                <tr
+                                  key={idx}
+                                  className="break-inside-avoid"
+                                  style={{
+                                    background: idx % 2 === 0 ? "transparent" : t.rowZebraBg,
+                                  }}
+                                >
+                                  {/* AREA/ROOM column — room name rendered once per
+                                      area group via rowspan; subsequent product
+                                      rows of the same room omit this cell */}
+                                  {idx === 0 && (
+                                    <TD
+                                      isLight={isLight}
+                                      rowSpan={area.items.length > 1 ? area.items.length : undefined}
+                                      style={{
+                                        fontWeight: 700,
+                                        color: t.productText,
+                                        fontSize: "11px",
+                                        verticalAlign: "top",
+                                        background: "#ffffff",
+                                      }}
+                                    >
+                                      {area.name}
+                                    </TD>
+                                  )}
+                                  <TD isLight={isLight} style={{ fontWeight: 500, color: t.productText, fontSize: "11px" }}>
+                                    {item.product}
+                                    {item.notes && item.notes !== `${item.floor} - ${item.area}` && (
+                                      <div style={{ fontSize: "8.5px", color: t.notesText, marginTop: "2px", fontWeight: 400 }}>
+                                        {item.notes}
+                                      </div>
+                                    )}
+                                  </TD>
+                                  <TD isLight={isLight} align="center" style={{ fontWeight: 800, color: t.qtyText, fontSize: "11.5px" }}>
+                                    {item.quantity}
+                                  </TD>
+                                  <TD isLight={isLight} align="right" style={{ color: t.unitPriceText, fontSize: "11px", fontWeight: 500 }}>
+                                    {formatMoney(item.price)}
+                                  </TD>
+                                  <TD isLight={isLight} align="right" style={{ fontWeight: 800, color: t.totalAmountText, fontSize: "11.5px" }}>
+                                    {formatMoney(item.totalPrice)}
+                                  </TD>
+                                  <TD isLight={isLight} align="left" style={{ fontWeight: 700, color: t.brandText, fontSize: "11px" }}>
+                                    {item.brand || "-"}
+                                  </TD>
+                                  <TD isLight={isLight} align="center" style={{ fontWeight: 700, color: t.warrantyText, fontSize: "11px" }}>
+                                    {formatWarranty(item.warranty)}
+                                  </TD>
+                                </tr>
+                              ))}
+                            </React.Fragment>
+                          ))}
+                        </React.Fragment>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
           </div>
 
           {/* Totals Summary Card (full width) */}
@@ -424,64 +515,9 @@ export default function DynamicProposalDocument({
           </div>
         </div>
 
-        {/* ── SECTION 3: Warranty & Terms ── */}
+        {/* ── SECTION 3: Bank Details ── */}
         <div>
-          <SectionHeading number="03" title="Warranty Coverage & Governance" subtitle="Comprehensive protection and project scope" isLight={isLight} />
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-            <div
-              className="break-inside-avoid"
-              style={{
-                background: t.warrantyBoxBg,
-                border: t.warrantyBoxBorder,
-                borderRadius: "10px", padding: "12px 14px",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-                <ShieldCheck style={{ width: 14, height: 14, color: isLight ? "#059669" : "#34d399" }} />
-                <p style={{ fontSize: "9.5px", fontWeight: 800, color: isLight ? "#059669" : "#34d399", margin: 0, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                  Standard Warranty Coverage
-                </p>
-              </div>
-              {[
-                "Smart Touch Switches: 5-Year Replacement",
-                "Curtain Motors & Tracks: 5-Year Motor",
-                "Smart Lights & Drivers: 2-Year Full",
-                "Sensors & Gate Automation: 2-Year",
-              ].map((text, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-                  <CheckCircle2 style={{ width: 10, height: 10, color: isLight ? "#059669" : "#34d399", flexShrink: 0 }} />
-                  <span style={{ fontSize: "9px", color: t.warrantyBoxText, fontWeight: 500 }}>{text}</span>
-                </div>
-              ))}
-            </div>
-
-            <div
-              className="break-inside-avoid"
-              style={{
-                background: t.civilBoxBg,
-                border: t.civilBoxBorder,
-                borderRadius: "10px", padding: "12px 14px",
-              }}
-            >
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-                <AlertTriangle style={{ width: 14, height: 14, color: isLight ? "#d97706" : "#fbbf24" }} />
-                <p style={{ fontSize: "9.5px", fontWeight: 800, color: isLight ? "#d97706" : "#fbbf24", margin: 0, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                  Civil Scope & Exclusions
-                </p>
-              </div>
-              <p style={{ fontSize: "9px", color: t.civilBoxText, lineHeight: 1.6, margin: 0, fontWeight: 500 }}>
-                All civil work, back-box wiring, and conduit routing to be completed by customer's
-                contractor before deployment. Main power distribution lines, third-party routers,
-                and external internet services are outside MAKc scope.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* ── SECTION 4: Bank Details ── */}
-        <div>
-          <SectionHeading number="04" title="Bank Transfer Details" subtitle="NEFT / RTGS / IMPS payment information" isLight={isLight} />
+          <SectionHeading number="03" title="Bank Transfer Details" subtitle="NEFT / RTGS / IMPS payment information" isLight={isLight} />
 
           <div
             className="break-inside-avoid"

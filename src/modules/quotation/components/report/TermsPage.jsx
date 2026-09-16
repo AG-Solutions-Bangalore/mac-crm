@@ -18,7 +18,7 @@ export default function TermsPage({ clientName }) {
             <span>MAKc Governance</span>
           </div>
           <div className="bg-white/95 p-1.5 rounded-xl border border-white/40 shadow-sm">
-            <img src={logoImg} alt="MAKc Logo" className="h-7 w-auto object-contain" />
+            <img src={logoImg} alt="MAKc Logo" className="h-12 w-auto object-contain" />
           </div>
         </div>
       </div>
