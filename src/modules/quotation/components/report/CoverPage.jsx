@@ -1,5 +1,5 @@
 import React from "react";
-import { Sliders, Layers, Lock, Wifi, Video } from "lucide-react";
+import { Sliders, Layers, Lock, Wifi, Video, Volume2 } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 
 const SERVICES = [
@@ -8,6 +8,7 @@ const SERVICES = [
   { title: "Door Automation", icon: Lock },
   { title: "Networking", icon: Wifi },
   { title: "CCTV & Security", icon: Video },
+  { title: "Sound & Light", icon: Volume2 },
 ];
 
 // Light executive cover — white hero photo is the page background (≈72% height).
@@ -72,16 +73,8 @@ export default function CoverPage({
           padding: "18px 28px 0",
         }}
       >
-        <div
-          style={{
-            background: "#fff", borderRadius: "12px",
-            padding: "8px 18px",
-            border: "1px solid #e2e8f0",
-            boxShadow: "0 4px 16px rgba(15,23,42,0.12)",
-          }}
-        >
-          <img src={logoImg} alt="MAKc" style={{ height: "46px", objectFit: "contain", display: "block" }} />
-        </div>
+        {/* Logo only — transparent asset, no box/background/border/shadow anywhere */}
+        <img src={logoImg} alt="MAKc" style={{ height: "52px", objectFit: "contain", display: "block", background: "transparent", backgroundColor: "transparent", border: "none", boxShadow: "none", outline: "none" }} />
 
         {/* Enlarged ISO seal — clearly visible stamp */}
         <div
@@ -123,17 +116,36 @@ export default function CoverPage({
       >
         <div
           style={{
-            display: "inline-flex", alignItems: "center",
-            background: "#fef3c7",
-            border: "1px solid #fde047",
-            borderRadius: "4px",
-            padding: "3px 10px",
-            fontSize: "7.5px", fontWeight: 800, letterSpacing: "0.18em",
-            color: "#b45309", textTransform: "uppercase",
+            display: "inline-flex", alignItems: "center", gap: "8px",
             width: "fit-content", marginBottom: "10px",
           }}
         >
-          ✦ Bespoke Smart Automation Proposal
+          <span
+            style={{
+              display: "inline-flex", alignItems: "center",
+              background: "#fef3c7",
+              border: "1px solid #fde047",
+              borderRadius: "4px",
+              padding: "3px 10px",
+              fontSize: "7.5px", fontWeight: 800, letterSpacing: "0.18em",
+              color: "#b45309", textTransform: "uppercase",
+            }}
+          >
+            ✦ Bespoke Smart Automation Proposal
+          </span>
+          <span
+            style={{
+              display: "inline-flex", alignItems: "center",
+              background: "#ffffff",
+              border: "1px solid #f59e0b",
+              borderRadius: "999px",
+              padding: "3px 10px",
+              fontSize: "7.5px", fontWeight: 800, letterSpacing: "0.14em",
+              color: "#b45309", textTransform: "uppercase",
+            }}
+          >
+            ✦ Award Winning
+          </span>
         </div>
 
         <h1
@@ -141,11 +153,12 @@ export default function CoverPage({
             fontSize: "34px", fontWeight: 900, lineHeight: 1.08,
             letterSpacing: "-0.02em", margin: "0 0 8px",
             color: "#0b1526",
+            fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
           }}
         >
           Smart Home Automation
           <br />
-          <span className="italic" style={{ color: "#0284c7", fontWeight: 900 }}>
+          <span style={{ color: "#0284c7", fontWeight: 900, fontStyle: "normal" }}>
             Company in Bangalore
           </span>
         </h1>
@@ -172,20 +185,20 @@ export default function CoverPage({
         <div>
           <p
             style={{
-              fontSize: "8px", color: "#64748b", letterSpacing: "0.14em",
-              textTransform: "uppercase", margin: "0 0 2px", fontWeight: 700,
+              fontSize: "10px", color: "#334155", letterSpacing: "0.14em",
+              textTransform: "uppercase", margin: "0 0 4px", fontWeight: 800,
             }}
           >
             Exclusively Prepared For
           </p>
-          <p style={{ fontSize: "17px", fontWeight: 900, color: "#0b1526", margin: 0, letterSpacing: "-0.01em" }}>
+          <p style={{ fontSize: "26px", fontWeight: 900, color: "#0b1526", margin: 0, letterSpacing: "-0.01em", lineHeight: 1.15 }}>
             {clientName}
           </p>
         </div>
       </div>
 
-      {/* ── CAPTION OVER HERO (bottom edge of the 72% photo zone) ── */}
-      <div style={{ position: "relative", zIndex: 2, padding: "0 28px", flex: "1 1 auto", display: "flex", alignItems: "flex-end", paddingBottom: "10px", minHeight: "52mm" }}>
+      {/* ── CAPTION (tightly follows client name — no big gap) ── */}
+      <div style={{ position: "relative", zIndex: 2, padding: "8px 28px 0", flex: "0 0 auto", display: "flex", alignItems: "flex-start", paddingBottom: "10px" }}>
         <div
           style={{
             width: "100%",
@@ -220,15 +233,14 @@ export default function CoverPage({
       </div>
 
       {/* ── FOOTER WRAPPER: SERVICE PILLS + METADATA CARD (solid white, below hero) ── */}
-      <div style={{ position: "relative", zIndex: 2, padding: "6px 28px 16px", background: "#ffffff" }}>
-        <div style={{ display: "flex", gap: "6px", marginBottom: "10px" }}>
+      <div style={{ position: "relative", zIndex: 2, padding: "6px 28px 16px", background: "#ffffff", marginTop: "auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "6px", marginBottom: "10px" }}>
           {SERVICES.map((srv, i) => {
             const Icon = srv.icon;
             return (
               <div
                 key={i}
                 style={{
-                  flex: 1,
                   background: "#f8fafc",
                   border: "1px solid #cbd5e1",
                   borderRadius: "8px", padding: "9px 4px",

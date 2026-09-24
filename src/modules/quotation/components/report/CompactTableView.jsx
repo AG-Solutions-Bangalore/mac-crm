@@ -53,11 +53,14 @@ export default function CompactTableView({
   tableRows,
   items,
   grandTotal,
+  consultancyFee = 0,
   installationFee,
   installPct = 5,
   netTotal,
   formatMoney,
+  switchFinishes = {},
 }) {
+  const isSmartSwitchRow = (app) => /switch/i.test(app || "");
   return (
     <div
       className="makc-page makc-page-dynamic makc-compact-view space-y-6 w-full py-4 px-4 md:px-6"
@@ -69,13 +72,13 @@ export default function CompactTableView({
       }}
     >
       {/* Metric Cards (screen only — hidden in print) */}
-      <div className="grid gap-4 md:grid-cols-4 quotation-no-print">
+      <div className="grid gap-4 md:grid-cols-5 quotation-no-print">
         <Card
           className="border shadow-sm"
           style={{ background: LIGHT.cardBg, borderColor: LIGHT.cardBorder, color: LIGHT.pageText }}
         >
           <CardHeader className="pb-2">
-            <CardDescription style={{ color: LIGHT.mutedText }}>Hardware Subtotal</CardDescription>
+            <CardDescription style={{ color: LIGHT.mutedText }}>Grand Total</CardDescription>
             <CardTitle className="text-2xl font-bold" style={{ color: LIGHT.accent }}>{formatMoney(grandTotal)}</CardTitle>
           </CardHeader>
         </Card>
@@ -93,7 +96,16 @@ export default function CompactTableView({
           style={{ background: LIGHT.cardBg, borderColor: LIGHT.cardBorder, color: LIGHT.pageText }}
         >
           <CardHeader className="pb-2">
-            <CardDescription style={{ color: LIGHT.mutedText }}>Transportation & Installation ({installPct}%)</CardDescription>
+            <CardDescription style={{ color: LIGHT.mutedText }}>Consultancy & Design</CardDescription>
+            <CardTitle className="text-2xl font-bold" style={{ color: LIGHT.gold }}>{formatMoney(consultancyFee)}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card
+          className="border shadow-sm"
+          style={{ background: LIGHT.cardBg, borderColor: LIGHT.cardBorder, color: LIGHT.pageText }}
+        >
+          <CardHeader className="pb-2">
+            <CardDescription style={{ color: LIGHT.mutedText }}>Installation</CardDescription>
             <CardTitle className="text-2xl font-bold" style={{ color: LIGHT.gold }}>{formatMoney(installationFee)}</CardTitle>
           </CardHeader>
         </Card>
@@ -115,12 +127,8 @@ export default function CompactTableView({
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-3">
-              <div
-                className="p-2 rounded-xl border shadow-sm"
-                style={{ background: LIGHT.cardBg, borderColor: LIGHT.cardBorder }}
-              >
-                <img src={logoImg} alt="MAKc Logo" className="h-12 w-auto object-contain" />
-              </div>
+              {/* Logo only — transparent asset, no box/background/border/shadow anywhere */}
+              <img src={logoImg} alt="MAKc Logo" style={{ height: "48px", width: "auto", objectFit: "contain", display: "block", background: "transparent", backgroundColor: "transparent", border: "none", boxShadow: "none", outline: "none" }} />
               <div>
                 <CardTitle className="text-2xl" style={{ color: LIGHT.headingText }}>Experience The Smart Living</CardTitle>
                 <CardDescription style={{ color: LIGHT.mutedText }}>Home automation project quotation breakdown</CardDescription>
@@ -137,7 +145,7 @@ export default function CompactTableView({
             className="rounded-lg border"
             style={{ borderColor: LIGHT.cardBorder, background: LIGHT.cardBg }}
           >
-            <Table className="w-full table-auto" style={{ background: LIGHT.cardBg, color: LIGHT.pageText }}>
+            <Table className="w-full table-auto makc-compact-table" style={{ background: LIGHT.cardBg, color: LIGHT.pageText }}>
               <TableHeader style={{ background: LIGHT.headerBg }}>
                 <TableRow style={{ borderColor: LIGHT.headerBorder }}>
                   {headers.map((header) => (
@@ -166,6 +174,11 @@ export default function CompactTableView({
                       <TableCell className="font-bold text-center" style={{ color: LIGHT.accent }}>{row.quantity || "-"}</TableCell>
                       <TableCell style={{ color: LIGHT.bodyText }}>{formatMoney(row.price)}</TableCell>
                       <TableCell className="font-bold" style={{ color: LIGHT.accent }}>{formatMoney(row.totalPrice)}</TableCell>
+                      <TableCell className="font-medium" style={{ color: LIGHT.bodyText }}>
+                        {isSmartSwitchRow(row.application)
+                          ? (switchFinishes[row.__idx] || row.finish || "-")
+                          : "-"}
+                      </TableCell>
                       <TableCell className="font-bold" style={{ color: LIGHT.headingText }}>{row.brand || "-"}</TableCell>
                       <TableCell className="font-bold" style={{ color: LIGHT.green }}>{formatWarranty(row.warranty)}</TableCell>
                     </TableRow>
@@ -179,12 +192,34 @@ export default function CompactTableView({
                         {row.label}
                       </TableCell>
                       <TableCell style={{ color: LIGHT.accent }}>{formatMoney(row.totalPrice)}</TableCell>
+                      <TableCell />
                       <TableCell colSpan={2} />
                     </TableRow>
                   )
                 )}
               </TableBody>
             </Table>
+          </div>
+          {/* Printed totals — per-service totals are in the table above;
+              grand + consultancy + installation + net shown here without any % */}
+          <div
+            className="mt-4 grid gap-2 break-inside-avoid md:grid-cols-4"
+          >
+            {[
+              { label: "Grand Total", value: formatMoney(grandTotal), color: LIGHT.headingText },
+              { label: "Consultancy & Design", value: formatMoney(consultancyFee), color: LIGHT.bodyText },
+              { label: "Installation", value: formatMoney(installationFee), color: LIGHT.bodyText },
+              { label: "Net Project Value", value: formatMoney(netTotal), color: LIGHT.accent },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="rounded-lg border px-3 py-2"
+                style={{ borderColor: LIGHT.cardBorder, background: LIGHT.summaryBg }}
+              >
+                <div className="text-[11px] font-semibold" style={{ color: LIGHT.mutedText }}>{s.label}</div>
+                <div className="text-base font-bold" style={{ color: s.color }}>{s.value}</div>
+              </div>
+            ))}
           </div>
           <p className="mt-3 text-right text-xs" style={{ color: LIGHT.mutedText }}>
             All prices inclusive of applicable taxes, product, delivery and installation.

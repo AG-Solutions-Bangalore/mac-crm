@@ -685,3 +685,30 @@ input:disabled + .slider { opacity: 0.5; cursor: not-allowed; }
 .dark .text-muted-foreground { color: var(--color-muted-foreground) !important; }
 .dark th, .dark th.text-muted-foreground { color: var(--color-foreground) !important; }
 .dark .text-gray-400, .dark .text-slate-400 { color: var(--color-muted-foreground) !important; }
+
+/* MAKc proposal tables — pinned header colors in every theme.
+   Beats `.dark th ... !important` above by higher specificity (0,1,2 > 0,1,1),
+   so headers always render dark-navy on light, exactly like the reference,
+   on screen and in print. */
+.makc-proposal-table thead th {
+  color: #1e4a7a !important;
+  background-color: #eaf0f7 !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+.makc-compact-table thead th {
+  color: #64748b !important;
+  background-color: #f8fafc !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+@media print {
+  .makc-proposal-table thead th {
+    color: #1e4a7a !important;
+    background-color: #eaf0f7 !important;
+  }
+  .makc-compact-table thead th {
+    color: #64748b !important;
+    background-color: #f8fafc !important;
+  }
+}

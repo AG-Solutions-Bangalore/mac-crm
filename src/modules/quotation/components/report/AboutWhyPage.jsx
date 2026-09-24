@@ -7,7 +7,7 @@ const WHY_ITEMS = [
   { icon: Zap, title: "Professional Design", desc: "Bespoke electrical & wireless system layout for every home." },
   { icon: Users, title: "Certified Engineers", desc: "Trained, experienced team ensuring hassle-free deployment." },
   { icon: Star, title: "Premium Products", desc: "High-durability hardware with sleek, tactile finish." },
-  { icon: Shield, title: "Best Service SLA", desc: "Dedicated account manager & priority on-site support." },
+  { icon: Shield, title: "Service Excellence", desc: "Dedicated support with priority on-site assistance & care." },
   { icon: Headphones, title: "24/7 Remote Support", desc: "Cloud-based diagnosis, monitoring & instant updates." },
 ];
 
@@ -19,7 +19,7 @@ const AWARDS = [
 
 const SERVICES = [
   "Smart Touch Switches", "Curtains & Blinds Automation", "Door & Gate Automation",
-  "Architectural Lighting", "High-Speed Networking", "CCTV & Surveillance",
+  "Architectural Lighting", "Audio & Sound Systems", "High-Speed Networking", "CCTV & Surveillance",
 ];
 
 export default function AboutWhyPage({ heroImage, clientName }) {
@@ -65,9 +65,8 @@ export default function AboutWhyPage({ heroImage, clientName }) {
           <div style={{ display: "flex", alignItems: "center", gap: "5px", background: isLight ? "#fef3c7" : "rgba(30,20,5,0.85)", border: isLight ? "1px solid #fde047" : "1px solid rgba(212,175,55,0.4)", borderRadius: "999px", padding: "5px 12px", fontSize: "9px", fontWeight: 700, color: isLight ? "#b45309" : "#d4af37" }}>
             <Award style={{ width: 12, height: 12 }} /> Award Winning
           </div>
-          <div style={{ background: "#fff", borderRadius: "14px", padding: "8px 20px", border: "2px solid #f59e0b", boxShadow: "0 6px 20px rgba(245,158,11,0.25), 0 2px 8px rgba(15,23,42,0.10)" }}>
-            <img src={logoImg} alt="MAKc" style={{ height: "46px", objectFit: "contain" }} />
-          </div>
+          {/* Logo only — transparent asset, no box/background/border/shadow anywhere */}
+          <img src={logoImg} alt="MAKc" style={{ height: "52px", objectFit: "contain", display: "block", background: "transparent", backgroundColor: "transparent", border: "none", boxShadow: "none", outline: "none" }} />
         </div>
       </div>
 
@@ -131,7 +130,7 @@ export default function AboutWhyPage({ heroImage, clientName }) {
         {/* Why MAKc heading */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <div style={{ flex: 1, height: "1px", background: isLight ? "#e2e8f0" : "rgba(148,163,184,0.15)" }} />
-          <p style={{ fontSize: "9.5px", fontWeight: 800, letterSpacing: "0.2em", color: isLight ? "#b45309" : "#d4af37", textTransform: "uppercase", margin: 0 }}>Why Choose MAKc?</p>
+          <p style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.08em", color: isLight ? "#b45309" : "#d4af37", margin: 0 }}>Why choose MAKc?</p>
           <div style={{ flex: 1, height: "1px", background: isLight ? "#e2e8f0" : "rgba(148,163,184,0.15)" }} />
         </div>
 

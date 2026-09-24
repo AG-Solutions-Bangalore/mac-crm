@@ -42,18 +42,21 @@ const formatWarranty = (val) => {
 };
 
 // ─── Table Head Cell (category tables) ─────────────────────────────────────
+// Light header row + dark navy text, matching the reference layout.
+// Solid background set on each cell (not transparent) so it survives print.
 function TH({ children, align = "left", width, isLight }) {
   return (
     <th
       style={{
         textAlign: align, padding: "9px 10px",
-        fontSize: "10px", fontWeight: 700, letterSpacing: "0.02em",
+        fontSize: "10.5px", fontWeight: 800, letterSpacing: "0.02em",
         color: "#1e4a7a",
         borderBottom: "1px solid #c9dcee",
         borderRight: "1px solid #e2e8f0",
-        background: "transparent",
+        background: "#eaf0f7",
         width: width,
         overflowWrap: "break-word",
+        whiteSpace: "normal",
       }}
     >
       {children}
@@ -104,12 +107,12 @@ function QuotationCategoryHeader({ title }) {
 
 // ─── Floor-level subheader (ONE per floor, e.g. "Ground Floor") ────────────
 // Compact floor strip — minimal height per layout feedback.
-function FloorSectionHeader({ floorName }) {
+function FloorSectionHeader({ floorName, colSpan = 8 }) {
   const isGround = /ground/i.test(floorName || "");
   const Icon = isGround ? Home : Layers;
   return (
     <td
-      colSpan={7}
+      colSpan={colSpan}
       style={{
         padding: "2px 14px",
         fontSize: "11px",
@@ -129,16 +132,24 @@ function FloorSectionHeader({ floorName }) {
   );
 }
 
+const FINISH_OPTIONS = ["", "Frame", "Frameless", "Brass", "Hybrid"];
+
+const isSmartSwitchApp = (appName) => /switch/i.test(appName || "");
+
 export default function DynamicProposalDocument({
   items,
   quotationNo,
   clientName,
   formatMoney,
   grandTotal,
+  consultancyPct,
+  consultancyFee,
   installationFee,
   installPct = 5,
   netTotal,
   paymentRows,
+  switchFinishes = {},
+  onSwitchFinishChange,
 }) {
   // Group items data-driven: application -> floor -> area -> products.
   // Insertion order is preserved so floors/rooms render in quotation order.
@@ -146,12 +157,15 @@ export default function DynamicProposalDocument({
   // changes flow through automatically.
   const appGroups = [];
   const appIndex = new Map();
-  items.forEach((item) => {
+  items.forEach((item, globalIdx) => {
     const appName = (item.application && item.application !== "-")
       ? item.application
       : "General";
     const floorName = (item.floor && item.floor !== "-") ? item.floor : "";
     const areaName = (item.area && item.area !== "-") ? item.area : "-";
+
+    // Preserve original row index so Finish selections map correctly.
+    const itemWithIdx = item.__idx !== undefined ? item : { ...item, __idx: globalIdx };
 
     let app = appIndex.get(appName);
     if (!app) {
@@ -171,7 +185,7 @@ export default function DynamicProposalDocument({
       floor.areaIndex.set(areaName, area);
       floor.areas.push(area);
     }
-    area.items.push(item);
+    area.items.push(itemWithIdx);
   });
 
   const groupEntries = appGroups;
@@ -283,9 +297,8 @@ export default function DynamicProposalDocument({
             <span style={{ fontSize: "8px", color: t.refLabel, display: "block", textTransform: "uppercase", letterSpacing: "0.09em", fontWeight: 600 }}>Proposal Ref</span>
             <span style={{ fontSize: "13px", fontWeight: 800, color: t.refNo, fontFamily: "monospace" }}>#{quotationNo}</span>
           </div>
-          <div style={{ background: "#fff", borderRadius: "10px", padding: "8px 18px", border: "1px solid #e2e8f0", boxShadow: "0 4px 16px rgba(15,23,42,0.12)" }}>
-            <img src={logoImg} alt="MAKc" style={{ height: "46px", objectFit: "contain", display: "block" }} />
-          </div>
+          {/* Logo only — transparent asset, no box/background/border/shadow anywhere */}
+          <img src={logoImg} alt="MAKc" style={{ height: "52px", objectFit: "contain", display: "block", background: "transparent", backgroundColor: "transparent", border: "none", boxShadow: "none", outline: "none" }} />
         </div>
       </div>
 
@@ -307,7 +320,13 @@ export default function DynamicProposalDocument({
               Rooms with multiple products use rowspan so the room name
               appears once per group. ── */}
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            {groupEntries.map((group, gi) => (
+            {groupEntries.map((group, gi) => {
+              const isSwitchGroup = isSmartSwitchApp(group.title);
+              const appTotal = group.floors
+                .flatMap((f) => f.areas)
+                .flatMap((a) => a.items)
+                .reduce((sum, it) => sum + (Number(it.totalPrice) || 0), 0);
+              return (
               <div
                 key={gi}
                 style={{
@@ -324,14 +343,18 @@ export default function DynamicProposalDocument({
                 {/* Fluid table — fills the section width with wrapping text,
                     so no per-section scrollbar is needed on any screen size */}
                 <div>
-                  <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
-                    <thead style={{ background: "#e9f1f8" }}>
+                  <table className="makc-proposal-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+                    <thead style={{ background: "#eaf0f7" }}>
                       <tr>
-                        <TH width="15%" isLight={isLight}>Area / Room</TH>
-                        <TH width="28%" isLight={isLight}>Product / System Specification</TH>
-                        <TH align="center" width="7%" isLight={isLight}>Qty</TH>
-                        <TH align="right" width="13%" isLight={isLight}>Unit Price</TH>
-                        <TH align="right" width="13%" isLight={isLight}>Total Price</TH>
+                        <TH width={isSwitchGroup ? "13%" : "15%"} isLight={isLight}>Area / Room</TH>
+                        <TH width={isSwitchGroup ? "24%" : "28%"} isLight={isLight}>Product / System Specification</TH>
+                        <TH align="center" width={isSwitchGroup ? "6%" : "7%"} isLight={isLight}>Qty</TH>
+                        <TH align="right" width={isSwitchGroup ? "11%" : "13%"} isLight={isLight}>Unit Price</TH>
+                        <TH align="right" width={isSwitchGroup ? "11%" : "13%"} isLight={isLight}>Total Price</TH>
+                        {/* Finish column — Smart Switches table ONLY */}
+                        {isSwitchGroup && (
+                          <TH align="center" width="11%" isLight={isLight}>Finish</TH>
+                        )}
                         <TH align="left" width="12%" isLight={isLight}>Brand</TH>
                         <TH align="center" width="12%" isLight={isLight}>Warranty</TH>
                       </tr>
@@ -342,7 +365,7 @@ export default function DynamicProposalDocument({
                           {/* FLOOR subheader — rendered once per floor */}
                           {floor.name !== "" && (
                             <tr style={{ background: "#d7e9f7" }} className="break-inside-avoid">
-                              <FloorSectionHeader floorName={floor.name} />
+                              <FloorSectionHeader floorName={floor.name} colSpan={isSwitchGroup ? 8 : 7} />
                             </tr>
                           )}
                           {floor.areas.map((area, ai) => (
@@ -390,6 +413,32 @@ export default function DynamicProposalDocument({
                                   <TD isLight={isLight} align="right" style={{ fontWeight: 800, color: t.totalAmountText, fontSize: "11.5px" }}>
                                     {formatMoney(item.totalPrice)}
                                   </TD>
+                                  {/* Finish cell — Smart Switches rows ONLY, no column otherwise */}
+                                  {isSwitchGroup && (
+                                  <TD isLight={isLight} align="center" style={{ fontWeight: 600, color: t.brandText, fontSize: "10.5px" }}>
+                                        <select
+                                          className="quotation-no-print"
+                                          value={switchFinishes[item.__idx] || ""}
+                                          onChange={(e) => onSwitchFinishChange && onSwitchFinishChange(item.__idx, e.target.value)}
+                                          style={{
+                                            fontSize: "10px", fontWeight: 600, color: "#0f172a",
+                                            border: "1px solid #cbd5e1", borderRadius: "6px",
+                                            padding: "2px 4px", background: "#f8fafc", maxWidth: "100%",
+                                          }}
+                                        >
+                                          {FINISH_OPTIONS.map((opt) => (
+                                            <option key={opt} value={opt}>{opt === "" ? "Select" : opt}</option>
+                                          ))}
+                                        </select>
+                                        <span
+                                          style={{ display: "none" }}
+                                          className="makc-print-only"
+                                        >
+                                          {switchFinishes[item.__idx] || "-"}
+                                        </span>
+                                        <style>{`@media print { .quotation-no-print { display: none !important; } .makc-print-only { display: inline !important; } } @media screen { .makc-print-only { display: none !important; } }`}</style>
+                                  </TD>
+                                  )}
                                   <TD isLight={isLight} align="left" style={{ fontWeight: 700, color: t.brandText, fontSize: "11px" }}>
                                     {item.brand || "-"}
                                   </TD>
@@ -405,8 +454,26 @@ export default function DynamicProposalDocument({
                     </tbody>
                   </table>
                 </div>
+                {/* Per-service total — shown for every application */}
+                <div
+                  className="break-inside-avoid"
+                  style={{
+                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                    padding: "8px 18px",
+                    background: "#f1f5f9",
+                    borderTop: "1px solid #e2e8f0",
+                  }}
+                >
+                  <span style={{ fontSize: "11px", fontWeight: 800, color: "#1e4a7a", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                    Total {group.title}
+                  </span>
+                  <span style={{ fontSize: "13px", fontWeight: 900, color: "#0284c7" }}>
+                    {formatMoney(appTotal)}
+                  </span>
+                </div>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Totals Summary Card (full width) */}
@@ -425,13 +492,14 @@ export default function DynamicProposalDocument({
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
+                  gridTemplateColumns: "1fr 1fr 1fr",
                   gap: "10px",
                 }}
               >
                 {[
-                  { label: "Hardware Subtotal", value: formatMoney(grandTotal), color: t.summaryRowVal },
-                  { label: `Transportation & Installation (${installPct}%)`, value: formatMoney(installationFee), color: t.summaryRowSubVal },
+                  { label: "Grand Total", value: formatMoney(grandTotal), color: t.summaryRowVal },
+                  { label: "Consultancy & Design", value: formatMoney(consultancyFee), color: t.summaryRowSubVal },
+                  { label: "Installation", value: formatMoney(installationFee), color: t.summaryRowSubVal },
                 ].map((row, i) => (
                   <div
                     key={i}

@@ -38,8 +38,17 @@ const headers = [
   "Quantity",
   "Price",
   "Total Price",
+  "Finish",
   "Brand",
   "Warranty",
+];
+
+// Prepared-by directory (selectable from report header)
+export const PREPARED_BY_OPTIONS = [
+  { id: "abhay", name: "Mr. Abhay Kumar Agarwal", phone: "9324226077" },
+  { id: "manan", name: "Mr. Manan Abhay Kumar", phone: "8197783287" },
+  { id: "bikash", name: "Mr. Bikash Pradhan Newar", phone: "8197785095" },
+  { id: "vinod", name: "Mr. Vinod Kumar", phone: "7338504441" },
 ];
 
 const formatMoney = (value) => {
@@ -67,8 +76,14 @@ export default function QuotationReportPage() {
   const navigate = useNavigate();
   const isRevised = searchParams.get("type") === "rev";
   const [viewMode, setViewMode] = useState("presentation"); // 'presentation' | 'table'
-  // Dynamic Transportation & Installation charge % (editable from header bar)
+  // Consultancy & Design % and Installation % — both editable from header bar,
+  // each applied on the grand total. No % is shown in the printed proposal.
+  const [consultancyPct, setConsultancyPct] = useState(5);
   const [installPct, setInstallPct] = useState(5);
+  // Prepared-by selection (defaults to Vinod Kumar, overridable from header)
+  const [preparedById, setPreparedById] = useState("vinod");
+  // Smart-switch Finish selections: { [itemIdx]: "Frame" | "Frameless" | "Brass" | "Hybrid" }
+  const [switchFinishes, setSwitchFinishes] = useState({});
 
   // Queries
   const { data: parentData, isLoading: parentLoading } = useQuotationQuery(
@@ -156,7 +171,7 @@ export default function QuotationReportPage() {
     products.find((p) => p.id?.toString() === pid?.toString());
 
   // Build items array
-  const items = subs.map((sub) => {
+  const items = subs.map((sub, idx) => {
     const prodDetails = getProductDetails(sub.quotation_sub_product_id);
     const brandName =
       brands.find((b) => b.id?.toString() === prodDetails?.brand_id?.toString())
@@ -169,6 +184,7 @@ export default function QuotationReportPage() {
       prodDetails?.product_name || "Product ID: " + sub.quotation_sub_product_id;
 
     return {
+      __idx: idx,
       type: "item",
       application: appName,
       floor: floorName,
@@ -210,10 +226,12 @@ export default function QuotationReportPage() {
     });
   });
 
-  // Totals — taxes are inclusive, so Net = Hardware + Installation only.
-  // No separate GST line item is shown anywhere in the proposal.
+  // Totals — taxes are inclusive, so Net = Grand + Consultancy + Installation.
+  // No separate GST line item is shown anywhere in the proposal, and no %
+  // figures are printed — only the computed values.
+  const consultancyFee = Math.round(grandTotal * (consultancyPct / 100));
   const installationFee = Math.round(grandTotal * (installPct / 100));
-  const netTotal = grandTotal + installationFee;
+  const netTotal = grandTotal + consultancyFee + installationFee;
 
   // Client name — the API exposes `buyer_name` (see QuotationListPage),
   // not `client_name`, which is why the old lookup always hit the fallback.
@@ -244,22 +262,26 @@ export default function QuotationReportPage() {
       year: "numeric",
     })
     : "August 7, 2026";
-  // Prepared-by — prefer whoever created the quotation, then the logged-in user.
+  // Prepared-by — selectable from header (defaults to Vinod Kumar),
+  // falling back to quotation / logged-in user when no match.
+  const selectedPreparer = PREPARED_BY_OPTIONS.find((p) => p.id === preparedById);
   const contactPerson =
+    selectedPreparer?.name ||
     quotationDetail.sales_person ||
     quotationDetail.prepared_by ||
     quotationDetail.created_by_name ||
     quotationDetail.user_name ||
     quotationDetail.employee_name ||
     authUser?.name ||
-    "Vinod Kumar";
+    "Mr. Vinod Kumar";
   const contactPhone =
+    selectedPreparer?.phone ||
     quotationDetail.contact_no ||
     quotationDetail.mobile ||
     quotationDetail.phone ||
     authUser?.mobile ||
     authUser?.phone ||
-    "+91-7338504441";
+    "7338504441";
 
   // Milestones sum to the Net Project Value (inclusive of installation).
   const paymentRows = [
@@ -398,14 +420,19 @@ export default function QuotationReportPage() {
         `}
       </style>
 
-      {/* Header Actions Component (navigation + view + install % + export/print) */}
+      {/* Header Actions Component (navigation + view + charges % + prepared-by + export/print) */}
       <ReportHeaderActions
         quotationNo={quotationNo}
         viewMode={viewMode}
         setViewMode={setViewMode}
         onNavigateBack={() => navigate(-1)}
+        consultancyPct={consultancyPct}
+        onConsultancyPctChange={setConsultancyPct}
         installPct={installPct}
         onInstallPctChange={setInstallPct}
+        preparedById={preparedById}
+        onPreparedByChange={setPreparedById}
+        preparedByOptions={PREPARED_BY_OPTIONS}
         onExportExcel={handleExportExcel}
         onPrint={handlePrint}
       />
@@ -418,10 +445,12 @@ export default function QuotationReportPage() {
             tableRows={tableRows}
             items={items}
             grandTotal={grandTotal}
+            consultancyFee={consultancyFee}
             installationFee={installationFee}
             installPct={installPct}
             netTotal={netTotal}
             formatMoney={formatMoney}
+            switchFinishes={switchFinishes}
           />
         ) : (
           <div className="makc-print-wrapper py-4 space-y-8">
@@ -443,10 +472,16 @@ export default function QuotationReportPage() {
               clientName={clientName}
               formatMoney={formatMoney}
               grandTotal={grandTotal}
+              consultancyPct={consultancyPct}
+              consultancyFee={consultancyFee}
               installationFee={installationFee}
               installPct={installPct}
               netTotal={netTotal}
               paymentRows={paymentRows}
+              switchFinishes={switchFinishes}
+              onSwitchFinishChange={(idx, value) =>
+                setSwitchFinishes((prev) => ({ ...prev, [idx]: value }))
+              }
             />
 
             {/* Last Page: About MAKc & Awards Overview */}
