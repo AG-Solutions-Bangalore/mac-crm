@@ -1,12 +1,4 @@
 import React, { useState } from "react";
-// Load Inter font for PDF
-if (typeof document !== 'undefined' && !document.getElementById('makc-inter-font')) {
-  const l = document.createElement('link');
-  l.id = 'makc-inter-font';
-  l.rel = 'stylesheet';
-  l.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap';
-  document.head.appendChild(l);
-}
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { ArrowLeft } from "lucide-react";
@@ -325,7 +317,10 @@ export default function QuotationReportPage() {
               display: none !important;
             }
 
-            html, body, #root, .quotation-report-root, .makc-pdf-container, .makc-print-wrapper, main, [class*="Sidebar"] {
+            html, body, #root,
+            [class*="sidebar"], [data-sidebar], [data-sidebar="inset"], [class*="SidebarInset"],
+            main, main > div,
+            .quotation-report-root, .makc-pdf-container, .makc-print-wrapper {
               background: ${printBgColor} !important;
               color: ${printFgColor} !important;
               margin: 0 !important;
@@ -333,8 +328,11 @@ export default function QuotationReportPage() {
               border: none !important;
               box-shadow: none !important;
               width: 100% !important;
+              max-width: 100% !important;
               height: auto !important;
               min-height: 0 !important;
+              overflow: visible !important;
+              transform: none !important;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
@@ -345,12 +343,16 @@ export default function QuotationReportPage() {
             .makc-page {
               background: ${printBgColor} !important;
               box-shadow: none !important;
-              margin: 0 !important;
+              margin: 0 auto !important;
               width: 210mm !important;
+              max-width: 210mm !important;
               box-sizing: border-box !important;
               position: relative !important;
+              border: 1px solid rgba(0, 0, 0, 0.1) !important;
             }
             .makc-cover-page {
+              width: 210mm !important;
+              max-width: 210mm !important;
               height: 297mm !important;
               max-height: 297mm !important;
               box-sizing: border-box !important;
@@ -359,6 +361,11 @@ export default function QuotationReportPage() {
               page-break-inside: avoid !important;
               break-inside: avoid !important;
               overflow: hidden !important;
+              border: 1px solid rgba(0, 0, 0, 0.1) !important;
+            }
+            .makc-cover-page * {
+              box-shadow: none !important;
+              text-shadow: none !important;
             }
             .makc-page-dynamic {
               min-height: 0 !important;
@@ -377,6 +384,12 @@ export default function QuotationReportPage() {
               break-inside: avoid !important;
               page-break-inside: avoid !important;
             }
+            /* Print-safe flats: no translucency / blur compositing in PDF export */
+            .makc-caption-card {
+              background: #ffffff !important;
+              backdrop-filter: none !important;
+              -webkit-backdrop-filter: none !important;
+            }
             h1, h2, h3, h4, [class*="SectionHeading"] {
               break-after: avoid !important;
               page-break-after: avoid !important;
@@ -387,9 +400,15 @@ export default function QuotationReportPage() {
             }
           }
 
+          /* Consistent font stack for entire quotation page */
+          .quotation-report-root {
+            font-family: ui-sans-serif, system-ui, sans-serif;
+          }
+
           /* Web PDF preview styling (light only) */
           .makc-page {
-            width: 210mm;
+            width: 100%;
+            max-width: 210mm;
             background: ${previewCardBg};
             position: relative;
             box-shadow: 0 10px 40px -10px rgba(0,0,0,0.15);

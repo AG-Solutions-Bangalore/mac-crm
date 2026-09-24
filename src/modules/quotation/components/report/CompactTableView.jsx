@@ -68,7 +68,7 @@ export default function CompactTableView({
         background: LIGHT.pageBg,
         color: LIGHT.pageText,
         colorScheme: "light",
-        fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+        fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
       }}
     >
       {/* Metric Cards (screen only — hidden in print) */}

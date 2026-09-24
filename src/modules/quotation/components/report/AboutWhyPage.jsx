@@ -1,3 +1,4 @@
+import { MapPin, Phone, Mail, Home, Layers } from "lucide-react";
 import React from "react";
 import { Award, CheckCircle2, Zap, Shield, Users, Headphones, Star, Globe } from "lucide-react";
 import logoImg from "@/assets/logo.png";
@@ -30,7 +31,7 @@ export default function AboutWhyPage({ heroImage, clientName }) {
       style={{
         background: isLight ? "#ffffff" : "#06090f",
         color: isLight ? "#0f172a" : "#fff",
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
         padding: "0",
         height: "297mm",
         maxHeight: "297mm",
@@ -202,6 +203,35 @@ export default function AboutWhyPage({ heroImage, clientName }) {
       >
         <span>MAKc Automation and Solutions LLP · ISO 9001:2015 Certified</span>
         <span style={{ color: isLight ? "#b45309" : "#d4af37", fontWeight: 600 }}>Company Overview</span>
+      </div>
+
+      {/* ─── FOOTER 2 ─── */}
+      <div
+        style={{
+          padding: "12px 36px",
+          borderTop: "1px solid #e2e8f0",
+          background: "linear-gradient(180deg, #f1f5f9 0%, #ffffff 100%)",
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          flexShrink: 0, marginTop: "auto",
+        }}
+      >
+        <div style={{ display: "flex", gap: "20px", fontSize: "9px", color: "#0f172a" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <MapPin style={{ width: 10, height: 10, color: isLight ? "#0284c7" : "#38bdf8" }} />
+            BEML Layout, Brookfield, Bangalore – 560066
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <Phone style={{ width: 10, height: 10, color: isLight ? "#0284c7" : "#38bdf8" }} />
+            +91-7338504441
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <Mail style={{ width: 10, height: 10, color: isLight ? "#0284c7" : "#38bdf8" }} />
+            vinod@makcautomations.com
+          </span>
+        </div>
+        <span style={{ fontSize: "9px", color: isLight ? "#b45309" : "#fbbf24", fontWeight: 700, letterSpacing: "0.05em" }}>
+          Commercial Proposal — Confidential
+        </span>
       </div>
     </div>
   );

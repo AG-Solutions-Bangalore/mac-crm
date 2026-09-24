@@ -1,6 +1,8 @@
 import React from "react";
 import { Sliders, Layers, Lock, Wifi, Video, Volume2 } from "lucide-react";
-import logoImg from "@/assets/logo.png";
+import logoImg from "@/assets/MAKc-Logo.svg";
+import isoImg from "@/assets/iso-image.svg";
+import heroBgImg from "@/assets/hero_bg-light-1392.webp";
 
 const SERVICES = [
   { title: "Smart Switches", icon: Sliders },
@@ -11,9 +13,11 @@ const SERVICES = [
   { title: "Sound & Light", icon: Volume2 },
 ];
 
-// Light executive cover — white hero photo is the page background (≈72% height).
-// Header logo, ISO seal, headline and caption all layer above it with a soft
-// white veil so dark text stays crisp over the bright villa photo.
+const PAGE_PX = "28px";
+
+// Light executive cover — hero photo extends across the top (~72% height)
+// with a smooth top-to-bottom overlay so the image shows through properly
+// while maintaining crisp text readability and dissolving into solid white at the bottom.
 export default function CoverPage({
   clientName,
   projectAddress,
@@ -21,7 +25,7 @@ export default function CoverPage({
   quotationDate,
   contactPerson,
   contactPhone,
-  bgImage,
+  bgImage = heroBgImg,
 }) {
   return (
     <div
@@ -29,89 +33,86 @@ export default function CoverPage({
       style={{
         background: "#ffffff",
         color: "#0f172a",
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
         display: "flex",
         flexDirection: "column",
         boxSizing: "border-box",
         overflow: "hidden",
         position: "relative",
         padding: 0,
+        width: "100%",
+        maxWidth: "210mm",
         height: "297mm",
         maxHeight: "297mm",
         pageBreakInside: "avoid",
         breakInside: "avoid",
         pageBreakAfter: "always",
         breakAfter: "page",
+        border: "1px solid rgba(0, 0, 0, 0.1)",
+
       }}
     >
-      {/* ── HERO BACKGROUND — white villa photo, top 72% of page ── */}
+      {/* ── HERO BACKGROUND — villa photo with smooth top-to-bottom overlay ── */}
       <div
         style={{
-          position: "absolute", top: 0, left: 0, right: 0, height: "72%", zIndex: 0,
-          overflow: "hidden",
+          position: "absolute", top: "-10%", left: 0, right: 0, width: "100%", height: "100%", zIndex: 0,
+          overflow: "hidden", pointerEvents: "none",
         }}
       >
         <img
-          src={bgImage}
+          src={bgImage || heroBgImg}
           alt="Smart home"
-          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 35%", display: "block" }}
+          style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%", display: "block" }}
         />
-        {/* Soft white veil — keeps dark overlay text crisp while photo shows through */}
+        {/* Reverse overlay: white at top for crisp text legibility, fading to transparent toward bottom so bg image shows properly */}
         <div
           style={{
             position: "absolute", inset: 0,
-            background: "linear-gradient(to bottom, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.72) 32%, rgba(255,255,255,0.28) 58%, rgba(255,255,255,0.55) 82%, #ffffff 100%)",
+            background: "linear-gradient(to bottom, #ffffff 17%, rgba(255,255,255,0.92) 24%, rgba(255,255,255,0.20) 60%, rgba(255,255,255,0) 100%)",
           }}
         />
       </div>
 
-      {/* ── HEADER (layered over hero) ── */}
+      {/* ── HEADER (transparent — full-bleed photo behind logos) ── */}
       <div
         style={{
           position: "relative", zIndex: 2,
           display: "flex", justifyContent: "space-between", alignItems: "center",
-          padding: "18px 28px 0",
+          paddingTop: "20px", paddingLeft: PAGE_PX, paddingRight: PAGE_PX, paddingBottom: "4px",
+          boxSizing: "border-box", width: "100%",
+          background: "transparent",
         }}
       >
-        {/* Logo only — transparent asset, no box/background/border/shadow anywhere */}
-        <img src={logoImg} alt="MAKc" style={{ height: "52px", objectFit: "contain", display: "block", background: "transparent", backgroundColor: "transparent", border: "none", boxShadow: "none", outline: "none" }} />
-
-        {/* Enlarged ISO seal — clearly visible stamp */}
-        <div
-          title="ISO 9001:2015 Certified"
+        {/* MAKc Brand Logo */}
+        <img
+          src={logoImg}
+          alt="MAKc"
+          className="p-1"
           style={{
-            width: "68px", height: "68px", borderRadius: "50%",
-            border: "2.5px solid #047857",
-            background: "#ffffff",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            flexShrink: 0,
-            boxShadow: "0 4px 14px rgba(4,120,87,0.22)",
+            height: "48px", width: "auto", objectFit: "contain", display: "block",
+            background: "#ffffff", border: "none", boxShadow: "none", outline: "none",
           }}
-        >
-          <div
-            style={{
-              width: "58px", height: "58px", borderRadius: "50%",
-              border: "1.5px dashed #059669",
-              display: "flex", flexDirection: "column",
-              alignItems: "center", justifyContent: "center",
-              lineHeight: 1,
-            }}
-          >
-            <span style={{ fontSize: "14px", fontWeight: 900, color: "#047857", letterSpacing: "0.04em" }}>
-              ISO
-            </span>
-            <span style={{ fontSize: "8px", fontWeight: 800, color: "#047857", letterSpacing: "0.02em", marginTop: "2px" }}>
-              9001:2015
-            </span>
-          </div>
-        </div>
+        />
+
+        {/* Official ISO 9001:2015 SVG Stamp */}
+        <img
+          src={isoImg}
+          alt="ISO 9001:2015"
+          className="p-1"
+          style={{
+            height: "48px", width: "auto", objectFit: "contain", display: "block",
+            background: "#ffffff", border: "none", boxShadow: "none", outline: "none",
+          }}
+        />
       </div>
 
-      {/* ── HERO TEXT (layered over hero photo, dark text over white veil) ── */}
+      {/* ── HERO TEXT (dark text over white veil, photo full-bleed behind) ── */}
       <div
         style={{
           position: "relative", zIndex: 2,
-          padding: "14px 28px 0",
+          paddingTop: "14px", paddingLeft: PAGE_PX, paddingRight: PAGE_PX, paddingBottom: 0,
+          boxSizing: "border-box", width: "100%",
+          background: "transparent",
         }}
       >
         <div
@@ -153,7 +154,7 @@ export default function CoverPage({
             fontSize: "34px", fontWeight: 900, lineHeight: 1.08,
             letterSpacing: "-0.02em", margin: "0 0 8px",
             color: "#0b1526",
-            fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+            fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
           }}
         >
           Smart Home Automation
@@ -198,8 +199,9 @@ export default function CoverPage({
       </div>
 
       {/* ── CAPTION (tightly follows client name — no big gap) ── */}
-      <div style={{ position: "relative", zIndex: 2, padding: "8px 28px 0", flex: "0 0 auto", display: "flex", alignItems: "flex-start", paddingBottom: "10px" }}>
+      <div style={{ position: "relative", zIndex: 2, paddingTop: "8px", paddingLeft: PAGE_PX, paddingRight: PAGE_PX, paddingBottom: "10px", boxSizing: "border-box", width: "100%", flex: "0 0 auto", display: "flex", alignItems: "flex-start", background: "transparent" }}>
         <div
+          className="makc-caption-card"
           style={{
             width: "100%",
             display: "flex", justifyContent: "space-between", alignItems: "flex-end",
@@ -220,9 +222,10 @@ export default function CoverPage({
             </p>
           </div>
           <span
+            className="bg-amber-200"
             style={{
               fontSize: "11.5px", fontWeight: 700, color: "#0b1526",
-              background: "#fef3c7",
+              // background: "#fef3c7",
               border: "1px solid #fde047",
               borderRadius: "6px", padding: "6px 14px", whiteSpace: "nowrap",
             }}
@@ -233,7 +236,7 @@ export default function CoverPage({
       </div>
 
       {/* ── FOOTER WRAPPER: SERVICE PILLS + METADATA CARD (solid white, below hero) ── */}
-      <div style={{ position: "relative", zIndex: 2, padding: "6px 28px 16px", background: "#ffffff", marginTop: "auto" }}>
+      <div style={{ position: "relative", zIndex: 2, paddingTop: "6px", paddingLeft: PAGE_PX, paddingRight: PAGE_PX, paddingBottom: "16px", boxSizing: "border-box", width: "100%", background: "#ffffff", marginTop: "auto" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "6px", marginBottom: "10px" }}>
           {SERVICES.map((srv, i) => {
             const Icon = srv.icon;
@@ -280,7 +283,7 @@ export default function CoverPage({
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 28px" }}>
             {[
               { label: "Client / Project", value: clientName },
-              { label: "Location", value: projectAddress },
+              { label: "Area", value: projectAddress },
               { label: "Quotation Ref", value: `#${quotationNo}`, color: "#0284c7" },
               { label: "Proposal Date", value: quotationDate },
             ].map((f, i) => (
