@@ -29,6 +29,9 @@ const formatWarranty = (val) => {
 
 // Light-only PDF export theme — ignores the app's global dark/light mode
 // via explicit inline styles + colorScheme so print output is always light.
+// Shared font — ui-sans-serif on every text in this view
+const FONT = "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+
 const LIGHT = {
   pageBg: "#ffffff",
   pageText: "#0f172a",
@@ -58,9 +61,7 @@ export default function CompactTableView({
   installPct = 5,
   netTotal,
   formatMoney,
-  switchFinishes = {},
 }) {
-  const isSmartSwitchRow = (app) => /switch/i.test(app || "");
   return (
     <div
       className="makc-page makc-page-dynamic makc-compact-view space-y-6 w-full py-4 px-4 md:px-6"
@@ -68,9 +69,11 @@ export default function CompactTableView({
         background: LIGHT.pageBg,
         color: LIGHT.pageText,
         colorScheme: "light",
-        fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+        fontFamily: FONT,
       }}
     >
+      {/* Enforce ui-sans-serif on every text in this view */}
+      <style>{`.makc-compact-view, .makc-compact-view * { font-family: ${FONT} !important; }`}</style>
       {/* Metric Cards (screen only — hidden in print) */}
       <div className="grid gap-4 md:grid-cols-5 quotation-no-print">
         <Card
@@ -174,12 +177,10 @@ export default function CompactTableView({
                       <TableCell className="font-bold text-center" style={{ color: LIGHT.accent }}>{row.quantity || "-"}</TableCell>
                       <TableCell style={{ color: LIGHT.bodyText }}>{formatMoney(row.price)}</TableCell>
                       <TableCell className="font-bold" style={{ color: LIGHT.accent }}>{formatMoney(row.totalPrice)}</TableCell>
-                      <TableCell className="font-medium" style={{ color: LIGHT.bodyText }}>
-                        {isSmartSwitchRow(row.application)
-                          ? (switchFinishes[row.__idx] || row.finish || "-")
-                          : "-"}
+                      <TableCell className="font-medium text-center" style={{ color: LIGHT.bodyText }}>
+                        {row.finish || "-"}
                       </TableCell>
-                      <TableCell className="font-bold" style={{ color: LIGHT.headingText }}>{row.brand || "-"}</TableCell>
+                      <TableCell className="font-bold whitespace-nowrap" style={{ color: LIGHT.headingText }}>{row.brand || "-"}</TableCell>
                       <TableCell className="font-bold" style={{ color: LIGHT.green }}>{formatWarranty(row.warranty)}</TableCell>
                     </TableRow>
                   ) : (

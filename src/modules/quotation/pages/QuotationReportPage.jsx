@@ -14,6 +14,8 @@ import { useActiveAreasQuery } from "../../area/hooks/useArea";
 import { useActiveServicesQuery } from "../../service/hooks/useService";
 import { useActiveBrandsQuery } from "../../brand/hooks/useBrand";
 import { useBuyerQuery } from "../../buyer/hooks/useBuyer";
+import { useActivePropertiesQuery } from "../../property/hooks/useProperty";
+import { useActiveCategoriesQuery } from "../../category/hooks/useCategory";
 
 import ReportHeaderActions from "../components/report/ReportHeaderActions";
 import CoverPage from "../components/report/CoverPage";
@@ -91,18 +93,19 @@ export default function QuotationReportPage() {
   const { data: servicesData, isLoading: servicesLoading } =
     useActiveServicesQuery();
   const { data: brandsData, isLoading: brandsLoading } = useActiveBrandsQuery();
+  const { data: propertiesData, isLoading: propertiesLoading } =
+    useActivePropertiesQuery();
+  const { data: categoriesData, isLoading: categoriesLoading } =
+    useActiveCategoriesQuery();
 
   const quotationDetail = isRevised ? revData?.data : parentData?.data;
 
   // Logged-in user (fallback for "Prepared By")
   const authUser = useSelector((state) => state.auth?.user);
 
-  // Buyer lookup — the quotation list/detail API exposes `buyer_name`,
-  // but fetch the buyer record too so name / mobile / address are correct
-  // even when the detail payload only carries `quotation_buyer_id`.
+  // Buyer lookup — fetch the buyer record so name / mobile / address are available
   const buyerId = quotationDetail?.quotation_buyer_id;
-  const needsBuyerFetch =
-    Boolean(buyerId) && !quotationDetail?.buyer_name;
+  const needsBuyerFetch = Boolean(buyerId);
   const { data: buyerData, isLoading: buyerLoading } = useBuyerQuery(
     buyerId,
     needsBuyerFetch
@@ -127,6 +130,8 @@ export default function QuotationReportPage() {
     servicesLoading ||
     brandsLoading ||
     productsLoading ||
+    propertiesLoading ||
+    categoriesLoading ||
     (needsBuyerFetch && buyerLoading);
 
   if (isLoading) return <LoadingBar />;
@@ -148,6 +153,7 @@ export default function QuotationReportPage() {
   const services = servicesData?.data || [];
   const products = productsData?.data || [];
   const brands = brandsData?.data || [];
+  const categories = categoriesData?.data || [];
 
   // Helper mappings
   const getFloorName = (fid) =>
@@ -175,6 +181,19 @@ export default function QuotationReportPage() {
     const productName =
       prodDetails?.product_name || "Product ID: " + sub.quotation_sub_product_id;
 
+    // Resolve category/finish selected under categories
+    const categoryObj = categories.find(
+      (c) =>
+        c.id?.toString() === prodDetails?.category_id?.toString() ||
+        c.id?.toString() === sub.quotation_category_id?.toString()
+    );
+    const finishName =
+      categoryObj?.category_name ||
+      prodDetails?.category_name ||
+      sub.category_name ||
+      quotationDetail.quotation_category_name ||
+      "-";
+
     return {
       __idx: idx,
       type: "item",
@@ -185,6 +204,7 @@ export default function QuotationReportPage() {
       quantity: Number(sub.quotation_sub_quantity) || 0,
       price: Number(sub.quotation_sub_price) || 0,
       totalPrice: Number(sub.quotation_sub_amount) || 0,
+      finish: finishName,
       brand: brandName,
       warranty: warranty,
       notes: sub.quotation_sub_notes || `${floorName} - ${areaName}`,
@@ -244,6 +264,29 @@ export default function QuotationReportPage() {
     quotationDetail.buyer?.buyer_address ||
     quotationDetail.address ||
     "Bangalore, India";
+
+  // Property Type
+  const properties = propertiesData?.data || [];
+  const propertyObj = properties.find(
+    (p) => p.id?.toString() === quotationDetail.quotation_property_id?.toString()
+  );
+  const propertyType =
+    propertyObj?.property ||
+    quotationDetail.property_name ||
+    quotationDetail.property?.property ||
+    quotationDetail.property ||
+    quotationDetail.property_type ||
+    "-";
+
+  // Client contact number
+  const clientPhone =
+    quotationDetail.buyer_mobile ||
+    quotationDetail.client_phone ||
+    quotationDetail.client_mobile ||
+    quotationDetail.customer_mobile ||
+    quotationDetail.buyer?.buyer_mobile ||
+    buyer.buyer_mobile ||
+    "-";
   const quotationNo = quotationDetail.quotation_no || quotationDetail.id || "2894";
   const quotationDateRaw =
     quotationDetail.quotation_date || quotationDetail.created_at;
@@ -353,8 +396,8 @@ export default function QuotationReportPage() {
             .makc-cover-page {
               width: 210mm !important;
               max-width: 210mm !important;
-              height: 297mm !important;
-              max-height: 297mm !important;
+              height: 296mm !important;
+              max-height: 296mm !important;
               box-sizing: border-box !important;
               page-break-after: always !important;
               break-after: page !important;
@@ -366,6 +409,30 @@ export default function QuotationReportPage() {
             .makc-cover-page * {
               box-shadow: none !important;
               text-shadow: none !important;
+            }
+            .makc-about-why-page {
+              width: 210mm !important;
+              max-width: 210mm !important;
+              height: 296mm !important;
+              max-height: 296mm !important;
+              box-sizing: border-box !important;
+              page-break-before: always !important;
+              break-before: page !important;
+              page-break-after: avoid !important;
+              break-after: avoid !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+              overflow: hidden !important;
+              border: 1px solid rgba(0, 0, 0, 0.1) !important;
+            }
+            .makc-about-why-page * {
+              box-shadow: none !important;
+              text-shadow: none !important;
+            }
+            .makc-print-wrapper > *:last-child {
+              page-break-after: avoid !important;
+              break-after: avoid !important;
+              margin-bottom: 0 !important;
             }
             .makc-page-dynamic {
               min-height: 0 !important;
@@ -476,6 +543,8 @@ export default function QuotationReportPage() {
             {/* Page 1: Executive Cover Page */}
             <CoverPage
               clientName={clientName}
+              clientPhone={clientPhone}
+              propertyType={propertyType}
               projectAddress={projectAddress}
               quotationNo={quotationNo}
               quotationDate={quotationDate}

@@ -20,54 +20,63 @@ const AWARDS = [
 
 const SERVICES = [
   "Smart Touch Switches", "Curtains & Blinds Automation", "Door & Gate Automation",
-  "Architectural Lighting", "Audio & Sound Systems", "High-Speed Networking", "CCTV & Surveillance",
+  "Architectural Lighting", "Room Audio", "High-Speed Networking", "CCTV & Security",
 ];
 
 export default function AboutWhyPage({ heroImage, clientName }) {
   const isLight = true; // Light-only theme (theme switcher removed)
+  // Shared font — ui-sans-serif on every text in this page
+  const FONT = "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
   return (
     <div
-      className="makc-page makc-cover-page flex flex-col justify-between"
+      className="makc-page makc-about-why-page flex flex-col justify-between"
       style={{
         background: isLight ? "#ffffff" : "#06090f",
         color: isLight ? "#0f172a" : "#fff",
-        fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+        fontFamily: FONT,
         padding: "0",
-        height: "297mm",
-        maxHeight: "297mm",
+        width: "100%",
+        maxWidth: "210mm",
+        height: "296mm",
+        maxHeight: "296mm",
         boxSizing: "border-box",
         overflow: "hidden",
         pageBreakInside: "avoid",
         breakInside: "avoid",
-        pageBreakAfter: "always",
-        breakAfter: "page",
+        pageBreakBefore: "always",
+        breakBefore: "page",
+        pageBreakAfter: "avoid",
+        breakAfter: "avoid",
+        border: "1px solid rgba(0, 0, 0, 0.1)",
       }}
     >
+      {/* Enforce ui-sans-serif on every text in this page */}
+      <style>{`.makc-page, .makc-page * { font-family: ${FONT} !important; }`}</style>
       {/* ─── HEADER ─── */}
       <div
         style={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
-          padding: "20px 36px 16px",
+          padding: "16px 32px 10px",
         }}
       >
         <div>
-          <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", color: isLight ? "#b45309" : "#d4af37", textTransform: "uppercase", margin: 0, marginBottom: "4px" }}>
+          <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", color: isLight ? "#b45309" : "#d4af37", textTransform: "uppercase", margin: 0, marginBottom: "3px" }}>
             ✦ Company Profile
           </p>
-          <h2 style={{ fontSize: "22px", fontWeight: 900, margin: 0, letterSpacing: "-0.02em", color: isLight ? "#0f172a" : "#ffffff" }}>
+          <h2 style={{ fontSize: "20px", fontWeight: 900, margin: 0, letterSpacing: "-0.02em", color: isLight ? "#0f172a" : "#ffffff" }}>
             About MAKc &amp; Our Excellence
           </h2>
-          <p style={{ fontSize: "10px", color: isLight ? "#0284c7" : "#38bdf8", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", margin: "3px 0 0" }}>
+          <p style={{ fontSize: "9.5px", color: isLight ? "#0284c7" : "#38bdf8", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", margin: "2px 0 0" }}>
             Redefining Luxury Living — Engineering Trust Since Day One
           </p>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "5px", background: isLight ? "#fef3c7" : "rgba(30,20,5,0.85)", border: isLight ? "1px solid #fde047" : "1px solid rgba(212,175,55,0.4)", borderRadius: "999px", padding: "5px 12px", fontSize: "9px", fontWeight: 700, color: isLight ? "#b45309" : "#d4af37" }}>
-            <Award style={{ width: 12, height: 12 }} /> Award Winning
+          <div style={{ display: "flex", alignItems: "center", gap: "5px", background: isLight ? "#fef3c7" : "rgba(30,20,5,0.85)", border: isLight ? "1px solid #fde047" : "1px solid rgba(212,175,55,0.4)", borderRadius: "999px", padding: "4px 10px", fontSize: "8.5px", fontWeight: 700, color: isLight ? "#b45309" : "#d4af37" }}>
+            <Award style={{ width: 11, height: 11 }} /> Award Winning
           </div>
           {/* Logo only — transparent asset, no box/background/border/shadow anywhere */}
-          <img src={logoImg} alt="MAKc" style={{ height: "52px", objectFit: "contain", display: "block", background: "transparent", backgroundColor: "transparent", border: "none", boxShadow: "none", outline: "none" }} />
+          <img src={logoImg} alt="MAKc" style={{ height: "44px", objectFit: "contain", display: "block", background: "transparent", backgroundColor: "transparent", border: "none", boxShadow: "none", outline: "none" }} />
         </div>
       </div>
 
@@ -78,11 +87,12 @@ export default function AboutWhyPage({ heroImage, clientName }) {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          padding: "22px 36px",
+          padding: "10px 32px",
+          gap: "8px",
         }}
       >
         {/* Brand intro paragraph */}
-        <p style={{ fontSize: "11.5px", color: isLight ? "#475569" : "#94a3b8", lineHeight: 1.75, margin: 0 }}>
+        <p style={{ fontSize: "10.5px", color: isLight ? "#475569" : "#94a3b8", lineHeight: 1.55, margin: 0 }}>
           At <strong style={{ color: isLight ? "#0f172a" : "#e2e8f0" }}>MAKc Automation and Solutions LLP</strong>, we craft bespoke smart-home ecosystems
           engineered for peak reliability, security, and effortless elegance. Our turnkey solutions blend
           cutting-edge technology with artisan craftsmanship — delivering an experience that truly embodies{" "}
@@ -90,19 +100,19 @@ export default function AboutWhyPage({ heroImage, clientName }) {
         </p>
 
         {/* Service Pills */}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
           {SERVICES.map((s, i) => (
             <span
               key={i}
               style={{
-                display: "flex", alignItems: "center", gap: "6px",
+                display: "flex", alignItems: "center", gap: "5px",
                 background: isLight ? "#f1f5f9" : "rgba(15,23,42,0.9)",
                 border: isLight ? "1px solid #cbd5e1" : "1px solid rgba(56,189,248,0.25)",
-                borderRadius: "999px", padding: "5px 14px",
-                fontSize: "10px", fontWeight: 600, color: isLight ? "#0369a1" : "#7dd3fc",
+                borderRadius: "999px", padding: "4px 10px",
+                fontSize: "9px", fontWeight: 600, color: isLight ? "#0369a1" : "#7dd3fc",
               }}
             >
-              <CheckCircle2 style={{ width: 11, height: 11, color: isLight ? "#0284c7" : "#38bdf8" }} />{s}
+              <CheckCircle2 style={{ width: 10, height: 10, color: isLight ? "#0284c7" : "#38bdf8" }} />{s}
             </span>
           ))}
         </div>
@@ -110,33 +120,33 @@ export default function AboutWhyPage({ heroImage, clientName }) {
         {/* Hero image showcase */}
         <div
           style={{
-            position: "relative", borderRadius: "14px", overflow: "hidden",
-            border: isLight ? "1px solid #cbd5e1" : "1px solid rgba(148,163,184,0.15)", height: "200px",
-            boxShadow: isLight ? "0 8px 24px rgba(0,0,0,0.1)" : "0 10px 36px rgba(0,0,0,0.6)", flexShrink: 0,
+            position: "relative", borderRadius: "12px", overflow: "hidden",
+            border: isLight ? "1px solid #cbd5e1" : "1px solid rgba(148,163,184,0.15)", height: "155px",
+            boxShadow: isLight ? "0 6px 18px rgba(0,0,0,0.08)" : "0 8px 28px rgba(0,0,0,0.5)", flexShrink: 0,
           }}
         >
           <img src={heroImage} alt="MAKc Smart Home" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           <div style={{ position: "absolute", inset: 0, background: isLight ? "linear-gradient(to top, rgba(255,255,255,0.95) 0%, transparent 60%)" : "linear-gradient(to top, rgba(6,9,15,0.9) 0%, transparent 60%)" }} />
-          <div style={{ position: "absolute", bottom: "16px", left: "20px", right: "20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+          <div style={{ position: "absolute", bottom: "12px", left: "16px", right: "16px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
             <div>
-              <p style={{ fontSize: "9.5px", fontWeight: 700, letterSpacing: "0.15em", color: isLight ? "#0284c7" : "#38bdf8", textTransform: "uppercase", margin: 0 }}>Intelligent Craftsmanship</p>
-              <p style={{ fontSize: "16px", fontWeight: 800, color: isLight ? "#0f172a" : "#fff", margin: "3px 0 0" }}>Seamless Control at Your Fingertips</p>
+              <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.15em", color: isLight ? "#0284c7" : "#38bdf8", textTransform: "uppercase", margin: 0 }}>Intelligent Craftsmanship</p>
+              <p style={{ fontSize: "15px", fontWeight: 800, color: isLight ? "#0f172a" : "#fff", margin: "2px 0 0" }}>Seamless Control at Your Fingertips</p>
             </div>
-            <span style={{ fontSize: "9.5px", color: isLight ? "#475569" : "#94a3b8", background: isLight ? "rgba(255,255,255,0.9)" : "rgba(15,23,42,0.85)", border: isLight ? "1px solid #cbd5e1" : "1px solid rgba(148,163,184,0.2)", borderRadius: "6px", padding: "4px 12px", backdropFilter: "blur(4px)" }}>
+            <span style={{ fontSize: "9px", color: isLight ? "#475569" : "#94a3b8", background: isLight ? "rgba(255,255,255,0.9)" : "rgba(15,23,42,0.85)", border: isLight ? "1px solid #cbd5e1" : "1px solid rgba(148,163,184,0.2)", borderRadius: "6px", padding: "3px 10px", backdropFilter: "blur(4px)" }}>
               ISO 9001:2015
             </span>
           </div>
         </div>
 
         {/* Why MAKc heading */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div style={{ flex: 1, height: "1px", background: isLight ? "#e2e8f0" : "rgba(148,163,184,0.15)" }} />
-          <p style={{ fontSize: "11px", fontWeight: 800, letterSpacing: "0.08em", color: isLight ? "#b45309" : "#d4af37", margin: 0 }}>Why choose MAKc?</p>
+          <p style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.08em", color: isLight ? "#b45309" : "#d4af37", margin: 0 }}>Why choose MAKc?</p>
           <div style={{ flex: 1, height: "1px", background: isLight ? "#e2e8f0" : "rgba(148,163,184,0.15)" }} />
         </div>
 
         {/* Why MAKc grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
           {WHY_ITEMS.map((item, i) => {
             const Icon = item.icon;
             return (
@@ -145,17 +155,17 @@ export default function AboutWhyPage({ heroImage, clientName }) {
                 style={{
                   background: isLight ? "#f8fafc" : "rgba(15,23,42,0.9)",
                   border: isLight ? "1px solid #e2e8f0" : "1px solid rgba(148,163,184,0.14)",
-                  borderRadius: "12px", padding: "12px 14px",
-                  boxShadow: isLight ? "0 4px 12px rgba(0,0,0,0.03)" : "none",
+                  borderRadius: "10px", padding: "8px 10px",
+                  boxShadow: isLight ? "0 2px 8px rgba(0,0,0,0.02)" : "none",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "5px" }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 6, background: isLight ? "#e0f2fe" : "rgba(56,189,248,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Icon style={{ width: 12, height: 12, color: isLight ? "#0284c7" : "#38bdf8" }} />
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
+                  <div style={{ width: 22, height: 22, borderRadius: 5, background: isLight ? "#e0f2fe" : "rgba(56,189,248,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Icon style={{ width: 11, height: 11, color: isLight ? "#0284c7" : "#38bdf8" }} />
                   </div>
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: isLight ? "#0f172a" : "#e2e8f0" }}>{item.title}</span>
+                  <span style={{ fontSize: "10px", fontWeight: 700, color: isLight ? "#0f172a" : "#e2e8f0" }}>{item.title}</span>
                 </div>
-                <p style={{ fontSize: "9px", color: isLight ? "#475569" : "#64748b", lineHeight: 1.5, margin: 0, fontWeight: 500 }}>{item.desc}</p>
+                <p style={{ fontSize: "8.5px", color: isLight ? "#475569" : "#64748b", lineHeight: 1.35, margin: 0, fontWeight: 500 }}>{item.desc}</p>
               </div>
             );
           })}
@@ -163,30 +173,30 @@ export default function AboutWhyPage({ heroImage, clientName }) {
 
         {/* Awards Section */}
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
             <div style={{ flex: 1, height: "1px", background: isLight ? "#e2e8f0" : "rgba(148,163,184,0.15)" }} />
-            <p style={{ fontSize: "9.5px", fontWeight: 800, letterSpacing: "0.2em", color: isLight ? "#b45309" : "#d4af37", textTransform: "uppercase", margin: 0 }}>
+            <p style={{ fontSize: "9px", fontWeight: 800, letterSpacing: "0.2em", color: isLight ? "#b45309" : "#d4af37", textTransform: "uppercase", margin: 0 }}>
               🏆 Recognition &amp; Awards
             </p>
             <div style={{ flex: 1, height: "1px", background: isLight ? "#e2e8f0" : "rgba(148,163,184,0.15)" }} />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
             {AWARDS.map((awd, i) => (
               <div
                 key={i}
                 style={{
                   background: isLight ? "#f8fafc" : "rgba(15,23,42,0.9)",
                   border: isLight ? "1px solid #fde047" : "1px solid rgba(212,175,55,0.35)",
-                  borderRadius: "12px", padding: "14px 12px",
-                  display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: "6px",
-                  boxShadow: isLight ? "0 4px 12px rgba(0,0,0,0.03)" : "none",
+                  borderRadius: "10px", padding: "8px 10px",
+                  display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: "4px",
+                  boxShadow: isLight ? "0 2px 8px rgba(0,0,0,0.02)" : "none",
                 }}
               >
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: isLight ? "#fef3c7" : "rgba(212,175,55,0.12)", border: isLight ? "1px solid #fde047" : "1px solid rgba(212,175,55,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <Award style={{ width: 15, height: 15, color: isLight ? "#b45309" : "#d4af37" }} />
+                <div style={{ width: 26, height: 26, borderRadius: "50%", background: isLight ? "#fef3c7" : "rgba(212,175,55,0.12)", border: isLight ? "1px solid #fde047" : "1px solid rgba(212,175,55,0.35)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Award style={{ width: 13, height: 13, color: isLight ? "#b45309" : "#d4af37" }} />
                 </div>
-                <p style={{ fontSize: "10.5px", fontWeight: 700, color: isLight ? "#0f172a" : "#f1f5f9", margin: 0, lineHeight: 1.4 }}>{awd.award}</p>
-                <span style={{ fontSize: "8.5px", color: isLight ? "#b45309" : "#d4af37", fontWeight: 600 }}>{awd.org}</span>
+                <p style={{ fontSize: "9.5px", fontWeight: 700, color: isLight ? "#0f172a" : "#f1f5f9", margin: 0, lineHeight: 1.3 }}>{awd.award}</p>
+                <span style={{ fontSize: "8px", color: isLight ? "#b45309" : "#d4af37", fontWeight: 600 }}>{awd.org}</span>
               </div>
             ))}
           </div>
@@ -196,9 +206,9 @@ export default function AboutWhyPage({ heroImage, clientName }) {
       {/* ─── FOOTER ─── */}
       <div
         style={{
-          padding: "12px 36px",
+          padding: "6px 32px",
           display: "flex", justifyContent: "space-between", alignItems: "center",
-          fontSize: "9.5px", color: isLight ? "#64748b" : "#475569",
+          fontSize: "8.5px", color: isLight ? "#64748b" : "#475569",
         }}
       >
         <span>MAKc Automation and Solutions LLP · ISO 9001:2015 Certified</span>
@@ -208,28 +218,28 @@ export default function AboutWhyPage({ heroImage, clientName }) {
       {/* ─── FOOTER 2 ─── */}
       <div
         style={{
-          padding: "12px 36px",
+          padding: "8px 32px",
           borderTop: "1px solid #e2e8f0",
           background: "linear-gradient(180deg, #f1f5f9 0%, #ffffff 100%)",
           display: "flex", justifyContent: "space-between", alignItems: "center",
           flexShrink: 0, marginTop: "auto",
         }}
       >
-        <div style={{ display: "flex", gap: "20px", fontSize: "9px", color: "#0f172a" }}>
+        <div style={{ display: "flex", gap: "16px", fontSize: "8.5px", color: "#0f172a" }}>
           <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <MapPin style={{ width: 10, height: 10, color: isLight ? "#0284c7" : "#38bdf8" }} />
+            <MapPin style={{ width: 9, height: 9, color: isLight ? "#0284c7" : "#38bdf8" }} />
             BEML Layout, Brookfield, Bangalore – 560066
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <Phone style={{ width: 10, height: 10, color: isLight ? "#0284c7" : "#38bdf8" }} />
+            <Phone style={{ width: 9, height: 9, color: isLight ? "#0284c7" : "#38bdf8" }} />
             +91-7338504441
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <Mail style={{ width: 10, height: 10, color: isLight ? "#0284c7" : "#38bdf8" }} />
+            <Mail style={{ width: 9, height: 9, color: isLight ? "#0284c7" : "#38bdf8" }} />
             vinod@makcautomations.com
           </span>
         </div>
-        <span style={{ fontSize: "9px", color: isLight ? "#b45309" : "#fbbf24", fontWeight: 700, letterSpacing: "0.05em" }}>
+        <span style={{ fontSize: "8.5px", color: isLight ? "#b45309" : "#fbbf24", fontWeight: 700, letterSpacing: "0.05em" }}>
           Commercial Proposal — Confidential
         </span>
       </div>

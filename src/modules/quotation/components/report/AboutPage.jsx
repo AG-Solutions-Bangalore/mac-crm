@@ -32,13 +32,12 @@ export default function AboutPage({ heroImage, clientName }) {
       <div className="flex flex-wrap gap-2.5 my-2">
         {[
           "Smart Switches",
-          "Curtain Automation",
-          "Door Automation",
-          "Gate Automation",
+          "Curtains & Blinds",
+          "Door & Gate Automation",
           "Architectural Lighting",
+          "Room Audio",
           "High-Speed Networking",
-          "CCTV Security",
-          "Surveillance Systems",
+          "CCTV & Security",
         ].map((pill, i) => (
           <span
             key={i}

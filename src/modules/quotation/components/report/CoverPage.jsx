@@ -1,25 +1,31 @@
 import React from "react";
-import { Sliders, Layers, Lock, Wifi, Video, Volume2 } from "lucide-react";
+import { Sliders, Layers, Lock, Wifi, Video, Volume2, Lightbulb } from "lucide-react";
 import logoImg from "@/assets/MAKc-Logo.svg";
-import isoImg from "@/assets/iso-image.svg";
+import isoImg from "@/assets/iso.png";
 import heroBgImg from "@/assets/hero_bg-light-1392.webp";
 
 const SERVICES = [
   { title: "Smart Switches", icon: Sliders },
   { title: "Curtains & Blinds", icon: Layers },
-  { title: "Door Automation", icon: Lock },
+  { title: "Door & Gate Automation", icon: Lock },
   { title: "Networking", icon: Wifi },
   { title: "CCTV & Security", icon: Video },
-  { title: "Sound & Light", icon: Volume2 },
+  { title: "Room Audio", icon: Volume2 },
+  { title: "Lights", icon: Lightbulb },
 ];
 
 const PAGE_PX = "28px";
+
+// Shared font — ui-sans-serif on every text in this page
+const FONT = "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
 // Light executive cover — hero photo extends across the top (~72% height)
 // with a smooth top-to-bottom overlay so the image shows through properly
 // while maintaining crisp text readability and dissolving into solid white at the bottom.
 export default function CoverPage({
   clientName,
+  clientPhone,
+  propertyType,
   projectAddress,
   quotationNo,
   quotationDate,
@@ -33,7 +39,7 @@ export default function CoverPage({
       style={{
         background: "#ffffff",
         color: "#0f172a",
-        fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+        fontFamily: FONT,
         display: "flex",
         flexDirection: "column",
         boxSizing: "border-box",
@@ -42,8 +48,8 @@ export default function CoverPage({
         padding: 0,
         width: "100%",
         maxWidth: "210mm",
-        height: "297mm",
-        maxHeight: "297mm",
+        height: "296mm",
+        maxHeight: "296mm",
         pageBreakInside: "avoid",
         breakInside: "avoid",
         pageBreakAfter: "always",
@@ -52,6 +58,8 @@ export default function CoverPage({
 
       }}
     >
+      {/* Enforce ui-sans-serif on every text in this page */}
+      <style>{`.makc-cover-page, .makc-cover-page * { font-family: ${FONT} !important; }`}</style>
       {/* ── HERO BACKGROUND — villa photo with smooth top-to-bottom overlay ── */}
       <div
         style={{
@@ -100,7 +108,7 @@ export default function CoverPage({
           alt="ISO 9001:2015"
           className="p-1"
           style={{
-            height: "48px", width: "auto", objectFit: "contain", display: "block",
+            height: "58px", width: "auto", objectFit: "contain", display: "block",
             background: "#ffffff", border: "none", boxShadow: "none", outline: "none",
           }}
         />
@@ -154,7 +162,7 @@ export default function CoverPage({
             fontSize: "34px", fontWeight: 900, lineHeight: 1.08,
             letterSpacing: "-0.02em", margin: "0 0 8px",
             color: "#0b1526",
-            fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+            fontFamily: FONT,
           }}
         >
           Smart Home Automation
@@ -230,14 +238,14 @@ export default function CoverPage({
               borderRadius: "6px", padding: "6px 14px", whiteSpace: "nowrap",
             }}
           >
-            800+ Projects
+            800+ Projects Completed
           </span>
         </div>
       </div>
 
       {/* ── FOOTER WRAPPER: SERVICE PILLS + METADATA CARD (solid white, below hero) ── */}
       <div style={{ position: "relative", zIndex: 2, paddingTop: "6px", paddingLeft: PAGE_PX, paddingRight: PAGE_PX, paddingBottom: "16px", boxSizing: "border-box", width: "100%", background: "#ffffff", marginTop: "auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "6px", marginBottom: "10px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "6px", marginBottom: "10px" }}>
           {SERVICES.map((srv, i) => {
             const Icon = srv.icon;
             return (
@@ -246,7 +254,7 @@ export default function CoverPage({
                 style={{
                   background: "#f8fafc",
                   border: "1px solid #cbd5e1",
-                  borderRadius: "8px", padding: "9px 4px",
+                  borderRadius: "8px", padding: "9px 3px",
                   display: "flex", flexDirection: "column",
                   alignItems: "center", gap: "6px",
                   boxShadow: "0 2px 6px rgba(0,0,0,0.03)",
@@ -261,7 +269,7 @@ export default function CoverPage({
                 >
                   <Icon style={{ width: 14, height: 14, color: "#0284c7" }} />
                 </div>
-                <span style={{ fontSize: "10.5px", fontWeight: 700, color: "#1e293b", textAlign: "center", lineHeight: 1.2 }}>
+                <span style={{ fontSize: "10px", fontWeight: 700, color: "#1e293b", textAlign: "center", lineHeight: 1.2 }}>
                   {srv.title}
                 </span>
               </div>
@@ -269,34 +277,35 @@ export default function CoverPage({
           })}
         </div>
 
-        {/* Metadata Card — enlarged type for Client / Location / Ref / Prepared By */}
+        {/* Metadata Card — Client / Client Contact / Property Type / Ref / Date / Prepared By */}
         <div
           style={{
             background: "#f8fafc",
             border: "1px solid #cbd5e1",
             borderRadius: "10px",
-            padding: "16px 20px",
+            padding: "14px 18px",
             display: "flex", justifyContent: "space-between", alignItems: "center",
             boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
           }}
         >
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 28px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px 18px", flex: 1 }}>
             {[
-              { label: "Client / Project", value: clientName },
-              { label: "Area", value: projectAddress },
+              { label: "Client", value: clientName },
+              { label: "Client Contact", value: clientPhone || "-" },
+              { label: "Property Type", value: propertyType || projectAddress || "-" },
               { label: "Quotation Ref", value: `#${quotationNo}`, color: "#0284c7" },
               { label: "Proposal Date", value: quotationDate },
             ].map((f, i) => (
               <div key={i}>
                 <span
                   style={{
-                    fontSize: "10.5px", color: "#64748b",
+                    fontSize: "10px", color: "#64748b",
                     textTransform: "uppercase", letterSpacing: "0.07em", display: "block", fontWeight: 700,
                   }}
                 >
                   {f.label}
                 </span>
-                <span style={{ fontSize: "14px", fontWeight: 700, color: f.color || "#0f172a", marginTop: "2px", display: "block" }}>
+                <span style={{ fontSize: "13.5px", fontWeight: 700, color: f.color || "#0f172a", marginTop: "2px", display: "block", overflowWrap: "break-word" }}>
                   {f.value}
                 </span>
               </div>

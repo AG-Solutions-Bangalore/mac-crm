@@ -2,28 +2,32 @@ import React from "react";
 import { MapPin, Phone, Mail, Home, Layers } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 
+// ─── Shared font — ui-sans-serif on every text in this document ─────────────
+const FONT = "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+
 // ─── Section Heading Component ─────────────────────────────────────────────
 function SectionHeading({ number, title, subtitle, isLight }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px", pageBreakAfter: "avoid", breakAfter: "avoid" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px", pageBreakAfter: "avoid", breakAfter: "avoid", fontFamily: FONT }}>
       <div
         style={{
           minWidth: "24px", height: "24px", borderRadius: "7px",
           background: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)",
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: "11px", fontWeight: 900, color: "#ffffff",
+          fontFamily: FONT,
           boxShadow: "0 3px 10px rgba(14,165,233,0.4)",
           flexShrink: 0,
         }}
       >
         {number}
       </div>
-      <div>
-        <h3 style={{ fontSize: "12px", fontWeight: 800, color: isLight ? "#0f172a" : "#f8fafc", margin: 0, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+      <div style={{ fontFamily: FONT }}>
+        <h3 style={{ fontSize: "12px", fontWeight: 800, color: isLight ? "#0f172a" : "#f8fafc", margin: 0, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: FONT }}>
           {title}
         </h3>
         {subtitle && (
-          <p style={{ fontSize: "9px", color: isLight ? "#64748b" : "#94a3b8", margin: "1px 0 0", letterSpacing: "0.02em" }}>{subtitle}</p>
+          <p style={{ fontSize: "9px", color: isLight ? "#64748b" : "#94a3b8", margin: "1px 0 0", letterSpacing: "0.02em", fontFamily: FONT }}>{subtitle}</p>
         )}
       </div>
     </div>
@@ -50,6 +54,7 @@ function TH({ children, align = "left", width, isLight }) {
       style={{
         textAlign: align, padding: "9px 10px",
         fontSize: "10.5px", fontWeight: 800, letterSpacing: "0.02em",
+        fontFamily: FONT,
         color: "#1e4a7a",
         borderBottom: "1px solid #c9dcee",
         borderRight: "1px solid #e2e8f0",
@@ -72,6 +77,7 @@ function TD({ children, align = "left", style: s, isLight, rowSpan }) {
       style={{
         textAlign: align, padding: "8px 10px",
         fontSize: "10.5px", color: isLight ? "#1e293b" : "#e2e8f0",
+        fontFamily: FONT,
         borderBottom: isLight ? "1px solid #f1f5f9" : "1px solid rgba(255,255,255,0.05)",
         borderRight: isLight ? "1px solid #eef2f7" : undefined,
         overflowWrap: "break-word",
@@ -94,6 +100,7 @@ function QuotationCategoryHeader({ title }) {
         padding: "4px 18px",
         fontSize: "13px",
         fontWeight: 800,
+        fontFamily: FONT,
         letterSpacing: "0.01em",
         lineHeight: 1.25,
         pageBreakAfter: "avoid",
@@ -117,6 +124,7 @@ function FloorSectionHeader({ floorName, colSpan = 8 }) {
         padding: "2px 14px",
         fontSize: "11px",
         fontWeight: 800,
+        fontFamily: FONT,
         color: "#1e4a7a",
         background: "#d7e9f7",
         borderBottom: "1px solid #bcd7ef",
@@ -124,7 +132,7 @@ function FloorSectionHeader({ floorName, colSpan = 8 }) {
         lineHeight: 1.3,
       }}
     >
-      <span style={{ display: "inline-flex", alignItems: "center", gap: "7px" }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: "7px", fontFamily: FONT }}>
         <Icon style={{ width: 13, height: 13, color: "#1e6fb5" }} />
         {floorName}
       </span>
@@ -132,9 +140,6 @@ function FloorSectionHeader({ floorName, colSpan = 8 }) {
   );
 }
 
-const FINISH_OPTIONS = ["", "Frame", "Frameless", "Brass", "Hybrid"];
-
-const isSmartSwitchApp = (appName) => /switch/i.test(appName || "");
 
 // ─── Mock QR (placeholder until the real UPI QR asset is provided) ─────────
 // Deterministic pseudo-random modules + standard finder squares, inline SVG
@@ -303,12 +308,14 @@ export default function DynamicProposalDocument({
       style={{
         background: t.docBg,
         color: t.docText,
-        fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+        fontFamily: FONT,
         padding: 0,
         display: "flex",
         flexDirection: "column",
       }}
     >
+      {/* Enforce ui-sans-serif on every text in this page */}
+      <style>{`.makc-page-dynamic, .makc-page-dynamic * { font-family: ${FONT} !important; }`}</style>
       {/* ─── HEADER ─── */}
       <div
         style={{
@@ -332,7 +339,7 @@ export default function DynamicProposalDocument({
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <div style={{ textAlign: "right" }}>
             <span style={{ fontSize: "8px", color: t.refLabel, display: "block", textTransform: "uppercase", letterSpacing: "0.09em", fontWeight: 600 }}>Proposal Ref</span>
-            <span style={{ fontSize: "13px", fontWeight: 800, color: t.refNo, fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif" }}>#{quotationNo}</span>
+            <span style={{ fontSize: "13px", fontWeight: 800, color: t.refNo, fontFamily: FONT }}>#{quotationNo}</span>
           </div>
           {/* Logo only — transparent asset, no box/background/border/shadow anywhere */}
           <img src={logoImg} alt="MAKc" style={{ height: "52px", objectFit: "contain", display: "block", background: "transparent", backgroundColor: "transparent", border: "none", boxShadow: "none", outline: "none" }} />
@@ -358,7 +365,7 @@ export default function DynamicProposalDocument({
               appears once per group. ── */}
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {groupEntries.map((group, gi) => {
-              const isSwitchGroup = isSmartSwitchApp(group.title);
+              const isSwitchGroup = /switch/i.test(group.title || "");
               const appTotal = group.floors
                 .flatMap((f) => f.areas)
                 .flatMap((a) => a.items)
@@ -383,17 +390,17 @@ export default function DynamicProposalDocument({
                     <table className="makc-proposal-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
                       <thead style={{ background: "#eaf0f7" }}>
                         <tr>
-                          <TH width={isSwitchGroup ? "13%" : "15%"} isLight={isLight}>Area / Room</TH>
-                          <TH width={isSwitchGroup ? "24%" : "28%"} isLight={isLight}>Product / System Specification</TH>
-                          <TH align="center" width={isSwitchGroup ? "6%" : "7%"} isLight={isLight}>Qty</TH>
-                          <TH align="right" width={isSwitchGroup ? "11%" : "13%"} isLight={isLight}>Unit Price</TH>
-                          <TH align="right" width={isSwitchGroup ? "11%" : "13%"} isLight={isLight}>Total Price</TH>
-                          {/* Finish column — Smart Switches table ONLY */}
+                          <TH width={isSwitchGroup ? "13%" : "14%"} isLight={isLight}>Area / Room</TH>
+                          <TH width={isSwitchGroup ? "23%" : "26%"} isLight={isLight}>Product / System Specification</TH>
+                          <TH align="center" width="6%" isLight={isLight}>Qty</TH>
+                          <TH align="right" width={isSwitchGroup ? "11%" : "12%"} isLight={isLight}>Unit Price</TH>
+                          <TH align="right" width={isSwitchGroup ? "11%" : "12%"} isLight={isLight}>Total Price</TH>
+                          {/* Finish column — shows category finish data without dropdown selector */}
                           {isSwitchGroup && (
                             <TH align="center" width="11%" isLight={isLight}>Finish</TH>
                           )}
-                          <TH align="left" width="12%" isLight={isLight}>Brand</TH>
-                          <TH align="center" width="12%" isLight={isLight}>Warranty</TH>
+                          <TH align="left" width={isSwitchGroup ? "15%" : "18%"} isLight={isLight}>Brand</TH>
+                          <TH align="center" width={isSwitchGroup ? "11%" : "12%"} isLight={isLight}>Warranty</TH>
                         </tr>
                       </thead>
                       <tbody>
@@ -450,33 +457,13 @@ export default function DynamicProposalDocument({
                                     <TD isLight={isLight} align="right" style={{ fontWeight: 800, color: t.totalAmountText, fontSize: "11.5px" }}>
                                       {formatMoney(item.totalPrice)}
                                     </TD>
-                                    {/* Finish cell — Smart Switches rows ONLY, no column otherwise */}
+                                    {/* Finish cell — shows category finish directly as text, no dropdown */}
                                     {isSwitchGroup && (
                                       <TD isLight={isLight} align="center" style={{ fontWeight: 600, color: t.brandText, fontSize: "10.5px" }}>
-                                        <select
-                                          className="quotation-no-print"
-                                          value={switchFinishes[item.__idx] || ""}
-                                          onChange={(e) => onSwitchFinishChange && onSwitchFinishChange(item.__idx, e.target.value)}
-                                          style={{
-                                            fontSize: "10px", fontWeight: 600, color: "#0f172a",
-                                            border: "1px solid #cbd5e1", borderRadius: "6px",
-                                            padding: "2px 4px", background: "#f8fafc", maxWidth: "100%",
-                                          }}
-                                        >
-                                          {FINISH_OPTIONS.map((opt) => (
-                                            <option key={opt} value={opt}>{opt === "" ? "Select" : opt}</option>
-                                          ))}
-                                        </select>
-                                        <span
-                                          style={{ display: "none" }}
-                                          className="makc-print-only"
-                                        >
-                                          {switchFinishes[item.__idx] || "-"}
-                                        </span>
-                                        <style>{`@media print { .quotation-no-print { display: none !important; } .makc-print-only { display: inline !important; } } @media screen { .makc-print-only { display: none !important; } }`}</style>
+                                        {item.finish && item.finish !== "-" ? item.finish : "-"}
                                       </TD>
                                     )}
-                                    <TD isLight={isLight} align="left" style={{ fontWeight: 700, color: t.brandText, fontSize: "11px" }}>
+                                    <TD isLight={isLight} align="left" style={{ fontWeight: 700, color: t.brandText, fontSize: "11px", whiteSpace: "nowrap" }}>
                                       {item.brand || "-"}
                                     </TD>
                                     <TD isLight={isLight} align="center" style={{ fontWeight: 700, color: t.warrantyText, fontSize: "11px" }}>
@@ -649,7 +636,7 @@ export default function DynamicProposalDocument({
                     style={{
                       fontSize: f.mono ? "12px" : "10.5px",
                       fontWeight: 800,
-                      fontFamily: "ui-sans-serif, system-ui, -apple-system, sans-serif",
+                      fontFamily: FONT,
                       color: f.mono ? t.bankMonoText : t.bankValText,
                       letterSpacing: f.mono ? "0.06em" : 0,
                     }}
