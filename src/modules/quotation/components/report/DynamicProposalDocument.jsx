@@ -366,6 +366,13 @@ export default function DynamicProposalDocument({
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             {groupEntries.map((group, gi) => {
               const isSwitchGroup = /switch/i.test(group.title || "");
+              const hasFinish =
+                isSwitchGroup ||
+                group.floors.some((f) =>
+                  f.areas.some((a) =>
+                    a.items.some((it) => it.finish && it.finish !== "-")
+                  )
+                );
               const appTotal = group.floors
                 .flatMap((f) => f.areas)
                 .flatMap((a) => a.items)
@@ -390,17 +397,17 @@ export default function DynamicProposalDocument({
                     <table className="makc-proposal-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
                       <thead style={{ background: "#eaf0f7" }}>
                         <tr>
-                          <TH width={isSwitchGroup ? "13%" : "14%"} isLight={isLight}>Area / Room</TH>
-                          <TH width={isSwitchGroup ? "23%" : "26%"} isLight={isLight}>Product / System Specification</TH>
+                          <TH width={hasFinish ? "13%" : "14%"} isLight={isLight}>Area / Room</TH>
+                          <TH width={hasFinish ? "23%" : "26%"} isLight={isLight}>Product / System Specification</TH>
                           <TH align="center" width="6%" isLight={isLight}>Qty</TH>
-                          <TH align="right" width={isSwitchGroup ? "11%" : "12%"} isLight={isLight}>Unit Price</TH>
-                          <TH align="right" width={isSwitchGroup ? "11%" : "12%"} isLight={isLight}>Total Price</TH>
-                          {/* Finish column — shows category finish data without dropdown selector */}
-                          {isSwitchGroup && (
+                          <TH align="right" width={hasFinish ? "11%" : "12%"} isLight={isLight}>Unit Price</TH>
+                          <TH align="right" width={hasFinish ? "11%" : "12%"} isLight={isLight}>Total Price</TH>
+                          {/* Finish column — shows category finish data directly as text */}
+                          {hasFinish && (
                             <TH align="center" width="11%" isLight={isLight}>Finish</TH>
                           )}
-                          <TH align="left" width={isSwitchGroup ? "15%" : "18%"} isLight={isLight}>Brand</TH>
-                          <TH align="center" width={isSwitchGroup ? "11%" : "12%"} isLight={isLight}>Warranty</TH>
+                          <TH align="left" width={hasFinish ? "15%" : "18%"} isLight={isLight}>Brand</TH>
+                          <TH align="center" width={hasFinish ? "11%" : "12%"} isLight={isLight}>Warranty</TH>
                         </tr>
                       </thead>
                       <tbody>
@@ -409,7 +416,7 @@ export default function DynamicProposalDocument({
                             {/* FLOOR subheader — rendered once per floor */}
                             {floor.name !== "" && (
                               <tr style={{ background: "#d7e9f7" }} className="break-inside-avoid">
-                                <FloorSectionHeader floorName={floor.name} colSpan={isSwitchGroup ? 8 : 7} />
+                                <FloorSectionHeader floorName={floor.name} colSpan={hasFinish ? 8 : 7} />
                               </tr>
                             )}
                             {floor.areas.map((area, ai) => (
@@ -458,7 +465,7 @@ export default function DynamicProposalDocument({
                                       {formatMoney(item.totalPrice)}
                                     </TD>
                                     {/* Finish cell — shows category finish directly as text, no dropdown */}
-                                    {isSwitchGroup && (
+                                    {hasFinish && (
                                       <TD isLight={isLight} align="center" style={{ fontWeight: 600, color: t.brandText, fontSize: "10.5px" }}>
                                         {item.finish && item.finish !== "-" ? item.finish : "-"}
                                       </TD>
