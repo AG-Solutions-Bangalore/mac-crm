@@ -1,10 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { notificationApi } from "../api/notificationApi";
 
-export function useNotificationsQuery(page = 1) {
+export function useNotificationsQuery(page = 1, search = "") {
   return useQuery({
-    queryKey: ["notifications", page],
-    queryFn: () => notificationApi.getNotifications(page),
+    queryKey: ["notifications", page, search],
+    queryFn: () => notificationApi.getNotifications(page, search),
+    placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
     retry: 1,

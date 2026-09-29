@@ -1,10 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { complaintApi } from "../api/complaintApi";
 
-export function useComplaintsQuery(page = 1) {
+export function useComplaintsQuery(page = 1, search = "") {
   return useQuery({
-    queryKey: ["complaints", page],
-    queryFn: () => complaintApi.getComplaints(page),
+    queryKey: ["complaints", page, search],
+    queryFn: () => complaintApi.getComplaints(page, search),
+    placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
     retry: 1,

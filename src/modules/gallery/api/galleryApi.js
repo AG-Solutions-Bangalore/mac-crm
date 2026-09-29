@@ -12,8 +12,9 @@ import apiClient from "@/api/apiClient";
  *   PATCH  /gallerys/{id}/status    → toggle gallery_status (Active / Inactive)
  */
 export const galleryApi = {
-  getGalleries: async (page = 1) => {
-    const response = await apiClient.get(`/gallery?page=${page}`);
+  getGalleries: async (page = 1, search = "") => {
+    const url = `/gallery?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
+    const response = await apiClient.get(url);
     return response.data;
   },
 

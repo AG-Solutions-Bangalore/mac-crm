@@ -1,8 +1,9 @@
 import apiClient from "@/api/apiClient";
 
 export const buyerApi = {
-  getBuyers: async (page = 1) => {
-    const response = await apiClient.get(`/buyer?page=${page}`);
+  getBuyers: async (page = 1, search = "") => {
+    const url = `/buyer?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
+    const response = await apiClient.get(url);
     return response.data;
   },
   getBuyerById: async (id) => {

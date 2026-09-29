@@ -1,8 +1,9 @@
 import apiClient from "@/api/apiClient";
 
 export const brandApi = {
-  getBrands: async (page = 1) => {
-    const response = await apiClient.get(`/brand?page=${page}`);
+  getBrands: async (page = 1, search = "") => {
+    const url = `/brand?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
+    const response = await apiClient.get(url);
     return response.data;
   },
   getBrandById: async (id) => {

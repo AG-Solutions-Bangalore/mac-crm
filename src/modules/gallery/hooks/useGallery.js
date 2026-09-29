@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { galleryApi } from "../api/galleryApi";
 
 /**
@@ -15,10 +15,11 @@ const LIST_KEY = ["galleries"];
 const ITEM_KEY = (id) => ["gallery", id];
 const ACTIVE_GALLERIES_KEY = ["activeGalleries"];
 
-export function useGalleriesQuery(page = 1) {
+export function useGalleriesQuery(page = 1, search = "") {
   return useQuery({
-    queryKey: [...LIST_KEY, page],
-    queryFn: () => galleryApi.getGalleries(page),
+    queryKey: [...LIST_KEY, page, search],
+    queryFn: () => galleryApi.getGalleries(page, search),
+    placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
     retry: 1,

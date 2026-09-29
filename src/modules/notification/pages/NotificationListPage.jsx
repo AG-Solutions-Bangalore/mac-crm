@@ -14,10 +14,11 @@ import NotificationDialog from "../components/NotificationDialog";
 
 const NotificationListPage = () => {
   const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);
 
-  const { data: responseData, isLoading, isError, refetch } = useNotificationsQuery(page);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useNotificationsQuery(page, searchTerm);
 
   const paginationData = responseData?.data;
   const notificationList = paginationData?.data || [];
@@ -88,8 +89,7 @@ const NotificationListPage = () => {
     },
   ];
 
-  if (isLoading) return <LoadingBar />;
-  if (isError) return <ApiErrorPage onRetry={refetch} />;
+  if (isError && !responseData) return <ApiErrorPage onRetry={refetch} />;
 
   const handleCreate = () => {
     setEditId(null);
@@ -104,10 +104,16 @@ const NotificationListPage = () => {
       </div>
 
       <DataTable
+        isLoading={isLoading || isFetching}
         data={notificationList}
         columns={columns}
         pageSize={50}
         searchPlaceholder="Search Notifications..."
+        searchValue={searchTerm}
+        onSearchChange={(val) => {
+          setSearchTerm(val);
+          setPage(1);
+        }}
         addButton={{
           onClick: handleCreate,
           label: "Add Notification",

@@ -1,8 +1,9 @@
 import apiClient from "@/api/apiClient";
 
 export const notificationApi = {
-  getNotifications: async (page = 1) => {
-    const response = await apiClient.get(`/notification?page=${page}`);
+  getNotifications: async (page = 1, search = "") => {
+    const url = `/notification?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
+    const response = await apiClient.get(url);
     return response.data;
   },
   getNotificationById: async (id) => {

@@ -19,9 +19,10 @@ import { useBuyersQuery } from "../hooks/useBuyer";
 const BuyerListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: responseData, isLoading, isError, refetch } = useBuyersQuery(page);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useBuyersQuery(page, searchTerm);
 
   const paginationData = responseData?.data;
   const buyerList = paginationData?.data || [];
@@ -86,8 +87,7 @@ const BuyerListPage = () => {
     },
   ];
 
-  if (isLoading) return <LoadingBar />;
-  if (isError) return <ApiErrorPage onRetry={refetch} />;
+  if (isError && !responseData) return <ApiErrorPage onRetry={refetch} />;
 
   return (
     <div className="px-5">
@@ -97,6 +97,7 @@ const BuyerListPage = () => {
         description="Manage buyer profiles and contact details"
       />
       <DataTable
+        isLoading={isLoading || isFetching}
         extraButton={
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[120px]">
@@ -113,6 +114,11 @@ const BuyerListPage = () => {
         columns={columns}
         searchPlaceholder="Search Buyers..."
         pageSize={50}
+        searchValue={searchTerm}
+        onSearchChange={(val) => {
+          setSearchTerm(val);
+          setPage(1);
+        }}
         addButton={{
           onClick: () => navigate("/buyer-list/create"),
           label: "Add Buyer",

@@ -1,8 +1,9 @@
 import apiClient from "@/api/apiClient";
 
 export const productApi = {
-  getProducts: async (page = 1) => {
-    const response = await apiClient.get(`/product?page=${page}`);
+  getProducts: async (page = 1, search = "") => {
+    const url = `/product?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
+    const response = await apiClient.get(url);
     return response.data;
   },
   getProductById: async (id) => {

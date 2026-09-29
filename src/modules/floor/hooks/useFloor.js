@@ -1,10 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { floorApi } from "../api/floorApi";
 
-export function useFloorsQuery() {
+export function useFloorsQuery(page = 1, search = "") {
   return useQuery({
-    queryKey: ["floors"],
-    queryFn: floorApi.getFloors,
+    queryKey: ["floors", page, search],
+    queryFn: () => floorApi.getFloors(page, search),
+    placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
     retry: 1,

@@ -14,8 +14,9 @@ import apiClient from "@/api/apiClient";
  * `blog_categories_ids` multi-select dropdown.
  */
 export const blogApi = {
-  getBlogs: async (page = 1) => {
-    const response = await apiClient.get(`/blog?page=${page}`);
+  getBlogs: async (page = 1, search = "") => {
+    const url = `/blog?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
+    const response = await apiClient.get(url);
     return response.data;
   },
 

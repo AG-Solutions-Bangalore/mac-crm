@@ -1,8 +1,12 @@
 import apiClient from "@/api/apiClient";
 
 export const floorApi = {
-  getFloors: async () => {
-    const response = await apiClient.get("/floor");
+  getFloors: async (page = 1, search = "") => {
+    const params = [];
+    if (page) params.push(`page=${page}`);
+    if (search) params.push(`search=${encodeURIComponent(search)}`);
+    const qs = params.length ? `?${params.join("&")}` : "";
+    const response = await apiClient.get(`/floor${qs}`);
     return response.data;
   },
   getFloorById: async (id) => {

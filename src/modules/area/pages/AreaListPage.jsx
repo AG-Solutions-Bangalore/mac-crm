@@ -19,9 +19,10 @@ import { useAreasQuery } from "../hooks/useArea";
 const AreaListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: responseData, isLoading, isError, refetch } = useAreasQuery(page);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useAreasQuery(page, searchTerm);
 
   const paginationData = responseData?.data;
   const areaList = paginationData?.data || [];
@@ -76,8 +77,7 @@ const AreaListPage = () => {
     },
   ];
 
-  if (isLoading) return <LoadingBar />;
-  if (isError) return <ApiErrorPage onRetry={refetch} />;
+  if (isError && !responseData) return <ApiErrorPage onRetry={refetch} />;
 
   return (
     <div className="px-5">
@@ -87,6 +87,7 @@ const AreaListPage = () => {
         description="Manage property area configurations"
       />
       <DataTable
+        isLoading={isLoading || isFetching}
         extraButton={
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[120px]">
@@ -103,6 +104,11 @@ const AreaListPage = () => {
         columns={columns}
         searchPlaceholder="Search Area..."
         pageSize={50}
+        searchValue={searchTerm}
+        onSearchChange={(val) => {
+          setSearchTerm(val);
+          setPage(1);
+        }}
         addButton={{
           onClick: () => navigate("/area-list/create"),
           label: "Add Area",

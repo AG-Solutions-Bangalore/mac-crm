@@ -26,11 +26,12 @@ import moment from "moment";
 const QuotationListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
   const [finishDateDialogOpen, setFinishDateDialogOpen] = useState(false);
   const [selectedQuotation, setSelectedQuotation] = useState(null);
   const [finishDate, setFinishDate] = useState("");
 
-  const { data: responseData, isLoading, isError, refetch } = useQuotationsQuery(page);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useQuotationsQuery(page, searchTerm);
   const updateFinishWorkDateMutation = useUpdateQuotationFinishWorkDateMutation();
 
   const handleOpenFinishDateDialog = (quotation) => {
@@ -181,8 +182,7 @@ const QuotationListPage = () => {
     },
   ];
 
-  if (isLoading) return <LoadingBar />;
-  if (isError) return <ApiErrorPage onRetry={refetch} />;
+  if (isError && !responseData) return <ApiErrorPage onRetry={refetch} />;
 
   return (
     <div className="px-5">
@@ -192,10 +192,16 @@ const QuotationListPage = () => {
         description="Manage customer quotations and revisions"
       />
       <DataTable
+        isLoading={isLoading || isFetching}
         data={quotationList}
         columns={columns}
         searchPlaceholder="Search Quotations..."
         pageSize={50}
+        searchValue={searchTerm}
+        onSearchChange={(val) => {
+          setSearchTerm(val);
+          setPage(1);
+        }}
         addButton={{
           onClick: () => navigate("/quotation-list/create"),
           label: "Add Quotation",

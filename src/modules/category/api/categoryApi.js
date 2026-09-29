@@ -1,8 +1,9 @@
 import apiClient from "@/api/apiClient";
 
 export const categoryApi = {
-  getCategories: async (page = 1) => {
-    const response = await apiClient.get(`/category?page=${page}`);
+  getCategories: async (page = 1, search = "") => {
+    const url = `/category?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
+    const response = await apiClient.get(url);
     return response.data;
   },
   getCategoryById: async (id) => {

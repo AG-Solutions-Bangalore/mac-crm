@@ -63,8 +63,7 @@ const PlaylistListPage = () => {
     setOpen(true);
   };
 
-  if (isLoading) return <LoadingBar />;
-  if (isError) return <ApiErrorPage onRetry={refetch} />;
+  if (isError && !responseData) return <ApiErrorPage onRetry={refetch} />;
 
   return (
     <div className="px-5">
@@ -76,6 +75,7 @@ const PlaylistListPage = () => {
 
       <div className="mt-6">
         <DataTable
+          isLoading={isLoading}
           data={responseData?.data ?? []}
           columns={columns}
           pageSize={50}
