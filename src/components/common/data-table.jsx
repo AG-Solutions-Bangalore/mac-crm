@@ -1,257 +1,3 @@
-// import {
-//   flexRender,
-//   getCoreRowModel,
-//   getFilteredRowModel,
-//   getPaginationRowModel,
-//   getSortedRowModel,
-//   useReactTable,
-// } from "@tanstack/react-table";
-// import { useState } from "react";
-// import {
-//   Table,
-//   TableBody,
-//   TableCell,
-//   TableHead,
-//   TableHeader,
-//   TableRow,
-// } from "@/components/ui/table";
-// import { Input } from "@/components/ui/input";
-// import { Button } from "@/components/ui/button";
-// import {
-//   ArrowUpDown,
-//   ChevronDown,
-//   ChevronLeft,
-//   ChevronRight,
-//   ChevronUp,
-//   Search,
-//   SquarePlus,
-// } from "lucide-react";
-// import {
-//   DropdownMenu,
-//   DropdownMenuCheckboxItem,
-//   DropdownMenuContent,
-//   DropdownMenuTrigger,
-// } from "@/components/ui/dropdown-menu";
-// import { Link } from "react-router-dom";
-
-// const DataTable = ({
-//   data = [],
-//   columns = [],
-//   pageSize = 10,
-//   searchPlaceholder = "Search...",
-//   addButton,
-//   extraButton,
-// }) => {
-//   const [sorting, setSorting] = useState([]);
-//   const [globalFilter, setGlobalFilter] = useState("");
-//   const [pagination, setPagination] = useState({
-//     pageIndex: 0,
-//     pageSize,
-//   });
-
-//   const table = useReactTable({
-//     data,
-//     columns,
-//     state: {
-//       sorting,
-//       globalFilter,
-//       pagination,
-//     },
-//     onSortingChange: setSorting,
-//     onGlobalFilterChange: setGlobalFilter,
-//     onPaginationChange: setPagination,
-//     getCoreRowModel: getCoreRowModel(),
-//     getFilteredRowModel: getFilteredRowModel(),
-//     getSortedRowModel: getSortedRowModel(),
-//     getPaginationRowModel: getPaginationRowModel(),
-//   });
-
-//   return (
-//     <div className="space-y-3">
-//       <div className="flex items-center justify-between py-1">
-//         <div className="relative w-64">
-//           <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-//           <Input
-//             value={globalFilter ?? ""}
-//             onChange={(e) => setGlobalFilter(e.target.value)}
-//             placeholder={searchPlaceholder}
-//             onKeyDown={(e) => {
-//               if (e.key === "Escape") {
-//                 setGlobalFilter("");
-//               }
-//             }}
-//             className="pl-8 h-9 text-sm bg-gray-50 border-gray-200 focus:border-gray-300 focus:ring-gray-200"
-//           />
-//         </div>
-//         <div className="flex flex-col md:flex-row md:ml-auto gap-2 w-full md:w-auto">
-//           <DropdownMenu>
-//             <DropdownMenuTrigger asChild>
-//               <Button variant="outline" size="sm" className="h-9">
-//                 Columns <ChevronDown className="ml-2 h-3 w-3" />
-//               </Button>
-//             </DropdownMenuTrigger>
-//             <DropdownMenuContent align="end" className="w-40">
-//               {table
-//                 .getAllColumns()
-//                 .filter((column) => column.getCanHide())
-//                 .map((column) => {
-//                   const columnDef = columns.find(
-//                     (col) =>
-//                       col.accessorKey === column.id || col.id === column.id,
-//                   );
-
-//                   return (
-//                     <DropdownMenuCheckboxItem
-//                       key={column.id}
-//                       className="text-xs capitalize"
-//                       checked={column.getIsVisible()}
-//                       onCheckedChange={(value) =>
-//                         column.toggleVisibility(!!value)
-//                       }
-//                     >
-//                       {columnDef?.header || column.id}
-//                     </DropdownMenuCheckboxItem>
-//                   );
-//                 })}
-//             </DropdownMenuContent>
-//           </DropdownMenu>
-
-//           {addButton &&
-//             (addButton.to ? (
-//               <Link to={addButton.to}>
-//                 <Button variant="default" size="sm" className="h-9">
-//                   <SquarePlus className="h-3 w-3 mr-2" />
-//                   {addButton.label}
-//                 </Button>
-//               </Link>
-//             ) : (
-//               <Button
-//                 variant="default"
-//                 size="sm"
-//                 className="h-9"
-//                 onClick={addButton.onClick}
-//               >
-//                 <SquarePlus className="h-3 w-3 mr-2" />
-//                 {addButton.label}
-//               </Button>
-//             ))}
-//           {extraButton}
-//         </div>
-//       </div>
-
-//       <div className="rounded-none border min-h-[31rem] grid grid-cols-1">
-//         <Table>
-//           <TableHeader>
-//             {table.getHeaderGroups().map((hg) => (
-//               <TableRow key={hg.id}>
-//                 {/* {headerGroup.headers.map((header) => (
-//                   <TableHead key={header.id}>
-//                     {flexRender(
-//                       header.column.columnDef.header,
-//                       header.getContext(),
-//                     )}
-//                   </TableHead>
-//                 ))} */}
-//                 {hg.headers.map((header) => {
-//                   const canSort = header.column.getCanSort();
-//                   const sortState = header.column.getIsSorted();
-
-//                   return (
-//                     <TableHead
-//                       key={header.id}
-//                       onClick={
-//                         canSort
-//                           ? header.column.getToggleSortingHandler()
-//                           : undefined
-//                       }
-//                       className={canSort ? "cursor-pointer select-none" : ""}
-//                     >
-//                       <div className="flex items-center gap-1">
-//                         {flexRender(
-//                           header.column.columnDef.header,
-//                           header.getContext(),
-//                         )}
-
-//                         {canSort && (
-//                           <>
-//                             {sortState === "asc" && (
-//                               <ChevronUp className="h-3 w-3" />
-//                             )}
-//                             {sortState === "desc" && (
-//                               <ChevronDown className="h-3 w-3" />
-//                             )}
-//                             {!sortState && (
-//                               <ArrowUpDown className="h-3 w-3 opacity-40" />
-//                             )}
-//                           </>
-//                         )}
-//                       </div>
-//                     </TableHead>
-//                   );
-//                 })}
-//               </TableRow>
-//             ))}
-//           </TableHeader>
-
-//           <TableBody>
-//             {table.getRowModel().rows.length ? (
-//               table.getRowModel().rows.map((row) => (
-//                 <TableRow key={row.id}>
-//                   {row.getVisibleCells().map((cell) => (
-//                     <TableCell key={cell.id}>
-//                       {flexRender(
-//                         cell.column.columnDef.cell,
-//                         cell.getContext(),
-//                       )}
-//                     </TableCell>
-//                   ))}
-//                 </TableRow>
-//               ))
-//             ) : (
-//               <TableRow>
-//                 <TableCell colSpan={columns.length} className="text-center">
-//                   No data found
-//                 </TableCell>
-//               </TableRow>
-//             )}
-//           </TableBody>
-//         </Table>
-//       </div>
-
-//       <div className="flex items-center justify-between gap-2">
-//         <div className="flex-1 text-sm text-muted-foreground">
-//           Total Records: {table.getFilteredRowModel().rows.length}
-//         </div>
-//         <div className="flex items-center justify-end gap-2">
-//           <Button
-//             size="sm"
-//             variant="outline"
-//             onClick={() => table.previousPage()}
-//             disabled={!table.getCanPreviousPage()}
-//           >
-//             <ChevronLeft className="h-4 w-4" />
-//           </Button>
-
-//           <span className="text-sm">
-//             Page {table.getState().pagination.pageIndex + 1} of{" "}
-//             {table.getPageCount()}
-//           </span>
-
-//           <Button
-//             size="sm"
-//             variant="outline"
-//             onClick={() => table.nextPage()}
-//             disabled={!table.getCanNextPage()}
-//           >
-//             <ChevronRight className="h-4 w-4" />
-//           </Button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default DataTable;
 import {
   flexRender,
   getCoreRowModel,
@@ -260,7 +6,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Table,
   TableBody,
@@ -271,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowUpDown,
   ChevronDown,
@@ -279,6 +26,7 @@ import {
   ChevronUp,
   Search,
   SquarePlus,
+  X,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -287,7 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 const DataTable = ({
   data = [],
@@ -303,25 +51,100 @@ const DataTable = ({
   totalPages = 1,
   totalRecords = 0,
   onPageChange,
+
+  // backend search props
+  searchValue,
+  onSearchChange,
+  isLoading = false,
 }) => {
+  const [internalSearch, setInternalSearch] = useState(searchValue ?? "");
+  const prevSearchValueRef = useRef(searchValue);
   const [sorting, setSorting] = useState([]);
-  const [globalFilter, setGlobalFilter] = useState("");
+  const [globalFilter, setGlobalFilter] = useState(onSearchChange ? "" : (searchValue ?? ""));
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize,
   });
+
+  // Keep internalSearch in sync when parent explicitly changes searchValue
+  useEffect(() => {
+    if (searchValue !== prevSearchValueRef.current) {
+      prevSearchValueRef.current = searchValue;
+      setInternalSearch(searchValue ?? "");
+      if (!onSearchChange) {
+        setGlobalFilter(searchValue ?? "");
+      }
+    }
+  }, [searchValue, onSearchChange]);
+
+  // Debounced search trigger for backend search
+  useEffect(() => {
+    if (!onSearchChange) return;
+    const timer = setTimeout(() => {
+      if (internalSearch !== (searchValue ?? "")) {
+        onSearchChange(internalSearch);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [internalSearch, onSearchChange, searchValue]);
+
+  const handleSearchChange = (value) => {
+    setInternalSearch(value);
+    if (!onSearchChange) {
+      setGlobalFilter(value);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setInternalSearch("");
+    if (onSearchChange) {
+      onSearchChange("");
+    } else {
+      setGlobalFilter("");
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Escape") {
+      handleClearSearch();
+    } else if (e.key === "Enter" && onSearchChange) {
+      onSearchChange(internalSearch);
+    }
+  };
 
   const table = useReactTable({
     data,
     columns,
     state: {
       sorting,
-      globalFilter,
+      globalFilter: onSearchChange ? "" : globalFilter,
       pagination,
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
     onPaginationChange: setPagination,
+
+    // Ensure all leaf columns can be globally filtered even if row 0 has null / undefined values
+    getColumnCanGlobalFilter: () => true,
+    globalFilterFn: (row, columnId, filterValue) => {
+      if (!filterValue) return true;
+      const search = String(filterValue).toLowerCase().trim();
+      const value = row.getValue(columnId);
+      if (value != null && String(value).toLowerCase().includes(search)) {
+        return true;
+      }
+      if (row.original && typeof row.original === "object") {
+        for (const key in row.original) {
+          const val = row.original[key];
+          if (val != null && (typeof val === "string" || typeof val === "number")) {
+            if (String(val).toLowerCase().includes(search)) {
+              return true;
+            }
+          }
+        }
+      }
+      return false;
+    },
 
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -338,13 +161,24 @@ const DataTable = ({
       {/* HEADER */}
       <div className="flex items-center justify-between py-1">
         <div className="relative w-64">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 pointer-events-none" />
           <Input
-            value={globalFilter ?? ""}
-            onChange={(e) => setGlobalFilter(e.target.value)}
+            value={internalSearch ?? ""}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder={searchPlaceholder}
-            className="pl-8 h-9 text-sm"
+            className="pl-8 pr-8 h-9 text-sm"
           />
+          {internalSearch ? (
+            <button
+              type="button"
+              onClick={handleClearSearch}
+              aria-label="Clear search"
+              className="absolute right-2.5 top-2.5 text-gray-400 hover:text-gray-600 focus:outline-none"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          ) : null}
         </div>
 
         <div className="flex flex-col md:flex-row md:ml-auto gap-2 w-full md:w-auto">
@@ -448,7 +282,27 @@ const DataTable = ({
           </TableHeader>
 
           <TableBody>
-            {table.getRowModel().rows.length ? (
+            {isLoading ? (
+              Array.from({ length: 8 }).map((_, rIdx) => (
+                <TableRow key={`skeleton-row-${rIdx}`} className="border-b">
+                  {columns.map((col, cIdx) => (
+                    <TableCell key={`skeleton-col-${cIdx}`} className="py-3.5 px-4">
+                      <Skeleton
+                        className={`h-4 ${
+                          cIdx === 0
+                            ? "w-8"
+                            : cIdx === 1
+                            ? "w-32"
+                            : cIdx === columns.length - 1
+                            ? "w-16"
+                            : "w-24"
+                        }`}
+                      />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows.length ? (
               table.getRowModel().rows.map((row, index) => (
                 <TableRow
                   key={row.id}
@@ -472,7 +326,7 @@ const DataTable = ({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center">
+                <TableCell colSpan={columns.length} className="text-center py-8 text-muted-foreground">
                   No data found
                 </TableCell>
               </TableRow>
@@ -498,7 +352,7 @@ const DataTable = ({
               backendPagination ? onPageChange(page - 1) : table.previousPage()
             }
             disabled={
-              backendPagination ? page === 1 : !table.getCanPreviousPage()
+              isLoading || (backendPagination ? page === 1 : !table.getCanPreviousPage())
             }
           >
             <ChevronLeft className="h-4 w-4" />
@@ -519,7 +373,7 @@ const DataTable = ({
               backendPagination ? onPageChange(page + 1) : table.nextPage()
             }
             disabled={
-              backendPagination ? page === totalPages : !table.getCanNextPage()
+              isLoading || (backendPagination ? page === totalPages : !table.getCanNextPage())
             }
           >
             <ChevronRight className="h-4 w-4" />

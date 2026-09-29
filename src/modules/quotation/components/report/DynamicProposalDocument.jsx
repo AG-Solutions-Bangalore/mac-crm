@@ -2,28 +2,32 @@ import React from "react";
 import { MapPin, Phone, Mail, Home, Layers } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 
+// ─── Shared font — ui-sans-serif on every text in this document ─────────────
+const FONT = "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+
 // ─── Section Heading Component ─────────────────────────────────────────────
 function SectionHeading({ number, title, subtitle, isLight }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px", pageBreakAfter: "avoid", breakAfter: "avoid" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px", pageBreakAfter: "avoid", breakAfter: "avoid", fontFamily: FONT }}>
       <div
         style={{
           minWidth: "24px", height: "24px", borderRadius: "7px",
           background: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)",
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: "11px", fontWeight: 900, color: "#ffffff",
+          fontFamily: FONT,
           boxShadow: "0 3px 10px rgba(14,165,233,0.4)",
           flexShrink: 0,
         }}
       >
         {number}
       </div>
-      <div>
-        <h3 style={{ fontSize: "12px", fontWeight: 800, color: isLight ? "#0f172a" : "#f8fafc", margin: 0, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+      <div style={{ fontFamily: FONT }}>
+        <h3 style={{ fontSize: "12px", fontWeight: 800, color: isLight ? "#0f172a" : "#f8fafc", margin: 0, letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: FONT }}>
           {title}
         </h3>
         {subtitle && (
-          <p style={{ fontSize: "9px", color: isLight ? "#64748b" : "#94a3b8", margin: "1px 0 0", letterSpacing: "0.02em" }}>{subtitle}</p>
+          <p style={{ fontSize: "9px", color: isLight ? "#64748b" : "#94a3b8", margin: "1px 0 0", letterSpacing: "0.02em", fontFamily: FONT }}>{subtitle}</p>
         )}
       </div>
     </div>
@@ -42,18 +46,22 @@ const formatWarranty = (val) => {
 };
 
 // ─── Table Head Cell (category tables) ─────────────────────────────────────
+// Light header row + dark navy text, matching the reference layout.
+// Solid background set on each cell (not transparent) so it survives print.
 function TH({ children, align = "left", width, isLight }) {
   return (
     <th
       style={{
         textAlign: align, padding: "9px 10px",
-        fontSize: "10px", fontWeight: 700, letterSpacing: "0.02em",
+        fontSize: "10.5px", fontWeight: 800, letterSpacing: "0.02em",
+        fontFamily: FONT,
         color: "#1e4a7a",
         borderBottom: "1px solid #c9dcee",
         borderRight: "1px solid #e2e8f0",
-        background: "transparent",
+        background: "#eaf0f7",
         width: width,
         overflowWrap: "break-word",
+        whiteSpace: "normal",
       }}
     >
       {children}
@@ -69,6 +77,7 @@ function TD({ children, align = "left", style: s, isLight, rowSpan }) {
       style={{
         textAlign: align, padding: "8px 10px",
         fontSize: "10.5px", color: isLight ? "#1e293b" : "#e2e8f0",
+        fontFamily: FONT,
         borderBottom: isLight ? "1px solid #f1f5f9" : "1px solid rgba(255,255,255,0.05)",
         borderRight: isLight ? "1px solid #eef2f7" : undefined,
         overflowWrap: "break-word",
@@ -91,6 +100,7 @@ function QuotationCategoryHeader({ title }) {
         padding: "4px 18px",
         fontSize: "13px",
         fontWeight: 800,
+        fontFamily: FONT,
         letterSpacing: "0.01em",
         lineHeight: 1.25,
         pageBreakAfter: "avoid",
@@ -104,16 +114,17 @@ function QuotationCategoryHeader({ title }) {
 
 // ─── Floor-level subheader (ONE per floor, e.g. "Ground Floor") ────────────
 // Compact floor strip — minimal height per layout feedback.
-function FloorSectionHeader({ floorName }) {
+function FloorSectionHeader({ floorName, colSpan = 8 }) {
   const isGround = /ground/i.test(floorName || "");
   const Icon = isGround ? Home : Layers;
   return (
     <td
-      colSpan={7}
+      colSpan={colSpan}
       style={{
         padding: "2px 14px",
         fontSize: "11px",
         fontWeight: 800,
+        fontFamily: FONT,
         color: "#1e4a7a",
         background: "#d7e9f7",
         borderBottom: "1px solid #bcd7ef",
@@ -121,11 +132,49 @@ function FloorSectionHeader({ floorName }) {
         lineHeight: 1.3,
       }}
     >
-      <span style={{ display: "inline-flex", alignItems: "center", gap: "7px" }}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: "7px", fontFamily: FONT }}>
         <Icon style={{ width: 13, height: 13, color: "#1e6fb5" }} />
         {floorName}
       </span>
     </td>
+  );
+}
+
+
+// ─── Mock QR (placeholder until the real UPI QR asset is provided) ─────────
+// Deterministic pseudo-random modules + standard finder squares, inline SVG
+// so it renders offline and prints reliably.
+function MockQR({ size = 104 }) {
+  const N = 25;
+  const inFinder = (x, y) =>
+    (x < 8 && y < 8) || (x >= N - 8 && y < 8) || (x < 8 && y >= N - 8);
+  let seed = 42;
+  const rnd = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  const cells = [];
+  for (let y = 0; y < N; y++) {
+    for (let x = 0; x < N; x++) {
+      if (!inFinder(x, y) && rnd() > 0.52) cells.push([x, y]);
+    }
+  }
+  const finder = (ox, oy) => (
+    <g key={`${ox}-${oy}`}>
+      <rect x={ox} y={oy} width={7} height={7} fill="#0f172a" />
+      <rect x={ox + 1} y={oy + 1} width={5} height={5} fill="#ffffff" />
+      <rect x={ox + 2} y={oy + 2} width={3} height={3} fill="#0f172a" />
+    </g>
+  );
+  return (
+    <svg width={size} height={size} viewBox={`-1 -1 ${N + 2} ${N + 2}`} style={{ display: "block", background: "#ffffff", borderRadius: "8px" }}>
+      {cells.map(([x, y]) => (
+        <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill="#0f172a" />
+      ))}
+      {finder(0, 0)}
+      {finder(N - 7, 0)}
+      {finder(0, N - 7)}
+    </svg>
   );
 }
 
@@ -135,10 +184,14 @@ export default function DynamicProposalDocument({
   clientName,
   formatMoney,
   grandTotal,
+  consultancyPct,
+  consultancyFee,
   installationFee,
   installPct = 5,
   netTotal,
   paymentRows,
+  switchFinishes = {},
+  onSwitchFinishChange,
 }) {
   // Group items data-driven: application -> floor -> area -> products.
   // Insertion order is preserved so floors/rooms render in quotation order.
@@ -146,12 +199,15 @@ export default function DynamicProposalDocument({
   // changes flow through automatically.
   const appGroups = [];
   const appIndex = new Map();
-  items.forEach((item) => {
+  items.forEach((item, globalIdx) => {
     const appName = (item.application && item.application !== "-")
       ? item.application
       : "General";
     const floorName = (item.floor && item.floor !== "-") ? item.floor : "";
     const areaName = (item.area && item.area !== "-") ? item.area : "-";
+
+    // Preserve original row index so Finish selections map correctly.
+    const itemWithIdx = item.__idx !== undefined ? item : { ...item, __idx: globalIdx };
 
     let app = appIndex.get(appName);
     if (!app) {
@@ -171,7 +227,7 @@ export default function DynamicProposalDocument({
       floor.areaIndex.set(areaName, area);
       floor.areas.push(area);
     }
-    area.items.push(item);
+    area.items.push(itemWithIdx);
   });
 
   const groupEntries = appGroups;
@@ -252,19 +308,21 @@ export default function DynamicProposalDocument({
       style={{
         background: t.docBg,
         color: t.docText,
-        fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+        fontFamily: FONT,
         padding: 0,
         display: "flex",
         flexDirection: "column",
       }}
     >
+      {/* Enforce ui-sans-serif on every text in this page */}
+      <style>{`.makc-page-dynamic, .makc-page-dynamic * { font-family: ${FONT} !important; }`}</style>
       {/* ─── HEADER ─── */}
       <div
         style={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
           padding: "20px 36px 14px",
           borderBottom: t.headerBorder,
-          background: t.headerBg,
+          // background: t.headerBg,
         }}
       >
         <div>
@@ -281,11 +339,10 @@ export default function DynamicProposalDocument({
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <div style={{ textAlign: "right" }}>
             <span style={{ fontSize: "8px", color: t.refLabel, display: "block", textTransform: "uppercase", letterSpacing: "0.09em", fontWeight: 600 }}>Proposal Ref</span>
-            <span style={{ fontSize: "13px", fontWeight: 800, color: t.refNo, fontFamily: "monospace" }}>#{quotationNo}</span>
+            <span style={{ fontSize: "13px", fontWeight: 800, color: t.refNo, fontFamily: FONT }}>#{quotationNo}</span>
           </div>
-          <div style={{ background: "#fff", borderRadius: "10px", padding: "8px 18px", border: "1px solid #e2e8f0", boxShadow: "0 4px 16px rgba(15,23,42,0.12)" }}>
-            <img src={logoImg} alt="MAKc" style={{ height: "46px", objectFit: "contain", display: "block" }} />
-          </div>
+          {/* Logo only — transparent asset, no box/background/border/shadow anywhere */}
+          <img src={logoImg} alt="MAKc" style={{ height: "52px", objectFit: "contain", display: "block", background: "transparent", backgroundColor: "transparent", border: "none", boxShadow: "none", outline: "none" }} />
         </div>
       </div>
 
@@ -307,106 +364,147 @@ export default function DynamicProposalDocument({
               Rooms with multiple products use rowspan so the room name
               appears once per group. ── */}
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            {groupEntries.map((group, gi) => (
-              <div
-                key={gi}
-                style={{
-                  border: t.cardBorder,
-                  borderRadius: "10px",
-                  overflow: "hidden",
-                  background: t.cardBg,
-                  boxShadow: t.cardShadow,
-                }}
-              >
-                {/* MAIN category header — rendered once per application */}
-                <QuotationCategoryHeader title={group.title} />
+            {groupEntries.map((group, gi) => {
+              const isSwitchGroup = /switch/i.test(group.title || "");
+              const hasFinish =
+                isSwitchGroup ||
+                group.floors.some((f) =>
+                  f.areas.some((a) =>
+                    a.items.some((it) => it.finish && it.finish !== "-")
+                  )
+                );
+              const appTotal = group.floors
+                .flatMap((f) => f.areas)
+                .flatMap((a) => a.items)
+                .reduce((sum, it) => sum + (Number(it.totalPrice) || 0), 0);
+              return (
+                <div
+                  key={gi}
+                  style={{
+                    border: t.cardBorder,
+                    borderRadius: "10px",
+                    overflow: "hidden",
+                    background: t.cardBg,
+                    boxShadow: t.cardShadow,
+                  }}
+                >
+                  {/* MAIN category header — rendered once per application */}
+                  <QuotationCategoryHeader title={group.title} />
 
-                {/* Fluid table — fills the section width with wrapping text,
+                  {/* Fluid table — fills the section width with wrapping text,
                     so no per-section scrollbar is needed on any screen size */}
-                <div>
-                  <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
-                    <thead style={{ background: "#e9f1f8" }}>
-                      <tr>
-                        <TH width="15%" isLight={isLight}>Area / Room</TH>
-                        <TH width="28%" isLight={isLight}>Product / System Specification</TH>
-                        <TH align="center" width="7%" isLight={isLight}>Qty</TH>
-                        <TH align="right" width="13%" isLight={isLight}>Unit Price</TH>
-                        <TH align="right" width="13%" isLight={isLight}>Total Price</TH>
-                        <TH align="left" width="12%" isLight={isLight}>Brand</TH>
-                        <TH align="center" width="12%" isLight={isLight}>Warranty</TH>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {group.floors.map((floor, fi) => (
-                        <React.Fragment key={fi}>
-                          {/* FLOOR subheader — rendered once per floor */}
-                          {floor.name !== "" && (
-                            <tr style={{ background: "#d7e9f7" }} className="break-inside-avoid">
-                              <FloorSectionHeader floorName={floor.name} />
-                            </tr>
+                  <div>
+                    <table className="makc-proposal-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+                      <thead style={{ background: "#eaf0f7" }}>
+                        <tr>
+                          <TH width={hasFinish ? "13%" : "14%"} isLight={isLight}>Area / Room</TH>
+                          <TH width={hasFinish ? "23%" : "26%"} isLight={isLight}>Product / System Specification</TH>
+                          <TH align="center" width="6%" isLight={isLight}>Qty</TH>
+                          <TH align="right" width={hasFinish ? "11%" : "12%"} isLight={isLight}>Unit Price</TH>
+                          <TH align="right" width={hasFinish ? "11%" : "12%"} isLight={isLight}>Total Price</TH>
+                          {/* Finish column — shows category finish data directly as text */}
+                          {hasFinish && (
+                            <TH align="center" width="11%" isLight={isLight}>Finish</TH>
                           )}
-                          {floor.areas.map((area, ai) => (
-                            <React.Fragment key={ai}>
-                              {area.items.map((item, idx) => (
-                                <tr
-                                  key={idx}
-                                  className="break-inside-avoid"
-                                  style={{
-                                    background: idx % 2 === 0 ? "transparent" : t.rowZebraBg,
-                                  }}
-                                >
-                                  {/* AREA/ROOM column — room name rendered once per
+                          <TH align="left" width={hasFinish ? "15%" : "18%"} isLight={isLight}>Brand</TH>
+                          <TH align="center" width={hasFinish ? "11%" : "12%"} isLight={isLight}>Warranty</TH>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {group.floors.map((floor, fi) => (
+                          <React.Fragment key={fi}>
+                            {/* FLOOR subheader — rendered once per floor */}
+                            {floor.name !== "" && (
+                              <tr style={{ background: "#d7e9f7" }} className="break-inside-avoid">
+                                <FloorSectionHeader floorName={floor.name} colSpan={hasFinish ? 8 : 7} />
+                              </tr>
+                            )}
+                            {floor.areas.map((area, ai) => (
+                              <React.Fragment key={ai}>
+                                {area.items.map((item, idx) => (
+                                  <tr
+                                    key={idx}
+                                    className="break-inside-avoid"
+                                    style={{
+                                      background: idx % 2 === 0 ? "transparent" : t.rowZebraBg,
+                                    }}
+                                  >
+                                    {/* AREA/ROOM column — room name rendered once per
                                       area group via rowspan; subsequent product
                                       rows of the same room omit this cell */}
-                                  {idx === 0 && (
-                                    <TD
-                                      isLight={isLight}
-                                      rowSpan={area.items.length > 1 ? area.items.length : undefined}
-                                      style={{
-                                        fontWeight: 700,
-                                        color: t.productText,
-                                        fontSize: "11px",
-                                        verticalAlign: "top",
-                                        background: "#ffffff",
-                                      }}
-                                    >
-                                      {area.name}
-                                    </TD>
-                                  )}
-                                  <TD isLight={isLight} style={{ fontWeight: 500, color: t.productText, fontSize: "11px" }}>
-                                    {item.product}
-                                    {item.notes && item.notes !== `${item.floor} - ${item.area}` && (
-                                      <div style={{ fontSize: "8.5px", color: t.notesText, marginTop: "2px", fontWeight: 400 }}>
-                                        {item.notes}
-                                      </div>
+                                    {idx === 0 && (
+                                      <TD
+                                        isLight={isLight}
+                                        rowSpan={area.items.length > 1 ? area.items.length : undefined}
+                                        style={{
+                                          fontWeight: 700,
+                                          color: t.productText,
+                                          fontSize: "11px",
+                                          verticalAlign: "top",
+                                          background: "#ffffff",
+                                        }}
+                                      >
+                                        {area.name}
+                                      </TD>
                                     )}
-                                  </TD>
-                                  <TD isLight={isLight} align="center" style={{ fontWeight: 800, color: t.qtyText, fontSize: "11.5px" }}>
-                                    {item.quantity}
-                                  </TD>
-                                  <TD isLight={isLight} align="right" style={{ color: t.unitPriceText, fontSize: "11px", fontWeight: 500 }}>
-                                    {formatMoney(item.price)}
-                                  </TD>
-                                  <TD isLight={isLight} align="right" style={{ fontWeight: 800, color: t.totalAmountText, fontSize: "11.5px" }}>
-                                    {formatMoney(item.totalPrice)}
-                                  </TD>
-                                  <TD isLight={isLight} align="left" style={{ fontWeight: 700, color: t.brandText, fontSize: "11px" }}>
-                                    {item.brand || "-"}
-                                  </TD>
-                                  <TD isLight={isLight} align="center" style={{ fontWeight: 700, color: t.warrantyText, fontSize: "11px" }}>
-                                    {formatWarranty(item.warranty)}
-                                  </TD>
-                                </tr>
-                              ))}
-                            </React.Fragment>
-                          ))}
-                        </React.Fragment>
-                      ))}
-                    </tbody>
-                  </table>
+                                    <TD isLight={isLight} style={{ fontWeight: 500, color: t.productText, fontSize: "11px" }}>
+                                      {item.product}
+                                      {item.notes && item.notes !== `${item.floor} - ${item.area}` && (
+                                        <div style={{ fontSize: "8.5px", color: t.notesText, marginTop: "2px", fontWeight: 400 }}>
+                                          {item.notes}
+                                        </div>
+                                      )}
+                                    </TD>
+                                    <TD isLight={isLight} align="center" style={{ fontWeight: 800, color: t.qtyText, fontSize: "11.5px" }}>
+                                      {item.quantity}
+                                    </TD>
+                                    <TD isLight={isLight} align="right" style={{ color: t.unitPriceText, fontSize: "11px", fontWeight: 500 }}>
+                                      {formatMoney(item.price)}
+                                    </TD>
+                                    <TD isLight={isLight} align="right" style={{ fontWeight: 800, color: t.totalAmountText, fontSize: "11.5px" }}>
+                                      {formatMoney(item.totalPrice)}
+                                    </TD>
+                                    {/* Finish cell — shows category finish directly as text, no dropdown */}
+                                    {hasFinish && (
+                                      <TD isLight={isLight} align="center" style={{ fontWeight: 600, color: t.brandText, fontSize: "10.5px" }}>
+                                        {item.finish && item.finish !== "-" ? item.finish : "-"}
+                                      </TD>
+                                    )}
+                                    <TD isLight={isLight} align="left" style={{ fontWeight: 700, color: t.brandText, fontSize: "11px", whiteSpace: "nowrap" }}>
+                                      {item.brand || "-"}
+                                    </TD>
+                                    <TD isLight={isLight} align="center" style={{ fontWeight: 700, color: t.warrantyText, fontSize: "11px" }}>
+                                      {formatWarranty(item.warranty)}
+                                    </TD>
+                                  </tr>
+                                ))}
+                              </React.Fragment>
+                            ))}
+                          </React.Fragment>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {/* Per-service total — shown for every application */}
+                  <div
+                    className="break-inside-avoid"
+                    style={{
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                      padding: "8px 18px",
+                      background: "#f1f5f9",
+                      borderTop: "1px solid #e2e8f0",
+                    }}
+                  >
+                    <span style={{ fontSize: "11px", fontWeight: 800, color: "#1e4a7a", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                      Total {group.title}
+                    </span>
+                    <span style={{ fontSize: "13px", fontWeight: 900, color: "#0284c7" }}>
+                      {formatMoney(appTotal)}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Totals Summary Card (full width) */}
@@ -425,13 +523,14 @@ export default function DynamicProposalDocument({
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
+                  gridTemplateColumns: "1fr 1fr 1fr",
                   gap: "10px",
                 }}
               >
                 {[
-                  { label: "Hardware Subtotal", value: formatMoney(grandTotal), color: t.summaryRowVal },
-                  { label: `Transportation & Installation (${installPct}%)`, value: formatMoney(installationFee), color: t.summaryRowSubVal },
+                  { label: "Grand Total", value: formatMoney(grandTotal), color: t.summaryRowVal },
+                  { label: "Consultancy & Design", value: formatMoney(consultancyFee), color: t.summaryRowSubVal },
+                  { label: "Installation", value: formatMoney(installationFee), color: t.summaryRowSubVal },
                 ].map((row, i) => (
                   <div
                     key={i}
@@ -525,33 +624,44 @@ export default function DynamicProposalDocument({
               background: t.bankCardBg,
               border: t.bankCardBorder,
               borderRadius: "12px", padding: "14px 18px",
-              display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 28px",
+              display: "flex", alignItems: "center", gap: "20px",
               boxShadow: t.cardShadow,
             }}
           >
-            {[
-              { label: "Account Name", value: "MAKc Automation and Solutions LLP", mono: false },
-              { label: "Bank Name", value: "ICICI Bank", mono: false },
-              { label: "Account Number", value: "777705435168", mono: true },
-              { label: "IFSC Code", value: "ICIC0000561", mono: true },
-            ].map((f, i) => (
-              <div key={i} style={{ display: "flex", flexDirection: "column" }}>
-                <span style={{ fontSize: "8px", color: t.bankLabelText, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, marginBottom: "2px" }}>
-                  {f.label}
-                </span>
-                <span
-                  style={{
-                    fontSize: f.mono ? "12px" : "10.5px",
-                    fontWeight: 800,
-                    fontFamily: f.mono ? "monospace" : "inherit",
-                    color: f.mono ? t.bankMonoText : t.bankValText,
-                    letterSpacing: f.mono ? "0.06em" : 0,
-                  }}
-                >
-                  {f.value}
-                </span>
+            <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 28px" }}>
+              {[
+                { label: "Account Name", value: "MAKc Automation and Solutions LLP", mono: false },
+                { label: "Bank Name", value: "ICICI Bank", mono: false },
+                { label: "Account Number", value: "777705435168", mono: true },
+                { label: "IFSC Code", value: "ICIC0000561", mono: true },
+              ].map((f, i) => (
+                <div key={i} style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: "8px", color: t.bankLabelText, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, marginBottom: "2px" }}>
+                    {f.label}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: f.mono ? "12px" : "10.5px",
+                      fontWeight: 800,
+                      fontFamily: FONT,
+                      color: f.mono ? t.bankMonoText : t.bankValText,
+                      letterSpacing: f.mono ? "0.06em" : 0,
+                    }}
+                  >
+                    {f.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {/* Mock UPI QR — swap MockQR with the real QR image when provided */}
+            <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+              <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "6px" }}>
+                <MockQR size={104} />
               </div>
-            ))}
+              <span style={{ fontSize: "8.5px", fontWeight: 800, color: t.bankValText, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                Scan to Pay · UPI
+              </span>
+            </div>
           </div>
         </div>
 
@@ -573,7 +683,7 @@ export default function DynamicProposalDocument({
               MAKc Automation and Solutions LLP
             </p>
             <div style={{ borderBottom: t.signLineBorder, width: "170px" }} />
-            <p style={{ fontSize: "8.5px", color: t.signTitleText, marginTop: "4px", fontStyle: "italic", fontWeight: 600 }}>
+            <p style={{ fontSize: "8.5px", color: t.signTitleText, marginTop: "4px", fontWeight: 600 }}>
               Authorized Signatory
             </p>
           </div>
@@ -591,35 +701,6 @@ export default function DynamicProposalDocument({
           </div>
         </div>
 
-      </div>
-
-      {/* ─── FOOTER ─── */}
-      <div
-        style={{
-          padding: "12px 36px",
-          borderTop: t.footerBorder,
-          background: t.footerBg,
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          flexShrink: 0, marginTop: "auto",
-        }}
-      >
-        <div style={{ display: "flex", gap: "20px", fontSize: "9px", color: t.footerText }}>
-          <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <MapPin style={{ width: 10, height: 10, color: isLight ? "#0284c7" : "#38bdf8" }} />
-            BEML Layout, Brookfield, Bangalore – 560066
-          </span>
-          <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <Phone style={{ width: 10, height: 10, color: isLight ? "#0284c7" : "#38bdf8" }} />
-            +91-7338504441
-          </span>
-          <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <Mail style={{ width: 10, height: 10, color: isLight ? "#0284c7" : "#38bdf8" }} />
-            vinod@makcautomations.com
-          </span>
-        </div>
-        <span style={{ fontSize: "9px", color: isLight ? "#b45309" : "#fbbf24", fontWeight: 700, letterSpacing: "0.05em" }}>
-          Commercial Proposal — Confidential
-        </span>
       </div>
     </div>
   );

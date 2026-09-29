@@ -1,8 +1,9 @@
 import apiClient from "@/api/apiClient";
 
 export const areaApi = {
-  getAreas: async (page = 1) => {
-    const response = await apiClient.get(`/area?page=${page}`);
+  getAreas: async (page = 1, search = "") => {
+    const url = `/area?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
+    const response = await apiClient.get(url);
     return response.data;
   },
   getAreaById: async (id) => {

@@ -19,9 +19,10 @@ import { useFloorsQuery } from "../hooks/useFloor";
 const FloorListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: responseData, isLoading, isError, refetch } = useFloorsQuery();
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useFloorsQuery(page, searchTerm);
 
   const paginationData = responseData?.data;
   const isPaginated = paginationData && typeof paginationData === "object" && "data" in paginationData && Array.isArray(paginationData.data);
@@ -77,8 +78,7 @@ const FloorListPage = () => {
     },
   ];
 
-  if (isLoading) return <LoadingBar />;
-  if (isError) return <ApiErrorPage onRetry={refetch} />;
+  if (isError && !responseData) return <ApiErrorPage onRetry={refetch} />;
 
   return (
     <div className="px-5">
@@ -89,6 +89,7 @@ const FloorListPage = () => {
       />
 
       <DataTable
+        isLoading={isLoading || isFetching}
         extraButton={
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[120px]">
@@ -105,6 +106,11 @@ const FloorListPage = () => {
         columns={columns}
         searchPlaceholder="Search Floors..."
         pageSize={50}
+        searchValue={searchTerm}
+        onSearchChange={(val) => {
+          setSearchTerm(val);
+          setPage(1);
+        }}
         addButton={{
           onClick: () => navigate("/floor-list/create"),
           label: "Add Floor",

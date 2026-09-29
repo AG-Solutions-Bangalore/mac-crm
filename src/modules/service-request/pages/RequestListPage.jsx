@@ -19,8 +19,9 @@ const getServiceBadgeClass = (serviceName) => {
 
 const RequestListPage = () => {
   const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const { data: responseData, isLoading, isError, refetch } = useRequestsQuery(page);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useRequestsQuery(page, searchTerm);
 
   const paginationData = responseData?.data;
   const requestList = paginationData?.data || [];
@@ -73,8 +74,7 @@ const RequestListPage = () => {
     },
   ];
 
-  if (isLoading) return <LoadingBar />;
-  if (isError) return <ApiErrorPage onRetry={refetch} />;
+  if (isError && !responseData) return <ApiErrorPage onRetry={refetch} />;
 
   return (
     <div className="px-5">
@@ -84,10 +84,16 @@ const RequestListPage = () => {
       </div>
 
       <DataTable
+        isLoading={isLoading || isFetching}
         data={requestList}
         columns={columns}
         pageSize={50}
         searchPlaceholder="Search Request..."
+        searchValue={searchTerm}
+        onSearchChange={(val) => {
+          setSearchTerm(val);
+          setPage(1);
+        }}
         backendPagination={true}
         page={paginationData?.current_page || 1}
         totalPages={paginationData?.last_page || 1}

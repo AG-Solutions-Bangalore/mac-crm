@@ -1,8 +1,9 @@
 import apiClient from "@/api/apiClient";
 
 export const requestApi = {
-  getRequests: async (page = 1) => {
-    const response = await apiClient.get(`/service-request?page=${page}`);
+  getRequests: async (page = 1, search = "") => {
+    const url = `/service-request?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
+    const response = await apiClient.get(url);
     return response.data;
   },
   updateRequestStatus: async (id, status) => {

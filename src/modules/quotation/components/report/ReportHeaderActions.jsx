@@ -8,19 +8,57 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Top bar: navigation + view switcher + dynamic installation % input +
-// Export Excel / Print-Save PDF actions (original header layout).
+const PCT_PRESETS = [5, 7, 10, 15];
+
+// Top bar: navigation + view switcher + Consultancy / Installation % inputs +
+// Prepared-by selector + Export Excel / Print-Save PDF actions.
 // This bar is `quotation-no-print` so it never appears in print output.
 export default function ReportHeaderActions({
   quotationNo,
   viewMode,
   setViewMode,
   onNavigateBack,
-  installPct,
+  consultancyPct = 5,
+  onConsultancyPctChange,
+  installPct = 5,
   onInstallPctChange,
+  preparedById,
+  onPreparedByChange,
+  preparedByOptions = [],
   onExportExcel,
   onPrint,
 }) {
+  const renderPctInput = (label, value, onChange, listId, title) => (
+    <label
+      className="flex h-[46px] shrink-0 items-center gap-1 rounded-lg border border-border bg-background px-2.5 text-[11px] font-semibold focus-within:border-sky-400"
+      title={title}
+    >
+      <span className="whitespace-nowrap text-muted-foreground">
+        {label}
+      </span>
+      <input
+        type="number"
+        min={0}
+        max={100}
+        step={0.5}
+        list={listId}
+        value={value}
+        onChange={(e) => {
+          const v = parseFloat(e.target.value);
+          onChange?.(Number.isNaN(v) ? 0 : Math.min(100, Math.max(0, v)));
+        }}
+        onFocus={(e) => e.target.select()}
+        onWheel={(e) => e.currentTarget.blur()}
+        className="w-10 bg-transparent text-center text-xs font-bold text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      />
+      <datalist id={listId}>
+        {PCT_PRESETS.map((p) => (
+          <option key={p} value={p} />
+        ))}
+      </datalist>
+    </label>
+  );
+
   return (
     <div className="quotation-no-print flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-card text-card-foreground border border-border p-3 md:p-4 rounded-xl shadow-md sticky top-0 z-auto">
       {/* Title & Back Button */}
@@ -40,7 +78,7 @@ export default function ReportHeaderActions({
         </div>
       </div>
 
-      {/* View switcher + dynamic installation % + export actions */}
+      {/* View switcher + charge % + prepared-by + export actions */}
       <div className="flex flex-wrap items-center gap-1.5">
         {/* Tab View Switcher */}
         <div className="bg-muted p-1 rounded-lg border border-border flex items-center mr-1">
@@ -68,29 +106,46 @@ export default function ReportHeaderActions({
           </Button>
         </div>
 
-        {/* Dynamic Transportation & Installation % — same height as switcher pill */}
-        <label
-          className="flex h-[46px] shrink-0 items-center gap-1 rounded-lg border border-border bg-background px-2.5 text-[11px] font-semibold focus-within:border-sky-400"
-          title="Transportation & installation charge %"
-        >
-          <span className="whitespace-nowrap text-muted-foreground">
-            Install %
-          </span>
-          <input
-            type="number"
-            min={0}
-            max={100}
-            step={0.5}
-            value={installPct}
-            onChange={(e) => {
-              const v = parseFloat(e.target.value);
-              onInstallPctChange(Number.isNaN(v) ? 0 : Math.min(100, Math.max(0, v)));
-            }}
-            onFocus={(e) => e.target.select()}
-            onWheel={(e) => e.currentTarget.blur()}
-            className="w-10 bg-transparent text-center text-xs font-bold text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-          />
-        </label>
+        {/* Consultancy & Design % — presets 5/7/10/15 or any custom value */}
+        {renderPctInput(
+          "Consultancy %",
+          consultancyPct,
+          onConsultancyPctChange,
+          "makc-consultancy-presets",
+          "Consultancy & Design charge % of grand total (5 / 7 / 10 / 15 or custom)"
+        )}
+
+        {/* Installation % — presets 5/7/10/15 or any custom value */}
+        {renderPctInput(
+          "Install %",
+          installPct,
+          onInstallPctChange,
+          "makc-install-presets",
+          "Installation charge % of grand total (5 / 7 / 10 / 15 or custom)"
+        )}
+
+        {/* Prepared-by selector */}
+        {preparedByOptions.length > 0 && (
+          <label
+            className="flex h-[46px] shrink-0 items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-[11px] font-semibold focus-within:border-sky-400"
+            title="Prepared by"
+          >
+            <span className="whitespace-nowrap text-muted-foreground">
+              Prepared By
+            </span>
+            <select
+              value={preparedById}
+              onChange={(e) => onPreparedByChange?.(e.target.value)}
+              className="max-w-[170px] bg-transparent text-xs font-bold text-foreground outline-none cursor-pointer"
+            >
+              {preparedByOptions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} · {p.phone}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         <Button
           variant="outline"

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { quotationApi } from "../api/quotationApi";
 
 export function useGetProductsForQuotationQuery(categoryIds, serviceIds, enabled = true) {
@@ -12,10 +12,11 @@ export function useGetProductsForQuotationQuery(categoryIds, serviceIds, enabled
   });
 }
 
-export function useQuotationsQuery(page = 1) {
+export function useQuotationsQuery(page = 1, search = "") {
   return useQuery({
-    queryKey: ["quotations", page],
-    queryFn: () => quotationApi.getQuotations(page),
+    queryKey: ["quotations", page, search],
+    queryFn: () => quotationApi.getQuotations(page, search),
+    placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
     retry: 1,
@@ -87,11 +88,12 @@ export function useDeleteQuotationSubMutation() {
   });
 }
 
-export function useRevQuotationsQuery(quotationId, page = 1, enabled = true) {
+export function useRevQuotationsQuery(quotationId, page = 1, search = "", enabled = true) {
   return useQuery({
-    queryKey: ["rev-quotations", quotationId, page],
-    queryFn: () => quotationApi.getRevQuotations(quotationId, page),
+    queryKey: ["rev-quotations", quotationId, page, search],
+    queryFn: () => quotationApi.getRevQuotations(quotationId, page, search),
     enabled: !!quotationId && enabled,
+    placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
     retry: 1,

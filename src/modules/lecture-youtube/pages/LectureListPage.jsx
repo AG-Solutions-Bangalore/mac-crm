@@ -67,8 +67,7 @@ const LectureListPage = () => {
     },
   ];
 
-  if (isLoading) return <LoadingBar />;
-  if (isError) return <ApiErrorPage onRetry={refetch} />;
+  if (isError && !responseData) return <ApiErrorPage onRetry={refetch} />;
 
   const renderGroupedTabs = (data) => {
     const pages = getPages(data);
@@ -86,6 +85,7 @@ const LectureListPage = () => {
 
         <TabsContent value="ALL">
           <DataTable
+            isLoading={isLoading}
             data={data}
             columns={columns}
             pageSize={50}
@@ -100,6 +100,7 @@ const LectureListPage = () => {
         {pages.map((page) => (
           <TabsContent key={page} value={page}>
             <DataTable
+              isLoading={isLoading}
               data={groupByPage(data, page)}
               columns={columns}
               pageSize={50}

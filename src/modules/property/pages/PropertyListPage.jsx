@@ -19,9 +19,10 @@ import { usePropertiesQuery } from "../hooks/useProperty";
 const PropertyListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: responseData, isLoading, isError, refetch } = usePropertiesQuery();
+  const { data: responseData, isLoading, isFetching, isError, refetch } = usePropertiesQuery(page, searchTerm);
 
   const paginationData = responseData?.data;
   const isPaginated = paginationData && typeof paginationData === "object" && "data" in paginationData && Array.isArray(paginationData.data);
@@ -77,8 +78,7 @@ const PropertyListPage = () => {
     },
   ];
 
-  if (isLoading) return <LoadingBar />;
-  if (isError) return <ApiErrorPage onRetry={refetch} />;
+  if (isError && !responseData) return <ApiErrorPage onRetry={refetch} />;
 
   return (
     <div className="px-5">
@@ -89,6 +89,7 @@ const PropertyListPage = () => {
       />
 
       <DataTable
+        isLoading={isLoading || isFetching}
         extraButton={
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[120px]">
@@ -105,6 +106,11 @@ const PropertyListPage = () => {
         columns={columns}
         searchPlaceholder="Search Properties..."
         pageSize={50}
+        searchValue={searchTerm}
+        onSearchChange={(val) => {
+          setSearchTerm(val);
+          setPage(1);
+        }}
         addButton={{
           onClick: () => navigate("/property-list/create"),
           label: "Add Property",

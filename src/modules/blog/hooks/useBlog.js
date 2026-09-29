@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { blogApi } from "../api/blogApi";
 
 /**
@@ -15,10 +15,11 @@ const LIST_KEY = ["blogs"];
 const ITEM_KEY = (id) => ["blog", id];
 const ACTIVE_SERVICES_KEY = ["activeServices"];
 
-export function useBlogsQuery(page = 1) {
+export function useBlogsQuery(page = 1, search = "") {
   return useQuery({
-    queryKey: [...LIST_KEY, page],
-    queryFn: () => blogApi.getBlogs(page),
+    queryKey: [...LIST_KEY, page, search],
+    queryFn: () => blogApi.getBlogs(page, search),
+    placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
     retry: 1,

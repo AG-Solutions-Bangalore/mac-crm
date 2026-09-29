@@ -1,10 +1,11 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { clientApi } from "../api/clientApi";
 
-export function useClientsQuery(page = 1) {
+export function useClientsQuery(page = 1, search = "") {
   return useQuery({
-    queryKey: ["clients", page],
-    queryFn: () => clientApi.getClients(page),
+    queryKey: ["clients", page, search],
+    queryFn: () => clientApi.getClients(page, search),
+    placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
     retry: 1,

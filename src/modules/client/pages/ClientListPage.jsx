@@ -30,9 +30,10 @@ const getServiceBadgeClass = (serviceName) => {
 const ClientListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: responseData, isLoading, isError, refetch } = useClientsQuery(page);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useClientsQuery(page, searchTerm);
 
   const paginationData = responseData?.data;
   const clientList = paginationData?.data || [];
@@ -139,8 +140,7 @@ const ClientListPage = () => {
     },
   ];
 
-  if (isLoading) return <LoadingBar />;
-  if (isError) return <ApiErrorPage onRetry={refetch} />;
+  if (isError && !responseData) return <ApiErrorPage onRetry={refetch} />;
 
   return (
     <div className="px-5">
@@ -150,6 +150,7 @@ const ClientListPage = () => {
         description="Manage customer accounts and service mappings"
       />
       <DataTable
+        isLoading={isLoading || isFetching}
         extraButton={
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[120px]">
@@ -166,6 +167,11 @@ const ClientListPage = () => {
         columns={columns}
         searchPlaceholder="Search Clients..."
         pageSize={50}
+        searchValue={searchTerm}
+        onSearchChange={(val) => {
+          setSearchTerm(val);
+          setPage(1);
+        }}
         addButton={{
           onClick: () => navigate("/client-list/create"),
           label: "Add Client",

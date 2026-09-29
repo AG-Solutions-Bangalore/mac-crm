@@ -50,8 +50,9 @@ export const quotationApi = {
   },
 
   // Quotation CRUD
-  getQuotations: async (page = 1) => {
-    const response = await apiClient.get(`/quotation?page=${page}`);
+  getQuotations: async (page = 1, search = "") => {
+    const url = `/quotation?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
+    const response = await apiClient.get(url);
     return response.data;
   },
   getQuotationById: async (id) => {
@@ -78,8 +79,9 @@ export const quotationApi = {
   },
 
   // Revised Quotation CRUD
-  getRevQuotations: async (quotationId, page = 1) => {
-    const response = await apiClient.get(`/rev-quotation?id=${quotationId}&page=${page}`);
+  getRevQuotations: async (quotationId, page = 1, search = "") => {
+    const url = `/rev-quotation?id=${quotationId}&page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
+    const response = await apiClient.get(url);
     return response.data;
   },
   getRevQuotationById: async (id) => {

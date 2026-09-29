@@ -8,8 +8,9 @@ import ComplaintStatusToggle from "../components/ComplaintStatusToggle";
 
 const ComplaintListPage = () => {
   const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const { data: responseData, isLoading, isError, refetch } = useComplaintsQuery(page);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useComplaintsQuery(page, searchTerm);
 
   const paginationData = responseData?.data;
   const complaintList = paginationData?.data || [];
@@ -66,8 +67,7 @@ const ComplaintListPage = () => {
     },
   ];
 
-  if (isLoading) return <LoadingBar />;
-  if (isError) return <ApiErrorPage onRetry={refetch} />;
+  if (isError && !responseData) return <ApiErrorPage onRetry={refetch} />;
 
   return (
     <div className="px-5">
@@ -77,10 +77,16 @@ const ComplaintListPage = () => {
       </div>
 
       <DataTable
+        isLoading={isLoading || isFetching}
         data={complaintList}
         columns={columns}
         pageSize={50}
         searchPlaceholder="Search Complaints..."
+        searchValue={searchTerm}
+        onSearchChange={(val) => {
+          setSearchTerm(val);
+          setPage(1);
+        }}
         backendPagination={true}
         page={paginationData?.current_page || 1}
         totalPages={paginationData?.last_page || 1}

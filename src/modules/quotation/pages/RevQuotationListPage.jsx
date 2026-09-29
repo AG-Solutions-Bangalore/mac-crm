@@ -16,10 +16,11 @@ const RevQuotationListPage = () => {
   const { id: parentId } = useParams();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingApproveId, setPendingApproveId] = useState(null);
 
-  const { data: responseData, isLoading, isError, refetch } = useRevQuotationsQuery(parentId, page);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useRevQuotationsQuery(parentId, page, searchTerm);
   const { data: parentQuotationData, isLoading: isParentLoading, isError: isParentError } = useQuotationQuery(parentId);
   const approveMutation = useApproveRevQuotationMutation();
 
@@ -149,8 +150,8 @@ const RevQuotationListPage = () => {
     },
   ];
 
-  if (isLoading || isParentLoading) return <LoadingBar />;
-  if (isError || isParentError) return <ApiErrorPage onRetry={refetch} />;
+  if ((isLoading && !responseData) || (isParentLoading && !parentQuotationData)) return <LoadingBar />;
+  if ((isError && !responseData) || (isParentError && !parentQuotationData)) return <ApiErrorPage onRetry={refetch} />;
 
   return (
     <div className="px-5">
@@ -178,10 +179,16 @@ const RevQuotationListPage = () => {
       )}
 
       <DataTable
+        isLoading={isLoading || isFetching}
         data={revQuotationList}
         columns={columns}
         searchPlaceholder="Search Revisions..."
         pageSize={50}
+        searchValue={searchTerm}
+        onSearchChange={(val) => {
+          setSearchTerm(val);
+          setPage(1);
+        }}
         addButton={
           !parentFinishWorkDate
             ? {
