@@ -29,6 +29,8 @@ export function useCreateProductMutation() {
     mutationFn: productApi.createProduct,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      // Quotation form ka product dropdown stale na rahe — turant refresh ho
+      queryClient.invalidateQueries({ queryKey: ["products-for-quotation"] });
     },
   });
 }
@@ -40,6 +42,7 @@ export function useUpdateProductMutation() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["product", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["products-for-quotation"] });
     },
   });
 }

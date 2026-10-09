@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet, UserPlus, Copy } from "lucide-react";
+import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet, UserPlus, Copy, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import MemoizedSelect from "@/components/common/memoized-select";
 import SelectWithAdd from "@/components/common/select-with-add";
 import ConfirmDialog from "@/components/common/confirm-dialog";
+import UnsavedChangesDialog from "@/components/common/unsaved-changes-dialog";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import ImportQuotationDialog from "../components/ImportQuotationDialog";
 import { QuickNameDialog, ProductQuickAddDialog, ServiceQuickAddDialog } from "../components/MasterQuickAddDialogs";
 import { useCreateBuyerMutation } from "../../buyer/hooks/useBuyer";
@@ -192,6 +194,8 @@ const QuotationFormPage = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  // Unsaved-changes guard: pristine snapshot vs current form
+  const [initialSnapshot, setInitialSnapshot] = useState(null);
 
   // Buyer quick-add (single reusable SelectWithAdd + inline dialog)
   const [buyerDialogOpen, setBuyerDialogOpen] = useState(false);
@@ -292,7 +296,7 @@ const QuotationFormPage = () => {
   useEffect(() => {
     if (isEdit && fetchedData?.data) {
       const data = fetchedData.data;
-      setFormData({
+      const nextForm = {
         quotation_date: data.quotation_date || "",
         quotation_buyer_id: data.quotation_buyer_id?.toString() || "",
         quotation_property_id: data.quotation_property_id?.toString() || "",
@@ -301,13 +305,91 @@ const QuotationFormPage = () => {
         quotation_remarks: data.quotation_remarks || "",
         quotation_status: data.quotation_status || "Pending",
         quotation_finish_work_date: data.quotation_finish_work_date || "",
-      });
+      };
+      setFormData(nextForm);
 
+      let nextServices = null;
       if (data.subs && Array.isArray(data.subs) && data.subs.length > 0) {
-        setServicesState(groupSubsToServices(data.subs));
+        nextServices = groupSubsToServices(data.subs);
+        setServicesState(nextServices);
       }
+      // pristine snapshot taaki bina change ke bahar jane par popup na aaye
+      const snapshotServices =
+        nextServices ||
+        [
+          {
+            serviceId: "",
+            floors: [
+              {
+                floorId: "",
+                areas: [
+                  {
+                    areaId: "",
+                    products: [
+                      { id: null, productId: "", price: 0, quantity: 1, status: "Pending" },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ];
+      setInitialSnapshot(JSON.stringify({ formData: nextForm, servicesState: snapshotServices }));
     }
   }, [isEdit, fetchedData]);
+
+  // Create mode: mount par pristine snapshot lock karo
+  useEffect(() => {
+    if (!isEdit && initialSnapshot === null) {
+      setInitialSnapshot(
+        JSON.stringify({
+          quotation_date: new Date().toISOString().split("T")[0],
+          quotation_buyer_id: "",
+          quotation_property_id: "",
+          quotation_category_id: "",
+          quotation_service_id: "",
+          quotation_remarks: "",
+          quotation_status: "Pending",
+          quotation_finish_work_date: "",
+        })
+      );
+      // Note: servicesState ka empty default bhi dirty-check me shamil hai;
+      // neeche isDirty memo formData+servicesState dono dekhta hai, isliye
+      // create mode me pehla snapshot formData-default se set karke
+      // servicesState ko alag se compare karenge.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEdit]);
+
+  const snapshotKey = useMemo(
+    () => JSON.stringify({ formData, servicesState }),
+    [formData, servicesState]
+  );
+
+  const isDirty = useMemo(() => {
+    if (initialSnapshot === null) return false;
+    if (isEdit) return snapshotKey !== initialSnapshot;
+    // Create mode: buyer/property/category/service/remarks/date ya line-items me kuch bhi bhara ho to dirty
+    const todayStr = new Date().toISOString().split("T")[0];
+    const hasBasic = Boolean(
+      formData.quotation_buyer_id ||
+        formData.quotation_property_id ||
+        formData.quotation_category_id ||
+        formData.quotation_service_id ||
+        formData.quotation_remarks ||
+        (formData.quotation_date && formData.quotation_date !== todayStr)
+    );
+    const hasItems = servicesState.some(
+      (srv) =>
+        srv.serviceId ||
+        srv.floors.some(
+          (flr) =>
+            flr.floorId ||
+            flr.areas.some((a) => a.areaId || a.products.some((p) => p.productId))
+        )
+    );
+    return hasBasic || hasItems;
+  }, [initialSnapshot, snapshotKey, isEdit, formData, servicesState]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -691,39 +773,6 @@ const QuotationFormPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
-    const payload = buildPayload();
-
-    try {
-      if (isEdit) {
-        await updateQuotationMutation.mutateAsync({
-          id,
-          data: payload,
-        });
-        if (formData.quotation_finish_work_date) {
-          await updateQuotationFinishWorkDateMutation.mutateAsync({
-            id,
-            finishWorkDate: formData.quotation_finish_work_date,
-          });
-        }
-        toast.success("Quotation updated successfully");
-      } else {
-        await createQuotationMutation.mutateAsync(payload);
-        toast.success("Quotation created successfully");
-      }
-      navigate("/quotation-list");
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message ||
-          error.message ||
-          "Failed to save quotation",
-      );
-    }
-  };
-
   // Shared payload builder (create + overwrite + save-as-new sab yahi use karte hai)
   const buildPayload = (overrides = {}) => {
     const flattenedSubs = flattenServicesToSubs(servicesState);
@@ -734,6 +783,64 @@ const QuotationFormPage = () => {
       quotation_property_id: Number(formData.quotation_property_id),
       subs: flattenedSubs,
     };
+  };
+
+  // Popup ke "Save & Leave" ke liye: bina navigate kiye save, success par true/id
+  const saveWithoutNavigate = async () => {
+    if (!validateForm()) return false;
+    const payload = buildPayload();
+    try {
+      if (isEdit) {
+        await updateQuotationMutation.mutateAsync({ id, data: payload });
+        if (formData.quotation_finish_work_date) {
+          await updateQuotationFinishWorkDateMutation.mutateAsync({
+            id,
+            finishWorkDate: formData.quotation_finish_work_date,
+          });
+        }
+        toast.success("Quotation updated successfully");
+        setInitialSnapshot(snapshotKey);
+        refetch?.();
+        return true;
+      } else {
+        const res = await createQuotationMutation.mutateAsync(payload);
+        const created = res?.data?.data || res?.data || res;
+        const newId =
+          created?.id?.toString() ||
+          res?.data?.id?.toString() ||
+          res?.id?.toString() ||
+          "";
+        toast.success("Quotation created successfully");
+        setInitialSnapshot(snapshotKey);
+        return newId || true;
+      }
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || error.message || "Failed to save quotation"
+      );
+      return false;
+    }
+  };
+
+  const {
+    dialogOpen: unsavedDialogOpen,
+    isSavingAndLeaving,
+    requestNavigate,
+    handleStay,
+    handleLeaveWithoutSaving,
+    handleSaveAndLeave,
+  } = useUnsavedChangesGuard({ isDirty, onSave: saveWithoutNavigate });
+
+  // Save button ab working file me hi rehta hai — list par redirect nahi hota.
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const result = await saveWithoutNavigate();
+    if (!result) return;
+    if (!isEdit && typeof result === "string") {
+      // Create ke baad naye quotation ke edit page par (working file me hi raho)
+      navigate(`/quotation-list/edit/${result}`, { replace: true });
+    }
+    // Edit mode me yahi raho — refetch upar ho chuka hai, toast dikh chuka hai.
   };
 
   // Edit mode: same quotation ko naye quotation ke roop me, aaj ki date ke saath save karo.
@@ -756,6 +863,7 @@ const QuotationFormPage = () => {
         res?.id?.toString() ||
         "";
       toast.success("Saved as new quotation with today's date");
+      setInitialSnapshot(snapshotKey);
       navigate(newId ? `/quotation-list/edit/${newId}` : "/quotation-list");
     } catch (error) {
       toast.error(
@@ -921,24 +1029,31 @@ const QuotationFormPage = () => {
       (p) => p.id?.toString() === pid?.toString(),
     );
 
-  // Row product options: pehle row-service match; match zero ho to category
-  // ke saare products (+ just-created) — data hai to dikhega, khaali nahi rahega.
+  // Row product options: pehle row-service match (checked list), phir
+  // all-services list me row-service match, phir category ke saare products
+  // (+ just-created) — data hai to dikhega, khaali nahi rahega.
   const getRowProductOptions = (rowServiceId) => {
     if (!rowServiceId) return [];
     const matched = productsList.filter(
       (p) => p.service_id?.toString() === rowServiceId?.toString(),
     );
-    const base =
-      matched.length > 0
-        ? matched
-        : [
-            ...matched,
-            ...catProductsList.filter(
-              (p) =>
-                checkedCategories.includes(p.category_id?.toString()) &&
-                !matched.some((m) => m.id === p.id),
-            ),
-          ];
+    let base = matched;
+    if (base.length === 0) {
+      // Master me abhi-abhi add hua product (stale checked-list bypass):
+      // all-services wali list me isi row-service ka product dhoondo.
+      const catMatched = catProductsList.filter(
+        (p) => p.service_id?.toString() === rowServiceId?.toString(),
+      );
+      if (catMatched.length > 0) {
+        base = catMatched;
+      } else {
+        base = catProductsList.filter(
+          (p) =>
+            checkedCategories.includes(p.category_id?.toString()) &&
+            !matched.some((m) => m.id === p.id),
+        );
+      }
+    }
     const seen = new Set(base.map((p) => p.id?.toString()));
     return [
       ...base,
@@ -986,7 +1101,7 @@ const QuotationFormPage = () => {
         if (cur.includes(realSvc)) return prev;
         return { ...prev, quotation_service_id: [...cur, realSvc].join(",") };
       });
-      toast.info(`Row Service auto-set to '${svcName}' (product ka actual service)`);
+      toast.info(`Row Service auto-set to '${svcName}'`);
     }
     // 3. product + rate (knownProduct = fresh object, stale lookup bypass)
     handleNestedFieldChange(
@@ -1148,6 +1263,19 @@ const QuotationFormPage = () => {
             ? prev
             : [...prev, found],
         );
+        // Naye product ki category tick karo taaki refetch-list me bana rahe
+        // (warna category filter se bahar ho jayega aur dropdown se gayab lagega).
+        const newCatId =
+          found.category_id?.toString() || payload.category_id?.toString() || "";
+        if (newCatId) {
+          setFormData((prev) => {
+            const cur = prev.quotation_category_id
+              ? prev.quotation_category_id.split(",")
+              : [];
+            if (cur.includes(newCatId)) return prev;
+            return { ...prev, quotation_category_id: [...cur, newCatId].join(",") };
+          });
+        }
         const srv = servicesState[target.serviceIndex];
         handleProductSelect(
           target.serviceIndex,
@@ -1248,7 +1376,7 @@ const QuotationFormPage = () => {
             : "Create a new buyer quotation"
         }
         rightContent={
-          <Button variant="outline" onClick={() => navigate("/quotation-list")}>
+          <Button variant="outline" onClick={() => requestNavigate("/quotation-list")}>
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
           </Button>
         }
@@ -1461,6 +1589,22 @@ const QuotationFormPage = () => {
               <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
                 Quotation Items (Hierarchical Setup)
               </h3>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  await queryClient.invalidateQueries({ queryKey: ["products-for-quotation"] });
+                  await refetchQuotationProducts();
+                  toast.success("Product list refreshed");
+                }}
+                disabled={productsLoading}
+                className="shrink-0"
+                title="Product master me naya product add kiya ho to list refresh karo"
+              >
+                <RefreshCw className={`w-4 h-4 mr-1.5 ${productsLoading ? "animate-spin" : ""}`} />
+                Refresh Products
+              </Button>
               {/* <Button
                 type="button"
                 variant="outline"
@@ -1897,7 +2041,7 @@ const QuotationFormPage = () => {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate("/quotation-list")}
+            onClick={() => requestNavigate("/quotation-list")}
             disabled={isSubmitting}
           >
             Cancel
@@ -1934,6 +2078,13 @@ const QuotationFormPage = () => {
           </Button>
         </div>
       </form>
+      <UnsavedChangesDialog
+        open={unsavedDialogOpen}
+        onStay={handleStay}
+        onLeaveWithoutSaving={handleLeaveWithoutSaving}
+        onSaveAndLeave={handleSaveAndLeave}
+        isSaving={isSavingAndLeaving}
+      />
       <ConfirmDialog
         isOpen={confirmOpen}
         onClose={() => setConfirmOpen(false)}
