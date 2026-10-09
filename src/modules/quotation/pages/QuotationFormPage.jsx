@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet } from "lucide-react";
+import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,8 +25,18 @@ import { useActiveCategoriesQuery } from "../../category/hooks/useCategory";
 import { useActiveFloorsQuery } from "../../floor/hooks/useFloor";
 import { useActiveAreasQuery } from "../../area/hooks/useArea";
 import MemoizedSelect from "@/components/common/memoized-select";
+import SelectWithAdd from "@/components/common/select-with-add";
 import ConfirmDialog from "@/components/common/confirm-dialog";
 import ImportQuotationDialog from "../components/ImportQuotationDialog";
+import { useCreateBuyerMutation } from "../../buyer/hooks/useBuyer";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 // Helper: Group flat subs to nested Services structure (Service -> Floor -> Area -> Product)
 const groupSubsToServices = (subsList) => {
@@ -178,6 +188,20 @@ const QuotationFormPage = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+
+  // Buyer quick-add (single reusable SelectWithAdd + inline dialog)
+  const [buyerDialogOpen, setBuyerDialogOpen] = useState(false);
+  const [buyerMenuOpen, setBuyerMenuOpen] = useState(false);
+  const [buyerSearchText, setBuyerSearchText] = useState("");
+  const [extraBuyers, setExtraBuyers] = useState([]);
+  const [newBuyer, setNewBuyer] = useState({
+    buyer_name: "",
+    buyer_mobile: "",
+    buyer_email: "",
+    buyer_address: "",
+  });
+  const [buyerFormErrors, setBuyerFormErrors] = useState({});
+  const createBuyerMutation = useCreateBuyerMutation();
 
   const handleApplyImport = ({ nestedState, serviceIds, categoryIds }) => {
     const currentServices = formData.quotation_service_id
@@ -700,6 +724,97 @@ const QuotationFormPage = () => {
   const floors = floorsData?.data || [];
   const areas = areasData?.data || [];
 
+  // Buyer options for the single reusable SelectWithAdd
+  // (extraBuyers = abhi-abhi banaya hua buyer, refetch se pehle turant dikhe)
+  const buyerOptions = [
+    ...(buyers || []).map((b) => ({
+      value: b.id?.toString(),
+      label: b.buyer_name,
+      buyer: b,
+    })),
+    ...extraBuyers.filter(
+      (e) => !(buyers || []).some((b) => b.id?.toString() === e.value)
+    ),
+  ];
+
+  const filterBuyer = (option, input) => {
+    if (!input) return true;
+    const q = input.toLowerCase();
+    const b = option.data?.buyer || {};
+    return (
+      option.data.label?.toLowerCase().includes(q) ||
+      b.buyer_mobile?.toLowerCase().includes(q) ||
+      b.buyer_email?.toLowerCase().includes(q)
+    );
+  };
+
+  const handleBuyerAdd = (typed = "") => {
+    setBuyerFormErrors({});
+    setNewBuyer({
+      buyer_name: (typed || buyerSearchText || "").trim(),
+      buyer_mobile: "",
+      buyer_email: "",
+      buyer_address: "",
+    });
+    setBuyerMenuOpen(false);
+    setBuyerDialogOpen(true);
+  };
+
+  const handleCreateBuyer = async (e) => {
+    e?.preventDefault?.();
+    const errs = {};
+    if (!newBuyer.buyer_name.trim()) errs.buyer_name = "Buyer name is required";
+    if (!newBuyer.buyer_mobile) {
+      errs.buyer_mobile = "Mobile number is required";
+    } else if (!/^\d{10}$/.test(newBuyer.buyer_mobile)) {
+      errs.buyer_mobile = "Mobile must be a 10-digit number";
+    }
+    if (!newBuyer.buyer_email.trim()) {
+      errs.buyer_email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(newBuyer.buyer_email.trim())) {
+      errs.buyer_email = "Invalid email format";
+    }
+    setBuyerFormErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+    try {
+      const res = await createBuyerMutation.mutateAsync({
+        buyer_name: newBuyer.buyer_name.trim(),
+        buyer_mobile: newBuyer.buyer_mobile.trim(),
+        buyer_email: newBuyer.buyer_email.trim(),
+        buyer_address: newBuyer.buyer_address?.trim() || "",
+      });
+      // Backend shape varies — handle {data:{id}}, {data:{data:{id}}}, {id}
+      const created = res?.data?.data || res?.data || res;
+      const newId =
+        created?.id?.toString() ||
+        res?.data?.id?.toString() ||
+        res?.id?.toString() ||
+        "";
+      const newName = created?.buyer_name || newBuyer.buyer_name.trim();
+      if (newId) {
+        setExtraBuyers((prev) => [
+          ...prev,
+          { value: newId, label: newName, buyer: created },
+        ]);
+        setFormData((prev) => ({ ...prev, quotation_buyer_id: newId }));
+        setErrors((prev) => ({ ...prev, quotation_buyer_id: "" }));
+      }
+      toast.success("Buyer added successfully");
+      setBuyerDialogOpen(false);
+      setNewBuyer({
+        buyer_name: "",
+        buyer_mobile: "",
+        buyer_email: "",
+        buyer_address: "",
+      });
+      setBuyerSearchText("");
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || error.message || "Failed to add buyer"
+      );
+    }
+  };
+
   const checkedCategories = formData.quotation_category_id
     ? formData.quotation_category_id.split(",")
     : [];
@@ -827,11 +942,7 @@ const QuotationFormPage = () => {
                 <Label className="flex">
                   Buyer <RedStar />
                 </Label>
-                <MemoizedSelect
-                  options={buyers.map((buyer) => ({
-                    value: buyer.id?.toString(),
-                    label: buyer.buyer_name,
-                  }))}
+                <SelectWithAdd
                   value={formData.quotation_buyer_id}
                   onChange={(option) => {
                     setFormData((prev) => ({
@@ -840,8 +951,36 @@ const QuotationFormPage = () => {
                     }));
                     setErrors((prev) => ({ ...prev, quotation_buyer_id: "" }));
                   }}
-                  placeholder="Select Buyer"
+                  options={buyerOptions}
+                  placeholder="Search or Select Buyer"
+                  isLoading={buyersLoading}
                   hasError={Boolean(errors.quotation_buyer_id)}
+                  filterOption={filterBuyer}
+                  getSubtitle={(o) =>
+                    o?.buyer?.buyer_mobile || o?.buyer?.buyer_email
+                      ? `${o?.buyer?.buyer_mobile || ""}${o?.buyer?.buyer_mobile && o?.buyer?.buyer_email ? " • " : ""}${o?.buyer?.buyer_email || ""}`
+                      : ""
+                  }
+                  // ── Dropdown placement ──
+                  // placement: "bottom-left" | "bottom-right" | "top-left" | "top-right" | "bottom" | "top"
+                  // menuPosition: "absolute" = box KE ANDAR | "fixed" = box KE BAHAR (Dialog/overflow ke liye)
+                  // Bahar chahiye to: menuPosition="fixed" menuPortalTarget={document.body}
+                  placement="bottom-left"
+                  menuPosition="absolute"
+                  addLabel="Add New Buyer"
+                  renderAddLabel={(typed) =>
+                    typed?.trim()
+                      ? `Add "${typed.trim()}" as New Buyer`
+                      : "Add New Buyer"
+                  }
+                  onAdd={handleBuyerAdd}
+                  menuIsOpen={buyerDialogOpen ? false : buyerMenuOpen}
+                  onMenuOpen={() => setBuyerMenuOpen(true)}
+                  onMenuClose={() => setBuyerMenuOpen(false)}
+                  onInputChange={(v, meta) => {
+                    if (meta.action === "input-change") setBuyerSearchText(v);
+                    return v;
+                  }}
                 />
               </div>
 
@@ -1388,6 +1527,123 @@ const QuotationFormPage = () => {
         products={productsList}
         categories={categories}
       />
+      {/* Buyer quick-add dialog (single reusable SelectWithAdd ka Add button ise kholta hai) */}
+      <Dialog
+        open={buyerDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !createBuyerMutation.isPending) setBuyerDialogOpen(false);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-blue-600" />
+              Add New Buyer
+            </DialogTitle>
+            <DialogDescription>
+              Quickly register a buyer without leaving the quotation form. It
+              will be auto-selected after saving.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateBuyer} className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>
+                Buyer Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                value={newBuyer.buyer_name}
+                onChange={(e) =>
+                  setNewBuyer((p) => ({ ...p, buyer_name: e.target.value }))
+                }
+                placeholder="Enter buyer name"
+                autoFocus
+              />
+              {buyerFormErrors.buyer_name && (
+                <p className="text-xs text-red-500">{buyerFormErrors.buyer_name}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>
+                  Mobile <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  value={newBuyer.buyer_mobile}
+                  onChange={(e) =>
+                    setNewBuyer((p) => ({
+                      ...p,
+                      buyer_mobile: e.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 10),
+                    }))
+                  }
+                  placeholder="10-digit mobile"
+                  inputMode="numeric"
+                />
+                {buyerFormErrors.buyer_mobile && (
+                  <p className="text-xs text-red-500">
+                    {buyerFormErrors.buyer_mobile}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label>
+                  Email <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  type="email"
+                  value={newBuyer.buyer_email}
+                  onChange={(e) =>
+                    setNewBuyer((p) => ({ ...p, buyer_email: e.target.value }))
+                  }
+                  placeholder="Enter email"
+                />
+                {buyerFormErrors.buyer_email && (
+                  <p className="text-xs text-red-500">
+                    {buyerFormErrors.buyer_email}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Address</Label>
+              <Textarea
+                value={newBuyer.buyer_address}
+                onChange={(e) =>
+                  setNewBuyer((p) => ({ ...p, buyer_address: e.target.value }))
+                }
+                placeholder="Enter address (optional)"
+                rows={2}
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setBuyerDialogOpen(false)}
+                disabled={createBuyerMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createBuyerMutation.isPending}>
+                {createBuyerMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" /> Add Buyer
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
