@@ -20,15 +20,6 @@
 - **Validity + Project Notifications:** no estimate_valid_till / price_validity_date / payment flags; due-calculation + notify trigger is backend work. Without backend: dates won't save, no expiry alerts.
 - **Inline quick-add (Floor/Area/Brand/Product):** backend READY ✅ — create APIs exist. Can be built without backend changes.
 
-## Pending 🟡
-
-5. **Convert Estimate to Project** — backend status/API, Actions button, hide from estimates, Projects page.
-6. **Sidebar flow** — Estimates (non-converted only), Projects, Closed Projects, Follow-up with snooze/date.
-7. **Inline quick-add in quote** — Floor/Area/Brand (+ Add footer), Product quick-add dialog.
-8. **Validity + Project Notifications** — Valid Till on estimate, Price Validity on convert, expiry notifications with Extend / Paid-remind / Close.
-
----
-
 ## HINDI VERSION (neeche original)
 
 ## Backend Dependency 🔌 — kaun sa pending task backend par kyu depend hai
@@ -57,6 +48,15 @@
 - [pending] Complaint sidebar se hide (route intact — decision: sirf hide)
 
 ## 7. Quote me inline quick-add ✅
+
+## Pending 🟡
+
+5. **Convert Estimate to Project** — backend status/API, Actions button, hide from estimates, Projects page.
+6. **Sidebar flow** — Estimates (non-converted only), Projects, Closed Projects, Follow-up with snooze/date.
+7. **Inline quick-add in quote** — Floor/Area/Brand (+ Add footer), Product quick-add dialog.
+8. **Validity + Project Notifications** — Valid Till on estimate, Price Validity on convert, expiry notifications with Extend / Paid-remind / Close.
+
+---
 
 - Floor/Area: row dropdown footer "+ Add" (sirf naam wala dialog, auto-select, list auto-refresh)
 - Brand: product dialog me Brand label ke paas hamesha-dikhne wala "+ New Brand" button + dropdown footer (inline add, auto-select)
@@ -99,3 +99,60 @@
 ## 4. Company Profile page ✅
 
 - Room Audio + CCTV & Security included, "Why choose MAKc?", Service Excellence (SLA word hataya), Awards
+
+#
+
+--------------------------------------New changes--------------------------------
+
+## 9. Unsaved-changes popup (shadcn, no native) ✅
+
+- Naya reusable guard: `src/hooks/useUnsavedChangesGuard.js` + `src/components/common/unsaved-changes-dialog.jsx` (pure shadcn `AlertDialog` — Stay / Leave without saving / Save & Leave, no `confirm()`/`alert()`).
+- Quotation + Revised quotation form dono me integrated (`QuotationFormPage.jsx`, `RevQuotationFormPage.jsx`): pristine snapshot vs current form se `isDirty`; Back/Cancel buttons `requestNavigate` se; sidebar/header `<Link>` clicks capture-phase me roke jate hai; browser Back ke liye dummy history entry + `popstate` guard.
+- Refresh / tab-close par sirf browser ka native prompt aata hai (browsers waha custom/shadcn UI allow nahi karte — OS-level restriction).
+- Clickable fix: guard ka document-level capture listener dialog open hone par dialog ke andar ke clicks bhi block kar raha tha (buttons unclickable lag rahe the) — `data-unsaved-dialog` attribute se dialog-inside clicks ko allow kiya, background clicks ab bhi blocked.
+
+## 10. Save working file me hi hota hai (list par redirect nahi) ✅
+
+- `QuotationFormPage`: Save dabane par list par nahi jata — Edit me yahi rehta hai (+ refetch, toast), Create me naye quotation ke edit page par `replace:true` se jata hai (working file me hi raho).
+- `RevQuotationFormPage`: same — Create me nayi revision ke edit page par, Edit me yahi + `refetch()`.
+- `saveWithoutNavigate` success par id/`true` return karta hai (dialog ke Save & Leave ke liye); `handleSaveAsNew` snapshot clear karke naye edit par le jata hai.
+
+## 11. Product dropdown — naya product turant dikhega ✅
+
+- Root cause: `useCreateProductMutation` / `useUpdateProductMutation` sirf `["products"]` invalidate karte the, `["products-for-quotation"]` (5-min stale) stale reh jata tha — master se add kiya product dropdown me nahi aata tha. Ab dono jagah `products-for-quotation` bhi invalidate hota hai (`src/modules/product/hooks/useProduct.js`).
+- Quick-add (`saveProductQA`) ab naye product ki category bhi auto-tick karta hai (pehle sirf service tick hota tha, category filter se product gayab lagta tha).
+- Row options fallback strong kiya (`getRowProductOptions`): pehle checked-list me row-service match, phir all-services list me row-service match (stale-list bypass — master me abhi add hua product bhi dikhe), phir category fallback + just-created items.
+- Rev form me koi fallback nahi tha (strict filter) — `getRevRowProductOptions` add kiya + price lookup combined list (`productsList + catProductsList`) se.
+- Dono forms ke Quotation Items header me **Refresh Products** button (`RefreshCw`): `products-for-quotation` invalidate + refetch + toast — master me product add karke page chhode bina list refresh karo.
+- Note: dropdown ab bhi top Categories/Services checkboxes se filter hota hai — naye product ki category tick honi chahiye, nahi to hint batayega (kis service me products hai).
+
+---
+
+## All Pending — with context (English)
+
+> Source: items marked 🟡 / `[Pending]` above (Sec 5, 6, 8). Recent work (Sec 9, 10, 11) is complete — build passes. Sec 7 inline quick-add is marked ✅, so it is excluded.
+
+### P1. Convert Estimate to Project 🟡 — blocked on backend
+- **Context:** There is no way today to move a won estimate into execution. The status API (`PATCH /quotations/{id}/status`) only accepts `Pending/Cancel/Approved`, and there is no `/projects` API (returns 404).
+- **Frontend scope:** Actions-column "Convert to Project" button + confirm + toast; hide converted quotes from the estimates list; new Projects page (`/project-list`) + sidebar item.
+- **Blocked by:** backend must accept `"Project"` status (or expose a convert API) and confirm the projects listing contract.
+- **User impact if built without backend:** button errors, nothing moves/hides.
+
+### P2. Sidebar flow — Estimates / Projects / Closed Projects 🟡 — blocked on backend
+- **Context:** Operations needs three clean buckets: Estimates (only non-converted), Projects (converted/in-progress), Closed Projects (final payment done). Today there are no `"Project"`/`"Closed"` statuses, no payment-done flag in DB, and no server-side list filter.
+- **Frontend scope:** rename/filter Estimates to non-converted only; Projects page; Closed Projects page (final-payment-done only).
+- **Blocked by:** new statuses + payment-done flag + server-side filtering.
+- **User impact if built without backend:** pages show wrong/empty data.
+- **Note — conflict in this file:** Sec 5 (line 13) says "Complaint hidden (route kept)" as Completed, but Sec 6 still lists "Complaint hide" as pending. Needs a decision: hide-only (frontend, no backend) vs something more.
+
+### P3. Follow-up reminders with snooze / next date 🟡 — blocked on backend
+- **Context:** Quotations have no follow-up date/frequency field, and the Notification module is broadcast-only (no auto-due engine), so reminders can't be saved or triggered.
+- **Frontend scope:** reminder frequency on the quote (5/7/10/14/custom); snooze or next-date action on the notification.
+- **Blocked by:** follow-up date/frequency fields + due-notification trigger on the backend.
+- **User impact if built without backend:** reminders won't save or fire.
+
+### P4. Validity dates + Project Notifications page + badges 🟡 — blocked on backend
+- **Context:** There are no `estimate_valid_till` / `price_validity_date` / hardware/final-payment flags, and no due-calculation + notify trigger, so expiry can't be computed or alerted.
+- **Frontend scope:** Valid Till field on the estimate form; Price Validity date picker in the convert dialog; Project Notifications page (Operations → under Projects) with expiring/stagnant list + Extend (1 month/custom) / Client Paid (remind after X days) / Close actions; validity badge/warning in the Projects list.
+- **Blocked by:** new date/payment fields + due-notification trigger on the backend.
+- **User impact if built without backend:** dates won't persist, no expiry alerts.

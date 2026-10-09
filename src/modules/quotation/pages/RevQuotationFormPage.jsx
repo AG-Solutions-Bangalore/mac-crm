@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet } from "lucide-react";
+import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,10 @@ import { useActiveFloorsQuery } from "../../floor/hooks/useFloor";
 import { useActiveAreasQuery } from "../../area/hooks/useArea";
 import MemoizedSelect from "@/components/common/memoized-select";
 import ConfirmDialog from "@/components/common/confirm-dialog";
+import UnsavedChangesDialog from "@/components/common/unsaved-changes-dialog";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import ImportQuotationDialog from "../components/ImportQuotationDialog";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Helper: Group flat subs to nested Services structure (Service -> Floor -> Area -> Product)
 const groupSubsToServices = (subsList) => {
@@ -177,6 +180,7 @@ const RevQuotationFormPage = () => {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [initialSnapshot, setInitialSnapshot] = useState(null);
 
   const handleApplyImport = ({ nestedState, serviceIds, categoryIds }) => {
     const currentServices = formData.quotation_service_id
@@ -228,13 +232,14 @@ const RevQuotationFormPage = () => {
   const { data: revQuotationData, isLoading: revLoading, isError, refetch } = useRevQuotationQuery(revId, isEdit);
 
   // Fetch products matching selected categories and services
-  const { data: productsData, isLoading: productsLoading } = useGetProductsForQuotationQuery(
+  const { data: productsData, isLoading: productsLoading, refetch: refetchQuotationProducts } = useGetProductsForQuotationQuery(
     formData.quotation_category_id,
     formData.quotation_service_id,
     Boolean(formData.quotation_category_id && formData.quotation_service_id)
   );
 
   const productsList = productsData?.data || [];
+  const queryClient = useQueryClient();
 
   // TanStack Mutations
   const createRevQuotationMutation = useCreateRevQuotationMutation();
@@ -247,7 +252,7 @@ const RevQuotationFormPage = () => {
   useEffect(() => {
     if (!isEdit && parentQuotationData?.data) {
       const parent = parentQuotationData.data;
-      setFormData({
+      const nextForm = {
         quotation_id: parent.id?.toString() || parentId,
         quotation_date_rev: new Date().toISOString().split("T")[0],
         quotation_buyer_id: parent.quotation_buyer_id?.toString() || "",
@@ -256,11 +261,39 @@ const RevQuotationFormPage = () => {
         quotation_service_id: parent.quotation_service_id || "",
         quotation_remarks: parent.quotation_remarks || "",
         quotation_status: "Pending",
-      });
+      };
+      setFormData(nextForm);
 
+      let nextServices = null;
       if (parent.subs && Array.isArray(parent.subs) && parent.subs.length > 0) {
-        setServicesState(groupSubsToServices(parent.subs));
+        nextServices = groupSubsToServices(parent.subs);
+        setServicesState(nextServices);
       }
+      setInitialSnapshot(
+        JSON.stringify({
+          formData: nextForm,
+          servicesState:
+            nextServices ||
+            [
+              {
+                serviceId: "",
+                floors: [
+                  {
+                    floorId: "",
+                    areas: [
+                      {
+                        areaId: "",
+                        products: [
+                          { id: null, productId: "", price: 0, quantity: 1, status: "Pending" },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+        })
+      );
     }
   }, [isEdit, parentQuotationData, parentId]);
 
@@ -268,7 +301,7 @@ const RevQuotationFormPage = () => {
   useEffect(() => {
     if (isEdit && revQuotationData?.data) {
       const rev = revQuotationData.data;
-      setFormData({
+      const nextForm = {
         quotation_id: rev.quotation_id?.toString() || parentId,
         quotation_date_rev: rev.quotation_date_rev || "",
         quotation_buyer_id: rev.quotation_buyer_id?.toString() || "",
@@ -277,13 +310,50 @@ const RevQuotationFormPage = () => {
         quotation_service_id: rev.quotation_service_id || "",
         quotation_remarks: rev.quotation_remarks || "",
         quotation_status: rev.quotation_status || "Pending",
-      });
+      };
+      setFormData(nextForm);
 
+      let nextServices = null;
       if (rev.subs && Array.isArray(rev.subs) && rev.subs.length > 0) {
-        setServicesState(groupSubsToServices(rev.subs));
+        nextServices = groupSubsToServices(rev.subs);
+        setServicesState(nextServices);
       }
+      setInitialSnapshot(
+        JSON.stringify({
+          formData: nextForm,
+          servicesState:
+            nextServices ||
+            [
+              {
+                serviceId: "",
+                floors: [
+                  {
+                    floorId: "",
+                    areas: [
+                      {
+                        areaId: "",
+                        products: [
+                          { id: null, productId: "", price: 0, quantity: 1, status: "Pending" },
+                        ],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+        })
+      );
     }
   }, [isEdit, revQuotationData, parentId]);
+
+  const snapshotKey = useMemo(
+    () => JSON.stringify({ formData, servicesState }),
+    [formData, servicesState]
+  );
+  const isDirty = useMemo(
+    () => Boolean(initialSnapshot && snapshotKey !== initialSnapshot),
+    [initialSnapshot, snapshotKey]
+  );
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -513,7 +583,9 @@ const RevQuotationFormPage = () => {
         product[field] = value;
 
         if (field === "productId") {
-          const matchedProd = productsList.find((p) => p.id?.toString() === value?.toString());
+          const matchedProd = [...productsList, ...catProductsList].find(
+            (p) => p.id?.toString() === value?.toString()
+          );
           if (matchedProd) {
             product.price = matchedProd.product_price || 0;
           }
@@ -604,33 +676,61 @@ const RevQuotationFormPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-
+  const buildRevPayload = () => {
     const flattenedSubs = flattenServicesToSubs(servicesState);
-    const payload = {
+    return {
       ...formData,
       quotation_id: Number(formData.quotation_id),
       quotation_buyer_id: Number(formData.quotation_buyer_id),
       quotation_property_id: Number(formData.quotation_property_id),
       subs: flattenedSubs,
     };
+  };
 
+  const saveRevWithoutNavigate = async () => {
+    if (!validateForm()) return false;
+    const payload = buildRevPayload();
     try {
       if (isEdit) {
-        await updateRevQuotationMutation.mutateAsync({
-          id: revId,
-          data: payload,
-        });
+        await updateRevQuotationMutation.mutateAsync({ id: revId, data: payload });
         toast.success("Revised quotation updated successfully");
+        setInitialSnapshot(snapshotKey);
+        refetch?.();
+        return true;
       } else {
-        await createRevQuotationMutation.mutateAsync(payload);
+        const res = await createRevQuotationMutation.mutateAsync(payload);
+        const created = res?.data?.data || res?.data || res;
+        const newRevId =
+          created?.id?.toString() ||
+          res?.data?.id?.toString() ||
+          res?.id?.toString() ||
+          "";
         toast.success("Revised quotation created successfully");
+        setInitialSnapshot(snapshotKey);
+        return newRevId || true;
       }
-      navigate(`/quotation-list/revised/${parentId}`);
     } catch (error) {
       toast.error(error.response?.data?.message || error.message || "Failed to save revised quotation");
+      return false;
+    }
+  };
+
+  const {
+    dialogOpen: unsavedDialogOpen,
+    isSavingAndLeaving,
+    requestNavigate,
+    handleStay,
+    handleLeaveWithoutSaving,
+    handleSaveAndLeave,
+  } = useUnsavedChangesGuard({ isDirty, onSave: saveRevWithoutNavigate });
+
+  // Save button working file me hi rehta hai — revised list par redirect nahi hota.
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const result = await saveRevWithoutNavigate();
+    if (!result) return;
+    if (!isEdit && typeof result === "string") {
+      navigate(`/quotation-list/revised/${parentId}/edit/${result}`, { replace: true });
     }
   };
 
@@ -686,6 +786,23 @@ const RevQuotationFormPage = () => {
     return `No '${catNames}' products under '${rowSvcName}'. Found ${others.join(", ")} — tick that Service above.`;
   };
 
+  // Row product options: checked-list match, phir all-services list me row-service
+  // match (master me abhi-abhi add hua product bhi dikhe), phir category fallback.
+  const getRevRowProductOptions = (rowServiceId) => {
+    if (!rowServiceId) return [];
+    const matched = productsList.filter(
+      (p) => p.service_id?.toString() === rowServiceId?.toString()
+    );
+    if (matched.length > 0) return matched;
+    const catMatched = catProductsList.filter(
+      (p) => p.service_id?.toString() === rowServiceId?.toString()
+    );
+    if (catMatched.length > 0) return catMatched;
+    return catProductsList.filter((p) =>
+      checkedCategories.includes(p.category_id?.toString())
+    );
+  };
+
   const isFormLoading =
     buyersLoading ||
     propertiesLoading ||
@@ -737,7 +854,7 @@ const RevQuotationFormPage = () => {
         title={isEdit ? "Edit Revised Quotation" : "Add Revised Quotation"}
         description={isEdit ? "Update revised quotation details" : "Create revised quotation from parent"}
         rightContent={
-          <Button variant="outline" onClick={() => navigate(`/quotation-list/revised/${parentId}`)}>
+          <Button variant="outline" onClick={() => requestNavigate(`/quotation-list/revised/${parentId}`)}>
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
           </Button>
         }
@@ -889,12 +1006,28 @@ const RevQuotationFormPage = () => {
                 type="button"
                 variant="outline"
                 size="sm"
+                onClick={async () => {
+                  await queryClient.invalidateQueries({ queryKey: ["products-for-quotation"] });
+                  await refetchQuotationProducts();
+                  toast.success("Product list refreshed");
+                }}
+                disabled={productsLoading}
+                className="shrink-0"
+                title="Product master me naya product add kiya ho to list refresh karo"
+              >
+                <RefreshCw className={`w-4 h-4 mr-1.5 ${productsLoading ? "animate-spin" : ""}`} />
+                Refresh Products
+              </Button>
+              {/* <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => setImportDialogOpen(true)}
                 className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 font-medium shrink-0"
               >
                 <FileSpreadsheet className="w-4 h-4 mr-1.5 text-blue-600 dark:text-blue-400" />
                 Import from Excel / TSV
-              </Button>
+              </Button> */}
             </div>
 
             <div className="space-y-8">
@@ -1067,16 +1200,12 @@ const RevQuotationFormPage = () => {
                                       {/* Product select */}
                                       <div className="col-span-3">
                                         <MemoizedSelect
-                                          options={productsList
-                                            .filter(
-                                              (p) =>
-                                                p.service_id?.toString() ===
-                                                srv.serviceId?.toString(),
-                                            )
-                                            .map((p) => ({
-                                              value: p.id?.toString(),
-                                              label: p.product_name,
-                                            }))}
+                                          options={getRevRowProductOptions(
+                                            srv.serviceId
+                                          ).map((p) => ({
+                                            value: p.id?.toString(),
+                                            label: p.product_name,
+                                          }))}
                                           value={prod.productId}
                                           onChange={(option) =>
                                             handleNestedFieldChange(
@@ -1249,7 +1378,7 @@ const RevQuotationFormPage = () => {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate(`/quotation-list/revised/${parentId}`)}
+            onClick={() => requestNavigate(`/quotation-list/revised/${parentId}`)}
             disabled={isSubmitting}
           >
             Cancel
@@ -1267,6 +1396,13 @@ const RevQuotationFormPage = () => {
           </Button>
         </div>
       </form>
+      <UnsavedChangesDialog
+        open={unsavedDialogOpen}
+        onStay={handleStay}
+        onLeaveWithoutSaving={handleLeaveWithoutSaving}
+        onSaveAndLeave={handleSaveAndLeave}
+        isSaving={isSavingAndLeaving}
+      />
       <ConfirmDialog
         isOpen={confirmOpen}
         onClose={() => setConfirmOpen(false)}
