@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet } from "lucide-react";
+import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet, UserPlus, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,13 +20,27 @@ import {
 } from "../hooks/useQuotation";
 import { useActiveBuyersQuery } from "../../buyer/hooks/useBuyer";
 import { useActivePropertiesQuery } from "../../property/hooks/useProperty";
-import { useActiveServicesQuery } from "../../service/hooks/useService";
+import { useActiveServicesQuery, useCreateServiceMutation } from "../../service/hooks/useService";
 import { useActiveCategoriesQuery } from "../../category/hooks/useCategory";
-import { useActiveFloorsQuery } from "../../floor/hooks/useFloor";
-import { useActiveAreasQuery } from "../../area/hooks/useArea";
+import { useActiveFloorsQuery, useCreateFloorMutation } from "../../floor/hooks/useFloor";
+import { useActiveAreasQuery, useCreateAreaMutation } from "../../area/hooks/useArea";
+import { useActiveBrandsQuery, useCreateBrandMutation } from "../../brand/hooks/useBrand";
+import { useCreateProductMutation } from "../../product/hooks/useProduct";
+import { useQueryClient } from "@tanstack/react-query";
 import MemoizedSelect from "@/components/common/memoized-select";
+import SelectWithAdd from "@/components/common/select-with-add";
 import ConfirmDialog from "@/components/common/confirm-dialog";
 import ImportQuotationDialog from "../components/ImportQuotationDialog";
+import { QuickNameDialog, ProductQuickAddDialog, ServiceQuickAddDialog } from "../components/MasterQuickAddDialogs";
+import { useCreateBuyerMutation } from "../../buyer/hooks/useBuyer";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 // Helper: Group flat subs to nested Services structure (Service -> Floor -> Area -> Product)
 const groupSubsToServices = (subsList) => {
@@ -179,6 +193,20 @@ const QuotationFormPage = () => {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
 
+  // Buyer quick-add (single reusable SelectWithAdd + inline dialog)
+  const [buyerDialogOpen, setBuyerDialogOpen] = useState(false);
+  const [buyerMenuOpen, setBuyerMenuOpen] = useState(false);
+  const [buyerSearchText, setBuyerSearchText] = useState("");
+  const [extraBuyers, setExtraBuyers] = useState([]);
+  const [newBuyer, setNewBuyer] = useState({
+    buyer_name: "",
+    buyer_mobile: "",
+    buyer_email: "",
+    buyer_address: "",
+  });
+  const [buyerFormErrors, setBuyerFormErrors] = useState({});
+  const createBuyerMutation = useCreateBuyerMutation();
+
   const handleApplyImport = ({ nestedState, serviceIds, categoryIds }) => {
     const currentServices = formData.quotation_service_id
       ? formData.quotation_service_id.split(",")
@@ -217,15 +245,17 @@ const QuotationFormPage = () => {
   const { data: buyersData, isLoading: buyersLoading } = useActiveBuyersQuery();
   const { data: propertiesData, isLoading: propertiesLoading } =
     useActivePropertiesQuery();
-  const { data: servicesData, isLoading: servicesLoading } =
+  const { data: servicesData, isLoading: servicesLoading, refetch: refetchServices } =
     useActiveServicesQuery();
   const { data: categoriesData, isLoading: categoriesLoading } =
     useActiveCategoriesQuery();
-  const { data: floorsData, isLoading: floorsLoading } = useActiveFloorsQuery();
-  const { data: areasData, isLoading: areasLoading } = useActiveAreasQuery();
+  const { data: floorsData, isLoading: floorsLoading, refetch: refetchFloors } = useActiveFloorsQuery();
+  const { data: areasData, isLoading: areasLoading, refetch: refetchAreas } = useActiveAreasQuery();
+  const { data: brandsData, isLoading: brandsLoading, refetch: refetchBrands } = useActiveBrandsQuery();
+  const queryClient = useQueryClient();
 
   // Fetch products matching selected categories and services
-  const { data: productsData, isLoading: productsLoading } =
+  const { data: productsData, isLoading: productsLoading, refetch: refetchQuotationProducts } =
     useGetProductsForQuotationQuery(
       formData.quotation_category_id,
       formData.quotation_service_id,
@@ -245,6 +275,12 @@ const QuotationFormPage = () => {
   const updateQuotationMutation = useUpdateQuotationMutation();
   const deleteQuotationSubMutation = useDeleteQuotationSubMutation();
   const updateQuotationFinishWorkDateMutation = useUpdateQuotationFinishWorkDateMutation();
+  // Master quick-add mutations (Floor / Area / Brand / Product — inline, Buyer pattern)
+  const createFloorMutation = useCreateFloorMutation();
+  const createAreaMutation = useCreateAreaMutation();
+  const createBrandMutation = useCreateBrandMutation();
+  const createProductMutation = useCreateProductMutation();
+  const createServiceMutation = useCreateServiceMutation();
 
   const isSubmitting =
     createQuotationMutation.isPending ||
@@ -542,6 +578,7 @@ const QuotationFormPage = () => {
     productIndex,
     field,
     value,
+    knownProduct = null,
   ) => {
     setServicesState((prev) => {
       const updated = [...prev];
@@ -554,9 +591,9 @@ const QuotationFormPage = () => {
         product[field] = value;
 
         if (field === "productId") {
-          const matchedProd = productsList.find(
-            (p) => p.id?.toString() === value?.toString(),
-          );
+          // knownProduct = quick-add wala fresh object (stale list bypass);
+          // warna current lists me lookup.
+          const matchedProd = knownProduct || findProductById(value);
           if (matchedProd) {
             product.price = matchedProd.product_price || 0;
           }
@@ -658,13 +695,7 @@ const QuotationFormPage = () => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    const flattenedSubs = flattenServicesToSubs(servicesState);
-    const payload = {
-      ...formData,
-      quotation_buyer_id: Number(formData.quotation_buyer_id),
-      quotation_property_id: Number(formData.quotation_property_id),
-      subs: flattenedSubs,
-    };
+    const payload = buildPayload();
 
     try {
       if (isEdit) {
@@ -693,12 +724,147 @@ const QuotationFormPage = () => {
     }
   };
 
+  // Shared payload builder (create + overwrite + save-as-new sab yahi use karte hai)
+  const buildPayload = (overrides = {}) => {
+    const flattenedSubs = flattenServicesToSubs(servicesState);
+    return {
+      ...formData,
+      ...overrides,
+      quotation_buyer_id: Number(formData.quotation_buyer_id),
+      quotation_property_id: Number(formData.quotation_property_id),
+      subs: flattenedSubs,
+    };
+  };
+
+  // Edit mode: same quotation ko naye quotation ke roop me, aaj ki date ke saath save karo.
+  // Purana quotation untouched rehta hai; naya banne ke baad uske edit page par le jao.
+  const [isSavingNew, setIsSavingNew] = useState(false);
+  const handleSaveAsNew = async () => {
+    if (!validateForm()) return;
+    setIsSavingNew(true);
+    try {
+      const payload = buildPayload({
+        quotation_date: new Date().toISOString().split("T")[0],
+        quotation_status: "Pending",
+        quotation_finish_work_date: "",
+      });
+      const res = await createQuotationMutation.mutateAsync(payload);
+      const created = res?.data?.data || res?.data || res;
+      const newId =
+        created?.id?.toString() ||
+        res?.data?.id?.toString() ||
+        res?.id?.toString() ||
+        "";
+      toast.success("Saved as new quotation with today's date");
+      navigate(newId ? `/quotation-list/edit/${newId}` : "/quotation-list");
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to save as new quotation",
+      );
+    } finally {
+      setIsSavingNew(false);
+    }
+  };
+
   const buyers = buyersData?.data || [];
   const properties = propertiesData?.data || [];
   const services = servicesData?.data || [];
   const categories = categoriesData?.data || [];
   const floors = floorsData?.data || [];
   const areas = areasData?.data || [];
+
+  // Buyer options for the single reusable SelectWithAdd
+  // (extraBuyers = abhi-abhi banaya hua buyer, refetch se pehle turant dikhe)
+  const buyerOptions = [
+    ...(buyers || []).map((b) => ({
+      value: b.id?.toString(),
+      label: b.buyer_name,
+      buyer: b,
+    })),
+    ...extraBuyers.filter(
+      (e) => !(buyers || []).some((b) => b.id?.toString() === e.value)
+    ),
+  ];
+
+  const filterBuyer = (option, input) => {
+    if (!input) return true;
+    const q = input.toLowerCase();
+    const b = option.data?.buyer || {};
+    return (
+      option.data.label?.toLowerCase().includes(q) ||
+      b.buyer_mobile?.toLowerCase().includes(q) ||
+      b.buyer_email?.toLowerCase().includes(q)
+    );
+  };
+
+  const handleBuyerAdd = (typed = "") => {
+    setBuyerFormErrors({});
+    setNewBuyer({
+      buyer_name: (typed || buyerSearchText || "").trim(),
+      buyer_mobile: "",
+      buyer_email: "",
+      buyer_address: "",
+    });
+    setBuyerMenuOpen(false);
+    setBuyerDialogOpen(true);
+  };
+
+  const handleCreateBuyer = async (e) => {
+    e?.preventDefault?.();
+    const errs = {};
+    if (!newBuyer.buyer_name.trim()) errs.buyer_name = "Buyer Name is required";
+    if (!newBuyer.buyer_mobile) {
+      errs.buyer_mobile = "Mobile number is required";
+    } else if (newBuyer.buyer_mobile.length !== 10) {
+      errs.buyer_mobile = "Mobile must be a 10-digit number";
+    }
+    if (!newBuyer.buyer_email.trim()) {
+      errs.buyer_email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(newBuyer.buyer_email.trim())) {
+      errs.buyer_email = "Invalid email format";
+    }
+    setBuyerFormErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+    try {
+      const res = await createBuyerMutation.mutateAsync({
+        buyer_name: newBuyer.buyer_name.trim(),
+        buyer_mobile: newBuyer.buyer_mobile.trim(),
+        buyer_email: newBuyer.buyer_email.trim(),
+        buyer_address: newBuyer.buyer_address?.trim() || "",
+      });
+      // Backend shape varies — handle {data:{id}}, {data:{data:{id}}}, {id}
+      const created = res?.data?.data || res?.data || res;
+      const newId =
+        created?.id?.toString() ||
+        res?.data?.id?.toString() ||
+        res?.id?.toString() ||
+        "";
+      const newName = created?.buyer_name || newBuyer.buyer_name.trim();
+      if (newId) {
+        setExtraBuyers((prev) => [
+          ...prev,
+          { value: newId, label: newName, buyer: created },
+        ]);
+        setFormData((prev) => ({ ...prev, quotation_buyer_id: newId }));
+        setErrors((prev) => ({ ...prev, quotation_buyer_id: "" }));
+      }
+      toast.success("Buyer added successfully");
+      setBuyerDialogOpen(false);
+      setNewBuyer({
+        buyer_name: "",
+        buyer_mobile: "",
+        buyer_email: "",
+        buyer_address: "",
+      });
+      setBuyerSearchText("");
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message || error.message || "Failed to add buyer"
+      );
+    }
+  };
 
   const checkedCategories = formData.quotation_category_id
     ? formData.quotation_category_id.split(",")
@@ -707,6 +873,302 @@ const QuotationFormPage = () => {
     ? formData.quotation_service_id.split(",")
     : [];
 
+  // Empty-dropdown hint: selected categories ke products asli me KIS service
+  // ke neeche hai (e.g. Frame → Smart Switches, not Electrical Automation).
+  // Sirf guidance text hai — filter logic bilkul untouched.
+  const allServiceIds = services.map((s) => s.id).join(",");
+  const { data: catProductsData } = useGetProductsForQuotationQuery(
+    formData.quotation_category_id,
+    allServiceIds,
+    Boolean(formData.quotation_category_id && allServiceIds),
+  );
+  const catProductsList = catProductsData?.data || [];
+
+  const getProductEmptyHint = (rowServiceId) => {
+    const rowSvcName =
+      services.find((s) => s.id?.toString() === rowServiceId?.toString())
+        ?.service_name || "this service";
+    const catNames =
+      categories
+        .filter((c) => checkedCategories.includes(c.id?.toString()))
+        .map((c) => c.category_name)
+        .slice(0, 2)
+        .join(", ") || "selected categories";
+    if (!catProductsList.length)
+      return `No products found for '${catNames}'. Add products in Product master first.`;
+    const byService = {};
+    catProductsList.forEach((p) => {
+      const sid = p.service_id?.toString();
+      if (!sid || sid === rowServiceId?.toString()) return;
+      byService[sid] = (byService[sid] || 0) + 1;
+    });
+    const others = Object.entries(byService)
+      .slice(0, 2)
+      .map(([sid, n]) => {
+        const nm =
+          services.find((s) => s.id?.toString() === sid)?.service_name ||
+          "another service";
+        return `${n} under '${nm}'`;
+      });
+    if (!others.length)
+      return `No '${catNames}' products under '${rowSvcName}'.`;
+    return `No '${catNames}' products under '${rowSvcName}'. Found ${others.join(", ")} — tick that Service above.`;
+  };
+
+  // Combined product lookup (just-created + checked-services + all-services lists).
+  const findProductById = (pid) =>
+    [...extraProducts, ...productsList, ...catProductsList].find(
+      (p) => p.id?.toString() === pid?.toString(),
+    );
+
+  // Row product options: pehle row-service match; match zero ho to category
+  // ke saare products (+ just-created) — data hai to dikhega, khaali nahi rahega.
+  const getRowProductOptions = (rowServiceId) => {
+    if (!rowServiceId) return [];
+    const matched = productsList.filter(
+      (p) => p.service_id?.toString() === rowServiceId?.toString(),
+    );
+    const base =
+      matched.length > 0
+        ? matched
+        : [
+            ...matched,
+            ...catProductsList.filter(
+              (p) =>
+                checkedCategories.includes(p.category_id?.toString()) &&
+                !matched.some((m) => m.id === p.id),
+            ),
+          ];
+    const seen = new Set(base.map((p) => p.id?.toString()));
+    return [
+      ...base,
+      ...extraProducts.filter((e) => !seen.has(e.id?.toString())),
+    ];
+  };
+
+  // Product select: agar product kisi AUR service ka hai to row ka Service
+  // uske asli service par auto-set + service tick (galat service me save nahi hoga).
+  const handleProductSelect = (
+    serviceIndex,
+    floorIndex,
+    areaIndex,
+    prodIndex,
+    option,
+    srv,
+    knownProduct = null,
+  ) => {
+    const val = option ? option.value : "";
+    if (!option) {
+      handleNestedFieldChange(
+        serviceIndex,
+        floorIndex,
+        areaIndex,
+        prodIndex,
+        "productId",
+        "",
+      );
+      return;
+    }
+    const matched = knownProduct || findProductById(val);
+    const realSvc = matched?.service_id?.toString();
+    if (realSvc && srv.serviceId && realSvc !== srv.serviceId?.toString()) {
+      const svcName =
+        services.find((s) => s.id?.toString() === realSvc)?.service_name ||
+        matched?.service_name ||
+        realSvc;
+      // 1. row service asli service par (pehle — ye block reset karta hai)
+      handleNestedFieldChange(serviceIndex, null, null, null, "serviceId", realSvc);
+      // 2. service tick taaki row dropdown me bana rahe
+      setFormData((prev) => {
+        const cur = prev.quotation_service_id
+          ? prev.quotation_service_id.split(",")
+          : [];
+        if (cur.includes(realSvc)) return prev;
+        return { ...prev, quotation_service_id: [...cur, realSvc].join(",") };
+      });
+      toast.info(`Row Service auto-set to '${svcName}' (product ka actual service)`);
+    }
+    // 3. product + rate (knownProduct = fresh object, stale lookup bypass)
+    handleNestedFieldChange(
+      serviceIndex,
+      floorIndex,
+      areaIndex,
+      prodIndex,
+      "productId",
+      val,
+      matched,
+    );
+  };
+
+  // ── Master quick-add state (Floor / Area / Product) ──
+  const [quickName, setQuickName] = useState({
+    open: false,
+    type: "floor",
+    target: null,
+    name: "",
+    saving: false,
+  });
+  const [productQA, setProductQA] = useState({
+    open: false,
+    target: null,
+    serviceId: "",
+    categoryId: "",
+    name: "",
+    saving: false,
+  });
+  const [brandSaving, setBrandSaving] = useState(false);
+  const [serviceQA, setServiceQA] = useState({
+    open: false,
+    target: null,
+    name: "",
+    saving: false,
+  });
+  const [extraProducts, setExtraProducts] = useState([]);
+
+  const openQuickName = (type, target, typed) =>
+    setQuickName({ open: true, type, target, name: (typed || "").trim(), saving: false });
+
+  const matchByName = (list, name, key) =>
+    (list || []).find(
+      (x) => (x[key] || "").toLowerCase() === (name || "").toLowerCase(),
+    );
+
+  const saveQuickName = async (name) => {
+    // Floor / Area only (same payload as master create pages).
+    const { type, target } = quickName;
+    if (!target) return;
+    setQuickName((p) => ({ ...p, saving: true }));
+    try {
+      if (type === "floor") {
+        await createFloorMutation.mutateAsync({ property_floor: name });
+        const r = await refetchFloors();
+        const found = matchByName(r.data?.data, name, "property_floor");
+        if (found)
+          handleNestedFieldChange(target.serviceIndex, target.floorIndex, null, null, "floorId", found.id.toString());
+      } else {
+        await createAreaMutation.mutateAsync({ property_area: name });
+        const r = await refetchAreas();
+        const found = matchByName(r.data?.data, name, "property_area");
+        if (found)
+          handleNestedFieldChange(target.serviceIndex, target.floorIndex, target.areaIndex, null, "areaId", found.id.toString());
+      }
+      toast.success(`${type === "floor" ? "Floor" : "Area"} added successfully`);
+      setQuickName({ open: false, type: "floor", target: null, name: "", saving: false });
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || "Failed to add");
+      setQuickName((p) => ({ ...p, saving: false }));
+    }
+  };
+
+  const openServiceQA = (target, typed) =>
+    setServiceQA({ open: true, target, name: (typed || "").trim(), saving: false });
+
+  // Service quick-add save — dialog master-mirror FormData bhejta hai.
+  const saveServiceQA = async (formDataObj) => {
+    const { target } = serviceQA;
+    if (!target) return;
+    setServiceQA((p) => ({ ...p, saving: true }));
+    try {
+      await createServiceMutation.mutateAsync(formDataObj);
+      const r = await refetchServices();
+      const sentName = formDataObj.get("service_name");
+      const found = matchByName(r.data?.data, sentName, "service_name");
+      if (found) {
+        const sid = found.id.toString();
+        setFormData((prev) => {
+          const cur = prev.quotation_service_id ? prev.quotation_service_id.split(",") : [];
+          if (cur.includes(sid)) return prev;
+          return { ...prev, quotation_service_id: [...cur, sid].join(",") };
+        });
+        handleNestedFieldChange(target.serviceIndex, null, null, null, "serviceId", sid);
+      }
+      toast.success("Service added successfully");
+      setServiceQA({ open: false, target: null, name: "", saving: false });
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || "Failed to add service");
+      setServiceQA((p) => ({ ...p, saving: false }));
+    }
+  };
+
+  // Brand add (product dialog ke andar) — id wapas deta hai, dialog khud select karta hai.
+  const handleAddBrand = async (name) => {
+    setBrandSaving(true);
+    try {
+      await createBrandMutation.mutateAsync(name);
+      const r = await refetchBrands();
+      const found = matchByName(r.data?.data, name, "brand_name");
+      if (found) toast.success("Brand added successfully");
+      return found ? found.id.toString() : null;
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || "Failed to add brand");
+      return null;
+    } finally {
+      setBrandSaving(false);
+    }
+  };
+
+  const openProductQA = (target, typed, rowServiceId) =>
+    setProductQA({
+      open: true,
+      target,
+      name: (typed || "").trim(),
+      serviceId: rowServiceId || "",
+      categoryId: checkedCategories[0] || "",
+      saving: false,
+    });
+
+  const saveProductQA = async (payload) => {
+    const { target } = productQA;
+    if (!target) return;
+    setProductQA((p) => ({ ...p, saving: true }));
+    try {
+      const res = await createProductMutation.mutateAsync(payload);
+      await queryClient.invalidateQueries({ queryKey: ["products-for-quotation"] });
+      const r = await refetchQuotationProducts();
+      // Prefer create-response (fresh object — stale list bypass), else refetch-find.
+      const created = res?.data?.data || res?.data || res;
+      let found =
+        (r.data?.data || []).find(
+          (p) => (p.product_name || "").toLowerCase() === payload.product_name.toLowerCase(),
+        ) ||
+        (created?.id
+          ? {
+              id: created.id,
+              product_name: created.product_name || payload.product_name,
+              product_price:
+                created.product_price ?? payload.product_price ?? 0,
+              service_id: created.service_id ?? payload.service_id ?? "",
+              service_name: created.service_name || "",
+              category_id: created.category_id ?? payload.category_id ?? "",
+            }
+          : null);
+      if (found?.id) {
+        setExtraProducts((prev) =>
+          prev.some((e) => e.id?.toString() === found.id?.toString())
+            ? prev
+            : [...prev, found],
+        );
+        const srv = servicesState[target.serviceIndex];
+        handleProductSelect(
+          target.serviceIndex,
+          target.floorIndex,
+          target.areaIndex,
+          target.prodIndex,
+          { value: found.id.toString() },
+          { serviceId: srv?.serviceId },
+          found,
+        );
+      }
+      toast.success("Product added successfully");
+      setProductQA({ open: false, target: null, serviceId: "", categoryId: "", name: "", saving: false });
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || "Failed to add product");
+      setProductQA((p) => ({ ...p, saving: false }));
+    }
+  };
+
+  const brands = brandsData?.data || [];
+
   const isFormLoading =
     buyersLoading ||
     propertiesLoading ||
@@ -714,6 +1176,7 @@ const QuotationFormPage = () => {
     categoriesLoading ||
     floorsLoading ||
     areasLoading ||
+    brandsLoading ||
     (isEdit && isFetching);
 
   if (isFormLoading) return <LoadingBar />;
@@ -827,11 +1290,7 @@ const QuotationFormPage = () => {
                 <Label className="flex">
                   Buyer <RedStar />
                 </Label>
-                <MemoizedSelect
-                  options={buyers.map((buyer) => ({
-                    value: buyer.id?.toString(),
-                    label: buyer.buyer_name,
-                  }))}
+                <SelectWithAdd
                   value={formData.quotation_buyer_id}
                   onChange={(option) => {
                     setFormData((prev) => ({
@@ -840,8 +1299,36 @@ const QuotationFormPage = () => {
                     }));
                     setErrors((prev) => ({ ...prev, quotation_buyer_id: "" }));
                   }}
-                  placeholder="Select Buyer"
+                  options={buyerOptions}
+                  placeholder="Search or Select Buyer"
+                  isLoading={buyersLoading}
                   hasError={Boolean(errors.quotation_buyer_id)}
+                  filterOption={filterBuyer}
+                  getSubtitle={(o) =>
+                    o?.buyer?.buyer_mobile || o?.buyer?.buyer_email
+                      ? `${o?.buyer?.buyer_mobile || ""}${o?.buyer?.buyer_mobile && o?.buyer?.buyer_email ? " • " : ""}${o?.buyer?.buyer_email || ""}`
+                      : ""
+                  }
+                  // ── Dropdown placement ──
+                  // placement: "bottom-left" | "bottom-right" | "top-left" | "top-right" | "bottom" | "top"
+                  // menuPosition: "absolute" = box KE ANDAR | "fixed" = box KE BAHAR (Dialog/overflow ke liye)
+                  // Bahar chahiye to: menuPosition="fixed" menuPortalTarget={document.body}
+                  placement="bottom-left"
+                  menuPosition="absolute"
+                  addLabel="Add New Buyer"
+                  renderAddLabel={(typed) =>
+                    typed?.trim()
+                      ? `Add "${typed.trim()}" as New Buyer`
+                      : "Add New Buyer"
+                  }
+                  onAdd={handleBuyerAdd}
+                  menuIsOpen={buyerDialogOpen ? false : buyerMenuOpen}
+                  onMenuOpen={() => setBuyerMenuOpen(true)}
+                  onMenuClose={() => setBuyerMenuOpen(false)}
+                  onInputChange={(v, meta) => {
+                    if (meta.action === "input-change") setBuyerSearchText(v);
+                    return v;
+                  }}
                 />
               </div>
 
@@ -1002,11 +1489,11 @@ const QuotationFormPage = () => {
                   >
                     {/* Service Header */}
                     <div className="flex items-center justify-between gap-4 border-b dark:border-slate-800 pb-3">
-                      <div className="flex items-center gap-3 w-full md:w-1/3">
+                      <div className="flex items-center gap-3 w-full md:w-1/2">
                         <Label className="text-sm font-bold text-slate-900 dark:text-slate-100 shrink-0">
                           Service
                         </Label>
-                        <MemoizedSelect
+                        <SelectWithAdd
                           options={activeServicesForRows.map((s) => ({
                             value: s.id?.toString(),
                             label: s.service_name,
@@ -1023,6 +1510,19 @@ const QuotationFormPage = () => {
                             )
                           }
                           placeholder="Select Service"
+                          isLoading={servicesLoading}
+                          addLabel="Add New Service"
+                          renderAddLabel={(typed) =>
+                            typed?.trim()
+                              ? `Add "${typed.trim()}" as New Service`
+                              : "Add New Service"
+                          }
+                          onAdd={(typed) =>
+                            openServiceQA(
+                              { serviceIndex },
+                              typed,
+                            )
+                          }
                         />
                       </div>
 
@@ -1048,11 +1548,11 @@ const QuotationFormPage = () => {
 
                           {/* Floor Header */}
                           <div className="flex items-center justify-between gap-4 border-b dark:border-slate-800 pb-2">
-                            <div className="flex items-center gap-3 w-full md:w-1/3">
+                            <div className="flex items-center gap-3 w-full md:w-1/2">
                               <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">
                                 Floor
                               </Label>
-                              <MemoizedSelect
+                              <SelectWithAdd
                                 options={floors.map((flr) => ({
                                   value: flr.id?.toString(),
                                   label: flr.property_floor,
@@ -1069,6 +1569,20 @@ const QuotationFormPage = () => {
                                   )
                                 }
                                 placeholder="Select Floor"
+                                isLoading={floorsLoading}
+                                addLabel="Add New Floor"
+                                renderAddLabel={(typed) =>
+                                  typed?.trim()
+                                    ? `Add "${typed.trim()}" as New Floor`
+                                    : "Add New Floor"
+                                }
+                                onAdd={(typed) =>
+                                  openQuickName(
+                                    "floor",
+                                    { serviceIndex, floorIndex },
+                                    typed,
+                                  )
+                                }
                               />
                             </div>
 
@@ -1096,11 +1610,11 @@ const QuotationFormPage = () => {
 
                                 {/* Area Header */}
                                 <div className="flex items-center justify-between gap-4">
-                                  <div className="flex items-center gap-3 w-full md:w-1/3">
+                                  <div className="flex items-center gap-3 w-full md:w-2/3">
                                     <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">
                                       Area
                                     </Label>
-                                    <MemoizedSelect
+                                    <SelectWithAdd
                                       options={areas.map((ar) => ({
                                         value: ar.id?.toString(),
                                         label: ar.property_area,
@@ -1117,6 +1631,20 @@ const QuotationFormPage = () => {
                                         )
                                       }
                                       placeholder="Select Area"
+                                      isLoading={areasLoading}
+                                      addLabel="Add New Area"
+                                      renderAddLabel={(typed) =>
+                                        typed?.trim()
+                                          ? `Add "${typed.trim()}" as New Area`
+                                          : "Add New Area"
+                                      }
+                                      onAdd={(typed) =>
+                                        openQuickName(
+                                          "area",
+                                          { serviceIndex, floorIndex, areaIndex },
+                                          typed,
+                                        )
+                                      }
                                     />
                                   </div>
 
@@ -1163,26 +1691,22 @@ const QuotationFormPage = () => {
                                       >
                                         {/* Product select */}
                                         <div className="col-span-3">
-                                          <MemoizedSelect
-                                            options={productsList
-                                              .filter(
-                                                (p) =>
-                                                  p.service_id?.toString() ===
-                                                  srv.serviceId?.toString(),
-                                              )
-                                              .map((p) => ({
-                                                value: p.id?.toString(),
-                                                label: p.product_name,
-                                              }))}
+                                          <SelectWithAdd
+                                            options={getRowProductOptions(
+                                              srv.serviceId,
+                                            ).map((p) => ({
+                                              value: p.id?.toString(),
+                                              label: p.product_name,
+                                            }))}
                                             value={prod.productId}
                                             onChange={(option) =>
-                                              handleNestedFieldChange(
+                                              handleProductSelect(
                                                 serviceIndex,
                                                 floorIndex,
                                                 areaIndex,
                                                 prodIndex,
-                                                "productId",
-                                                option ? option.value : "",
+                                                option,
+                                                srv,
                                               )
                                             }
                                             placeholder={
@@ -1190,9 +1714,30 @@ const QuotationFormPage = () => {
                                                 ? "Select Service First"
                                                 : "Select Product"
                                             }
+                                            noOptionsMessage={getProductEmptyHint(
+                                              srv.serviceId,
+                                            )}
                                             isLoading={productsLoading}
                                             isDisabled={
                                               !srv.serviceId || productsLoading
+                                            }
+                                            addLabel="Add New Product"
+                                            renderAddLabel={(typed) =>
+                                              typed?.trim()
+                                                ? `Add "${typed.trim()}" as New Product`
+                                                : "Add New Product"
+                                            }
+                                            onAdd={(typed) =>
+                                              openProductQA(
+                                                {
+                                                  serviceIndex,
+                                                  floorIndex,
+                                                  areaIndex,
+                                                  prodIndex,
+                                                },
+                                                typed,
+                                                srv.serviceId,
+                                              )
                                             }
                                           />
                                         </div>
@@ -1357,14 +1902,33 @@ const QuotationFormPage = () => {
           >
             Cancel
           </Button>
+          {isEdit && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleSaveAsNew}
+              disabled={isSubmitting || isSavingNew}
+              title="Keep current quotation as-is, save a copy as new quotation with today's date"
+            >
+              {isSavingNew ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4 mr-2" /> Save as New
+                </>
+              )}
+            </Button>
+          )}
           <Button type="submit" disabled={isSubmitting || hasFinishWorkDate}>
-            {isSubmitting ? (
+            {isSubmitting && !isSavingNew ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
               </>
             ) : (
               <>
-                <Save className="w-4 h-4 mr-2" /> Save Quotation
+                <Save className="w-4 h-4 mr-2" /> {isEdit ? "Save Changes" : "Save Quotation"}
               </>
             )}
           </Button>
@@ -1388,6 +1952,168 @@ const QuotationFormPage = () => {
         products={productsList}
         categories={categories}
       />
+      {/* Floor / Area quick-add (dropdown footer "+ Add" ise kholta hai) */}
+      <QuickNameDialog
+        open={quickName.open}
+        onClose={() =>
+          !quickName.saving &&
+          setQuickName({ open: false, type: "floor", target: null, name: "", saving: false })
+        }
+        onSave={saveQuickName}
+        saving={quickName.saving}
+        title={quickName.type === "floor" ? "Add New Floor" : "Add New Area"}
+        label={quickName.type === "floor" ? "Floor Name" : "Area Name"}
+        placeholder={
+          quickName.type === "floor" ? "e.g. Second Floor" : "e.g. Living Room"
+        }
+        initialName={quickName.name}
+      />
+      {/* Product quick-add (product dropdown footer "+ Add Product" ise kholta hai) */}
+      <ProductQuickAddDialog
+        open={productQA.open}
+        onClose={() =>
+          !productQA.saving &&
+          setProductQA({ open: false, target: null, serviceId: "", categoryId: "", name: "", saving: false })
+        }
+        onSave={saveProductQA}
+        saving={productQA.saving}
+        services={services}
+        categories={categories}
+        brands={brands}
+        initialName={productQA.name}
+        initialServiceId={productQA.serviceId}
+        initialCategoryId={productQA.categoryId}
+        brandSaving={brandSaving}
+        onAddBrand={handleAddBrand}
+      />
+      {/* Service quick-add (service dropdown footer "+ Add Service" ise kholta hai) */}
+      <ServiceQuickAddDialog
+        open={serviceQA.open}
+        onClose={() =>
+          !serviceQA.saving &&
+          setServiceQA({ open: false, target: null, name: "", saving: false })
+        }
+        onSave={saveServiceQA}
+        saving={serviceQA.saving}
+        initialName={serviceQA.name}
+      />
+      {/* Buyer quick-add dialog (single reusable SelectWithAdd ka Add button ise kholta hai) */}
+      <Dialog
+        open={buyerDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !createBuyerMutation.isPending) setBuyerDialogOpen(false);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-blue-600" />
+              Add New Buyer
+            </DialogTitle>
+            <DialogDescription>
+              Quickly register a buyer without leaving the quotation form. It
+              will be auto-selected after saving.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateBuyer} className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>
+                Buyer Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                value={newBuyer.buyer_name}
+                onChange={(e) =>
+                  setNewBuyer((p) => ({ ...p, buyer_name: e.target.value }))
+                }
+                placeholder="Enter buyer name"
+                autoFocus
+              />
+              {buyerFormErrors.buyer_name && (
+                <p className="text-xs text-red-500">{buyerFormErrors.buyer_name}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>
+                  Mobile Number <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  value={newBuyer.buyer_mobile}
+                  onChange={(e) =>
+                    setNewBuyer((p) => ({
+                      ...p,
+                      buyer_mobile: e.target.value
+                        .replace(/\D/g, "")
+                        .slice(0, 10),
+                    }))
+                  }
+                  placeholder="10-digit mobile"
+                  inputMode="numeric"
+                />
+                {buyerFormErrors.buyer_mobile && (
+                  <p className="text-xs text-red-500">
+                    {buyerFormErrors.buyer_mobile}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label>
+                  Email Address <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  type="email"
+                  value={newBuyer.buyer_email}
+                  onChange={(e) =>
+                    setNewBuyer((p) => ({ ...p, buyer_email: e.target.value }))
+                  }
+                  placeholder="Enter email"
+                />
+                {buyerFormErrors.buyer_email && (
+                  <p className="text-xs text-red-500">
+                    {buyerFormErrors.buyer_email}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Address</Label>
+              <Textarea
+                value={newBuyer.buyer_address}
+                onChange={(e) =>
+                  setNewBuyer((p) => ({ ...p, buyer_address: e.target.value }))
+                }
+                placeholder="Enter address (optional)"
+                rows={2}
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setBuyerDialogOpen(false)}
+                disabled={createBuyerMutation.isPending}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createBuyerMutation.isPending}>
+                {createBuyerMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" /> Add Buyer
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
