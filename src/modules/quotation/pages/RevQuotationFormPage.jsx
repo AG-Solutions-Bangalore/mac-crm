@@ -644,6 +644,48 @@ const RevQuotationFormPage = () => {
   const checkedCategories = formData.quotation_category_id ? formData.quotation_category_id.split(",") : [];
   const checkedServices = formData.quotation_service_id ? formData.quotation_service_id.split(",") : [];
 
+  // Empty-dropdown hint: selected categories ke products asli me KIS service
+  // ke neeche hai (e.g. Frame → Smart Switches, not Electrical Automation).
+  // Sirf guidance text hai — filter logic bilkul untouched.
+  const allServiceIds = services.map((s) => s.id).join(",");
+  const { data: catProductsData } = useGetProductsForQuotationQuery(
+    formData.quotation_category_id,
+    allServiceIds,
+    Boolean(formData.quotation_category_id && allServiceIds)
+  );
+  const catProductsList = catProductsData?.data || [];
+
+  const getProductEmptyHint = (rowServiceId) => {
+    const rowSvcName =
+      services.find((s) => s.id?.toString() === rowServiceId?.toString())
+        ?.service_name || "this service";
+    const catNames =
+      categories
+        .filter((c) => checkedCategories.includes(c.id?.toString()))
+        .map((c) => c.category_name)
+        .slice(0, 2)
+        .join(", ") || "selected categories";
+    if (!catProductsList.length)
+      return `No products found for '${catNames}'. Add products in Product master first.`;
+    const byService = {};
+    catProductsList.forEach((p) => {
+      const sid = p.service_id?.toString();
+      if (!sid || sid === rowServiceId?.toString()) return;
+      byService[sid] = (byService[sid] || 0) + 1;
+    });
+    const others = Object.entries(byService)
+      .slice(0, 2)
+      .map(([sid, n]) => {
+        const nm =
+          services.find((s) => s.id?.toString() === sid)?.service_name ||
+          "another service";
+        return `${n} under '${nm}'`;
+      });
+    if (!others.length)
+      return `No '${catNames}' products under '${rowSvcName}'.`;
+    return `No '${catNames}' products under '${rowSvcName}'. Found ${others.join(", ")} — tick that Service above.`;
+  };
+
   const isFormLoading =
     buyersLoading ||
     propertiesLoading ||
@@ -1051,6 +1093,9 @@ const RevQuotationFormPage = () => {
                                               ? "Select Service First"
                                               : "Select Product"
                                           }
+                                          noOptionsMessage={getProductEmptyHint(
+                                            srv.serviceId,
+                                          )}
                                           isLoading={productsLoading}
                                           isDisabled={
                                             !srv.serviceId || productsLoading

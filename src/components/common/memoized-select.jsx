@@ -222,7 +222,8 @@ export const MemoizedSelect = React.memo(
       prevProps.isLoading === nextProps.isLoading &&
       prevProps.isMulti === nextProps.isMulti &&
       prevProps.isDisabled === nextProps.isDisabled &&
-      prevProps.hasError === nextProps.hasError
+      prevProps.hasError === nextProps.hasError &&
+      prevProps.noOptionsMessage === nextProps.noOptionsMessage
     );
   }
 );
