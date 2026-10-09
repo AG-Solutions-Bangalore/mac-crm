@@ -1461,7 +1461,7 @@ const QuotationFormPage = () => {
               <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
                 Quotation Items (Hierarchical Setup)
               </h3>
-              <Button
+              {/* <Button
                 type="button"
                 variant="outline"
                 size="sm"
@@ -1471,7 +1471,7 @@ const QuotationFormPage = () => {
               >
                 <FileSpreadsheet className="w-4 h-4 mr-1.5 text-blue-600 dark:text-blue-400" />
                 Import from Excel / TSV
-              </Button>
+              </Button> */}
             </div>
 
             {!formData.quotation_category_id ||
