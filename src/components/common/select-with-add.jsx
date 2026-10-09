@@ -85,6 +85,8 @@ const buildStyles = (hasError, align, maxMenuHeight, zIndex) => ({
     zIndex,
     marginTop: "4px",
     marginBottom: "4px",
+    // Narrow control ho to bhi menu usable rahe — kam se kam 240px.
+    minWidth: 240,
     // left/right alignment
     left: align === "right" ? "auto" : 0,
     right: align === "right" ? 0 : "auto",
@@ -165,10 +167,10 @@ const AddMenu = (props) => {
             e.stopPropagation();
             onAdd?.(typed);
           }}
-          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-sm font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-950/60 transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-sm font-semibold overflow-hidden text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-950/60 transition-colors"
         >
-          <Plus size={15} strokeWidth={2.5} />
-          {label}
+          <Plus size={15} strokeWidth={2.5} className="shrink-0" />
+          <span className="truncate">{label}</span>
         </button>
       </div>
     </components.Menu>
