@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet, UserPlus } from "lucide-react";
+import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet, UserPlus, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -682,13 +682,7 @@ const QuotationFormPage = () => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    const flattenedSubs = flattenServicesToSubs(servicesState);
-    const payload = {
-      ...formData,
-      quotation_buyer_id: Number(formData.quotation_buyer_id),
-      quotation_property_id: Number(formData.quotation_property_id),
-      subs: flattenedSubs,
-    };
+    const payload = buildPayload();
 
     try {
       if (isEdit) {
@@ -714,6 +708,50 @@ const QuotationFormPage = () => {
           error.message ||
           "Failed to save quotation",
       );
+    }
+  };
+
+  // Shared payload builder (create + overwrite + save-as-new sab yahi use karte hai)
+  const buildPayload = (overrides = {}) => {
+    const flattenedSubs = flattenServicesToSubs(servicesState);
+    return {
+      ...formData,
+      ...overrides,
+      quotation_buyer_id: Number(formData.quotation_buyer_id),
+      quotation_property_id: Number(formData.quotation_property_id),
+      subs: flattenedSubs,
+    };
+  };
+
+  // Edit mode: same quotation ko naye quotation ke roop me, aaj ki date ke saath save karo.
+  // Purana quotation untouched rehta hai; naya banne ke baad uske edit page par le jao.
+  const [isSavingNew, setIsSavingNew] = useState(false);
+  const handleSaveAsNew = async () => {
+    if (!validateForm()) return;
+    setIsSavingNew(true);
+    try {
+      const payload = buildPayload({
+        quotation_date: new Date().toISOString().split("T")[0],
+        quotation_status: "Pending",
+        quotation_finish_work_date: "",
+      });
+      const res = await createQuotationMutation.mutateAsync(payload);
+      const created = res?.data?.data || res?.data || res;
+      const newId =
+        created?.id?.toString() ||
+        res?.data?.id?.toString() ||
+        res?.id?.toString() ||
+        "";
+      toast.success("Saved as new quotation with today's date");
+      navigate(newId ? `/quotation-list/edit/${newId}` : "/quotation-list");
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to save as new quotation",
+      );
+    } finally {
+      setIsSavingNew(false);
     }
   };
 
@@ -1541,14 +1579,33 @@ const QuotationFormPage = () => {
           >
             Cancel
           </Button>
+          {isEdit && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleSaveAsNew}
+              disabled={isSubmitting || isSavingNew}
+              title="Keep current quotation as-is, save a copy as new quotation with today's date"
+            >
+              {isSavingNew ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4 mr-2" /> Save as New
+                </>
+              )}
+            </Button>
+          )}
           <Button type="submit" disabled={isSubmitting || hasFinishWorkDate}>
-            {isSubmitting ? (
+            {isSubmitting && !isSavingNew ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
               </>
             ) : (
               <>
-                <Save className="w-4 h-4 mr-2" /> Save Quotation
+                <Save className="w-4 h-4 mr-2" /> {isEdit ? "Save Changes" : "Save Quotation"}
               </>
             )}
           </Button>
