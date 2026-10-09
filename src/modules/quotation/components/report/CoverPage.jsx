@@ -91,25 +91,25 @@ export default function CoverPage({
           background: "transparent",
         }}
       >
-        {/* MAKc Brand Logo */}
+        {/* MAKc Brand Logo — logo only, no white box/background */}
         <img
           src={logoImg}
           alt="MAKc"
-          className="p-1"
           style={{
             height: "48px", width: "auto", objectFit: "contain", display: "block",
-            background: "#ffffff", border: "none", boxShadow: "none", outline: "none",
+            background: "transparent", backgroundColor: "transparent",
+            border: "none", boxShadow: "none", outline: "none", padding: 0,
           }}
         />
 
-        {/* Official ISO 9001:2015 SVG Stamp */}
+        {/* Official ISO 9001:2015 SVG Stamp — no white box/background */}
         <img
           src={isoImg}
           alt="ISO 9001:2015"
-          className="p-1"
           style={{
             height: "58px", width: "auto", objectFit: "contain", display: "block",
-            background: "#ffffff", border: "none", boxShadow: "none", outline: "none",
+            background: "transparent", backgroundColor: "transparent",
+            border: "none", boxShadow: "none", outline: "none", padding: 0,
           }}
         />
       </div>
@@ -167,7 +167,7 @@ export default function CoverPage({
         >
           Smart Home Automation
           <br />
-          <span style={{ color: "#0284c7", fontWeight: 900, fontStyle: "normal" }}>
+          <span style={{ color: "#0369a1", fontWeight: 900, fontStyle: "normal", fontFamily: FONT }}>
             Company in Bangalore
           </span>
         </h1>
@@ -194,20 +194,20 @@ export default function CoverPage({
         <div>
           <p
             style={{
-              fontSize: "10px", color: "#334155", letterSpacing: "0.14em",
-              textTransform: "uppercase", margin: "0 0 4px", fontWeight: 800,
+              fontSize: "11px", color: "#1e293b", letterSpacing: "0.14em",
+              textTransform: "uppercase", margin: "0 0 5px", fontWeight: 800,
             }}
           >
             Exclusively Prepared For
           </p>
-          <p style={{ fontSize: "26px", fontWeight: 900, color: "#0b1526", margin: 0, letterSpacing: "-0.01em", lineHeight: 1.15 }}>
+          <p style={{ fontSize: "32px", fontWeight: 900, color: "#0b1526", margin: 0, letterSpacing: "-0.01em", lineHeight: 1.15 }}>
             {clientName}
           </p>
         </div>
       </div>
 
       {/* ── CAPTION (tightly follows client name — no big gap) ── */}
-      <div style={{ position: "relative", zIndex: 2, paddingTop: "8px", paddingLeft: PAGE_PX, paddingRight: PAGE_PX, paddingBottom: "10px", boxSizing: "border-box", width: "100%", flex: "0 0 auto", display: "flex", alignItems: "flex-start", background: "transparent" }}>
+      <div style={{ position: "relative", zIndex: 2, paddingTop: "2px", paddingLeft: PAGE_PX, paddingRight: PAGE_PX, paddingBottom: "10px", boxSizing: "border-box", width: "100%", flex: "0 0 auto", display: "flex", alignItems: "flex-start", background: "transparent" }}>
         <div
           className="makc-caption-card"
           style={{

@@ -76,8 +76,6 @@ export default function QuotationReportPage() {
   const [installPct, setInstallPct] = useState(5);
   // Prepared-by selection (defaults to Vinod Kumar, overridable from header)
   const [preparedById, setPreparedById] = useState("vinod");
-  // Smart-switch Finish selections: { [itemIdx]: "Frame" | "Frameless" | "Brass" | "Hybrid" }
-  const [switchFinishes, setSwitchFinishes] = useState({});
 
   // Queries
   const { data: parentData, isLoading: parentLoading } = useQuotationQuery(
@@ -536,7 +534,6 @@ export default function QuotationReportPage() {
             installPct={installPct}
             netTotal={netTotal}
             formatMoney={formatMoney}
-            switchFinishes={switchFinishes}
           />
         ) : (
           <div className="makc-print-wrapper py-4 space-y-8">
@@ -566,10 +563,6 @@ export default function QuotationReportPage() {
               installPct={installPct}
               netTotal={netTotal}
               paymentRows={paymentRows}
-              switchFinishes={switchFinishes}
-              onSwitchFinishChange={(idx, value) =>
-                setSwitchFinishes((prev) => ({ ...prev, [idx]: value }))
-              }
             />
 
             {/* Last Page: About MAKc & Awards Overview */}

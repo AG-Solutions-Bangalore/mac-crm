@@ -190,8 +190,6 @@ export default function DynamicProposalDocument({
   installPct = 5,
   netTotal,
   paymentRows,
-  switchFinishes = {},
-  onSwitchFinishChange,
 }) {
   // Group items data-driven: application -> floor -> area -> products.
   // Insertion order is preserved so floors/rooms render in quotation order.
@@ -398,7 +396,7 @@ export default function DynamicProposalDocument({
                       <thead style={{ background: "#eaf0f7" }}>
                         <tr>
                           <TH width={hasFinish ? "13%" : "14%"} isLight={isLight}>Area / Room</TH>
-                          <TH width={hasFinish ? "23%" : "26%"} isLight={isLight}>Product / System Specification</TH>
+                          <TH width={hasFinish ? "21%" : "24%"} isLight={isLight}>Product / System Specification</TH>
                           <TH align="center" width="6%" isLight={isLight}>Qty</TH>
                           <TH align="right" width={hasFinish ? "11%" : "12%"} isLight={isLight}>Unit Price</TH>
                           <TH align="right" width={hasFinish ? "11%" : "12%"} isLight={isLight}>Total Price</TH>
@@ -406,7 +404,7 @@ export default function DynamicProposalDocument({
                           {hasFinish && (
                             <TH align="center" width="11%" isLight={isLight}>Finish</TH>
                           )}
-                          <TH align="left" width={hasFinish ? "15%" : "18%"} isLight={isLight}>Brand</TH>
+                          <TH align="left" width={hasFinish ? "17%" : "20%"} isLight={isLight}>Brand</TH>
                           <TH align="center" width={hasFinish ? "11%" : "12%"} isLight={isLight}>Warranty</TH>
                         </tr>
                       </thead>
@@ -464,7 +462,7 @@ export default function DynamicProposalDocument({
                                     <TD isLight={isLight} align="right" style={{ fontWeight: 800, color: t.totalAmountText, fontSize: "11.5px" }}>
                                       {formatMoney(item.totalPrice)}
                                     </TD>
-                                    {/* Finish cell — shows category finish directly as text, no dropdown */}
+                                    {/* Finish cell — category finish as text (set via Categories selection) */}
                                     {hasFinish && (
                                       <TD isLight={isLight} align="center" style={{ fontWeight: 600, color: t.brandText, fontSize: "10.5px" }}>
                                         {item.finish && item.finish !== "-" ? item.finish : "-"}
