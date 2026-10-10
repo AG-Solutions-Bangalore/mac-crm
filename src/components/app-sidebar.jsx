@@ -30,6 +30,7 @@ import {
   Package,
   BookOpen,
   Image,
+  FolderKanban,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
@@ -104,6 +105,12 @@ const NAVIGATION_CONFIG = {
       icon: FileText,
       isActive: false,
     },
+    PROJECT: {
+      title: "Projects",
+      url: "/project-list",
+      icon: FolderKanban,
+      isActive: false,
+    },
     SERVICEREQUEST: {
       title: "Service Request",
       url: "/service-request",
@@ -176,6 +183,7 @@ const USER_ROLE_PERMISSIONS = {
       "CATEGORY",
       "PRODUCT",
       "QUOTATION",
+      "PROJECT",
       "SERVICEREQUEST",
       "COMPLAINT",
       "NOTIFICATION",
@@ -197,6 +205,7 @@ const USER_ROLE_PERMISSIONS = {
       "CATEGORY",
       "PRODUCT",
       "QUOTATION",
+      "PROJECT",
       "SERVICEREQUEST",
       "COMPLAINT",
       "NOTIFICATION",
@@ -217,6 +226,7 @@ const USER_ROLE_PERMISSIONS = {
       "CATEGORY",
       "PRODUCT",
       "QUOTATION",
+      "PROJECT",
       "SERVICEREQUEST",
       "COMPLAINT",
       "NOTIFICATION",
@@ -239,6 +249,7 @@ const USER_ROLE_PERMISSIONS = {
       "CATEGORY",
       "PRODUCT",
       "QUOTATION",
+      "PROJECT",
       "SERVICEREQUEST",
       "COMPLAINT",
       "NOTIFICATION",
@@ -328,7 +339,7 @@ export function AppSidebar({ ...props }) {
 
   const dashboardItem = initialData.navMain.filter((item) => item.url === "/dashboard");
   const masterItems = initialData.navMain.filter((item) => ["Service", "Clients", "Buyers", "Properties", "Floors", "Areas", "Brands", "Categories", "Products", "Blogs", "Gallery"].includes(item.title));
-  const operationsItems = initialData.navMain.filter((item) => ["Service Request", "Complaint", "Notification", "Quotations"].includes(item.title));
+  const operationsItems = initialData.navMain.filter((item) => ["Quotations", "Projects", "Service Request", "Notification"].includes(item.title));
   const reportItems = initialData.navMainReport.filter((item) => item.title === "Reports");
   const systemItems = initialData.navMainReport.filter((item) => item.title === "Settings" || item.url === "/settings");
 

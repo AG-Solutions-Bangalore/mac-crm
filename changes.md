@@ -150,18 +150,43 @@
 
 ---
 
+### 4. Dedicated Projects Module (CRUD & APIs) ✅
+- **APIs & Hooks Integrated (`src/modules/project/`):**
+  - `GET /project` (with pagination, search, status filter)
+  - `POST /project` (create project)
+  - `GET /project/{id}` (fetch project details by id)
+  - `PUT /project/{id}` (update project)
+  - `DELETE /project-sub/{id}` (delete project sub line item)
+  - `PATCH /projects/{id}/status` (status toggle)
+- **Project List Page (`ProjectListPage.jsx`):**
+  - Integrated `DataTable` with status filter (`All Status`, `Project`, `Pending`, `Approved`, `Cancel`), search, pagination.
+  - Price Validity Date column with real-time expiry badges (🔴 Expired, 🟡 Expiring Soon, 🟢 Valid).
+  - Actions dropdown: Edit Project (`/project-list/edit/:id`), View Report (`/quotation-report/:id`).
+  - Add Project button (`/project-list/create`).
+- **Project Form Page (`ProjectFormPage.jsx`):**
+  - Includes extra `price_validity_date` field along with all quotation fields.
+  - Dual-mapping for project and quotation fields ensuring bulletproof API compatibility.
+  - Full hierarchical line items (Services ➔ Floors ➔ Areas ➔ Products).
+  - Quick-add inline master dialogs for Buyer, Floor, Area, Brand, Product, and Service.
+  - Unsaved-changes protection via pure shadcn dialog (`useUnsavedChangesGuard`).
+  - Delete line item connects to `DELETE /project-sub/{id}`.
+  - Excluded finish work date API and revisions per backend spec.
+- **Convert to Project Bridge:**
+  - "Convert to Project" in `QuotationListPage.jsx` now pulls full quotation details and line items, sends them to `POST /project` to create a real record in the Project module, and updates quotation status to `"Project"`.
+- **Edit Auto-Fill & Select Hardening:**
+  - Hardened `select-with-add.jsx` against string/number type mismatches (`String(opt.value) === String(v)`) with label preservation.
+  - Hardened `groupSubsToServices` in `ProjectFormPage.jsx` with fallbacks for all key variants (`project_sub_*`, `quotation_sub_*`, `sub_*`, and plain keys) and preserved pre-assigned names (`serviceName`, `floorName`, `areaName`, `productName`).
+  - Hardened service, floor, area, and product option lookups so options are never dropped or blank even before master lists load.
+
+---
+
 ## All Pending — with context (English)
 
-> Updated status following completion of Convert dialog, Status filter, "Project" status, and Validity dates.
+> Updated status following completion of Project Module, Convert dialog, Status filter, "Project" status, and Validity dates.
 
-### P1. Dedicated Projects Page & Sidebar Flow 🟡 — ready for frontend
-- **Context:** Operations needs separate pages/buckets for active Projects vs initial Estimates. Now that `"Project"` status is active and filterable, a dedicated Projects page can be built.
-- **Frontend scope:**
-  - Create dedicated Projects page (`/project-list`) displaying quotations where `quotation_status === "Project"`.
-  - Add "Projects" link under Operations in the sidebar (`app-sidebar.jsx`).
-  - Optionally hide converted `"Project"` records from default Estimates view (or rely on the existing status filter).
-  - Hide "Complaint" from sidebar (`app-sidebar.jsx`) while keeping route intact.
-- **Backend dependency for Closed Projects:** Closed Projects page remains blocked until backend implements `"Closed"` status or `is_payment_completed` flag in DB.
+### P1. Closed Projects Page 🟡 — blocked on backend
+- **Context:** Operations will eventually need a separate section for finalized/closed projects.
+- **Blocked by:** Backend implementing `"Closed"` status or `is_payment_completed` flag in DB.
 
 ### P2. Follow-up reminders with snooze / next date 🟡 — blocked on backend
 - **Context:** Quotations have no follow-up date/frequency field, and the Notification module is broadcast-only (no auto-due engine), so reminders can't be saved or triggered.
@@ -170,7 +195,7 @@
 - **User impact if built without backend:** Reminders won't save or trigger.
 
 ### P3. Project Notifications Page (Stagnant/Expiring Projects) 🟡 — blocked on backend
-- **Context:** While visual expiry badges are now active on the list page, a centralized Operations dashboard for expiring/stagnant projects with quick actions is needed.
+- **Context:** While visual expiry badges are active on both Quotation and Project lists, a centralized Operations dashboard for expiring/stagnant projects with quick actions is needed.
 - **Frontend scope:** Project Notifications page (Operations → under Projects) listing stagnant/expiring projects with quick actions: Extend (1 month / custom), Client Paid (remind after X days), and Close Project.
 - **Blocked by:** Backend due-calculation logic, notification triggers, and extend/snooze APIs.
 - **User impact if built without backend:** Page cannot fetch automated stagnant alerts or persist extension webhooks.

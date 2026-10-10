@@ -64,6 +64,8 @@ import QuotationListPage from "@/modules/quotation/pages/QuotationListPage";
 import QuotationFormPage from "@/modules/quotation/pages/QuotationFormPage";
 import RevQuotationListPage from "@/modules/quotation/pages/RevQuotationListPage";
 import RevQuotationFormPage from "@/modules/quotation/pages/RevQuotationFormPage";
+import ProjectListPage from "@/modules/project/pages/ProjectListPage";
+import ProjectFormPage from "@/modules/project/pages/ProjectFormPage";
 
 function AppRoutes() {
   return (
@@ -381,6 +383,32 @@ function AppRoutes() {
             element={
               <Suspense fallback={<LoadingBar />}>
                 <RevQuotationFormPage />
+              </Suspense>
+            }
+          />
+
+          {/* Projects */}
+          <Route
+            path="/project-list"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <ProjectListPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/project-list/create"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <ProjectFormPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/project-list/edit/:id"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <ProjectFormPage />
               </Suspense>
             }
           />
