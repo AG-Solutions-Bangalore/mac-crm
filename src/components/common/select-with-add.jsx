@@ -227,7 +227,10 @@ const SelectWithAdd = React.memo(
       value && value !== "" && value !== null
         ? (() => {
             const v = value?.value !== undefined ? value.value : value;
-            return selectOptions.find((opt) => opt.value === v) || null;
+            return (
+              selectOptions.find((opt) => String(opt.value) === String(v)) ||
+              (value?.label ? value : null)
+            );
           })()
         : null;
 

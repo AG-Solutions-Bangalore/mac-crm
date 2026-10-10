@@ -235,7 +235,7 @@ const DataTable = ({
       </div>
 
       {/* TABLE */}
-      <div className="rounded-lg bg-card shadow-sm border border-border min-h-[31rem] grid grid-cols-1 p-2">
+      <div className="rounded-lg bg-card shadow-sm border border-border min-h-[31rem] block overflow-x-auto p-2">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
@@ -254,7 +254,7 @@ const DataTable = ({
                       }
                       className={canSort ? "cursor-pointer select-none" : ""}
                     >
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 whitespace-nowrap">
                         {flexRender(
                           header.column.columnDef.header,
                           header.getContext(),
@@ -263,13 +263,13 @@ const DataTable = ({
                         {canSort && (
                           <>
                             {sortState === "asc" && (
-                              <ChevronUp className="h-3 w-3" />
+                              <ChevronUp className="h-3 w-3 shrink-0" />
                             )}
                             {sortState === "desc" && (
-                              <ChevronDown className="h-3 w-3" />
+                              <ChevronDown className="h-3 w-3 shrink-0" />
                             )}
                             {!sortState && (
-                              <ArrowUpDown className="h-3 w-3 opacity-40" />
+                              <ArrowUpDown className="h-3 w-3 shrink-0 opacity-40" />
                             )}
                           </>
                         )}

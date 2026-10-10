@@ -53,7 +53,7 @@ export default function Page({ children }) {
         </header>
 
         <main className="flex flex-1 flex-col gap-4 pt-0">
-          <div className="min-h-[calc(100vh-8rem)] md:min-h-[100vh] flex-1 p-4 md:p-6 pt-0">
+          <div className="min-h-[calc(100vh-8rem)] md:min-h-[100vh] flex-1 p-1 md:p-2 pt-0">
             {children}
           </div>
         </main>
