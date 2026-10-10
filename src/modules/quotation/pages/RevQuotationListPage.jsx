@@ -81,6 +81,9 @@ const RevQuotationListPage = () => {
         if (status === "Approved") {
           return <span className="pill pill-approved">Approved</span>;
         }
+        if (status === "Project") {
+          return <span className="pill pill-in_progress">Project</span>;
+        }
         if (parentFinishWorkDate) {
           return (
             <span className={`text-xs font-bold ${status === "Pending" ? "text-amber-500" : "text-red-500"}`}>

@@ -1579,6 +1579,7 @@ const QuotationFormPage = () => {
                     >
                       <option value="Pending">Pending</option>
                       <option value="Approved">Approved</option>
+                      <option value="Project">Project</option>
                       <option value="Cancel">Cancel</option>
                     </select>
                   </div>

@@ -32,11 +32,11 @@
 
 ## 8. Validity + Project Notifications 🟡 In Progress
 
-- [Pending] Backend: status/project conversion, hardware/final payment flags, due-notification trigger
+- [Pending] Backend: hardware/final payment flags, due-notification trigger
 - [Complete ✅] Estimate form (Create & Edit) + Quotation List me `quotation_validity_date` field & column added
-- [Pending] Convert dialog me Price Validity date picker (manual date)
+- [Complete ✅] Convert dialog as clean confirmation modal (Buyer, Property, Amount details + 1-click status convert)
+- [Complete ✅] Projects/Quotation list me validity badge/warning (Expired, Expiring in Xd, Valid)
 - [Pending] Project Notifications page (Operations → Projects ke neeche): expiring/stagnant list + Extend (1 month/custom) / Client Paid → X din baad yaad dilao / Close actions
-- [Pending] Projects list me validity badge/warning (expiring highlight)
 
 ## 6. Sidebar flow (Operations) 🟡 Pending
 
@@ -68,10 +68,10 @@
 - Product dropdown fallback: match zero ho to category products dikhenge + select par row Service auto-correct
 - Product quick-add Rate-0 fix: select par fresh product object se price (stale list bypass) — Rate/Amount turant sahi
 
-## 5. Convert Estimate to Project 🟡 Pending
+## 5. Convert Estimate to Project 🟡 In Progress
 
-- [Pending] Backend: `PATCH /quotations/{id}/status` me `"Project"` status accept ho (ya convert API) — backend confirm chahiye
-- [Pending] Actions me Convert to Project button + confirm + toast
+- [Complete ✅] Backend & Frontend: `"Project"` status added to status options, filters, and list badges
+- [Complete ✅] Actions me Convert to Project button + confirm dialog (with Validity Date) + toast
 - [Pending] Converted quotes estimates list se hide
 - [Pending] Naya Projects page (`/project-list`) + sidebar item
 
