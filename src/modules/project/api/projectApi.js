@@ -33,6 +33,7 @@ export const projectApi = {
 
   updateProjectStatus: async (id, status) => {
     const response = await apiClient.patch(`/projects/${id}/status`, {
+      quotation_status: status,
       project_status: status,
       status: status,
     });

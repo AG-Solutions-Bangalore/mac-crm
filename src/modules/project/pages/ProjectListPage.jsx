@@ -1,16 +1,18 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Edit, FileText, MoreHorizontal, FolderKanban } from "lucide-react";
+import { Edit, FileText, MoreHorizontal, FolderKanban, CheckCircle, XCircle, RotateCcw } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
 import ToggleStatus from "@/components/toogle/status-toogle";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/common/page-header";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -20,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useProjectsQuery } from "../hooks/useProject";
+import { useProjectsQuery, useUpdateProjectStatusMutation } from "../hooks/useProject";
 import moment from "moment";
 
 const ProjectListPage = () => {
@@ -34,6 +36,7 @@ const ProjectListPage = () => {
     searchTerm,
     statusFilter
   );
+  const updateStatusMutation = useUpdateProjectStatusMutation();
 
   const paginationData = responseData?.data;
   const rawProjectList = paginationData?.data || [];
@@ -160,7 +163,7 @@ const ProjectListPage = () => {
           <ToggleStatus
             initialStatus={status}
             apiUrl={`/projects/${row.original.id}/status`}
-            payloadKey="project_status"
+            payloadKey="quotation_status"
             activeValue="Pending"
             inactiveValue="Cancel"
             onSuccess={refetch}
@@ -175,6 +178,7 @@ const ProjectListPage = () => {
       enableSorting: false,
       cell: ({ row }) => {
         const p = row.original;
+        const status = p.project_status || p.status || p.quotation_status || "Project";
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -183,19 +187,68 @@ const ProjectListPage = () => {
                 <span className="sr-only">Open actions</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[11rem]">
+            <DropdownMenuContent align="end" className="min-w-[12rem]">
               <DropdownMenuItem
                 className="cursor-pointer"
                 onClick={() => navigate(`/project-list/edit/${p.id}`)}
               >
-                <Edit className="h-4 w-4" /> Edit Project
+                <Edit className="h-4 w-4 mr-2" /> Edit Project
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
                 onClick={() => navigate(`/quotation-report/${p.id}`)}
               >
-                <FileText className="h-4 w-4" /> View Report
+                <FileText className="h-4 w-4 mr-2" /> View Report
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {status !== "Approved" && (
+                <DropdownMenuItem
+                  className="cursor-pointer text-emerald-600 dark:text-emerald-400 font-medium"
+                  onClick={async () => {
+                    try {
+                      await updateStatusMutation.mutateAsync({ id: p.id, status: "Approved" });
+                      toast.success("Project status changed to Approved");
+                      refetch();
+                    } catch (err) {
+                      toast.error(err?.response?.data?.message || err.message || "Failed to update status");
+                    }
+                  }}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" /> Mark as Approved
+                </DropdownMenuItem>
+              )}
+              {status !== "Project" && (
+                <DropdownMenuItem
+                  className="cursor-pointer text-blue-600 dark:text-blue-400 font-medium"
+                  onClick={async () => {
+                    try {
+                      await updateStatusMutation.mutateAsync({ id: p.id, status: "Project" });
+                      toast.success("Project status set to Project");
+                      refetch();
+                    } catch (err) {
+                      toast.error(err?.response?.data?.message || err.message || "Failed to update status");
+                    }
+                  }}
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" /> Set as Project
+                </DropdownMenuItem>
+              )}
+              {status !== "Cancel" && (
+                <DropdownMenuItem
+                  className="cursor-pointer text-rose-600 dark:text-rose-400 font-medium"
+                  onClick={async () => {
+                    try {
+                      await updateStatusMutation.mutateAsync({ id: p.id, status: "Cancel" });
+                      toast.success("Project status changed to Cancel");
+                      refetch();
+                    } catch (err) {
+                      toast.error(err?.response?.data?.message || err.message || "Failed to update status");
+                    }
+                  }}
+                >
+                  <XCircle className="h-4 w-4 mr-2" /> Mark as Cancel
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         );
