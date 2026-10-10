@@ -12,10 +12,10 @@ export function useGetProductsForQuotationQuery(categoryIds, serviceIds, enabled
   });
 }
 
-export function useQuotationsQuery(page = 1, search = "") {
+export function useQuotationsQuery(page = 1, search = "", status = "all") {
   return useQuery({
-    queryKey: ["quotations", page, search],
-    queryFn: () => quotationApi.getQuotations(page, search),
+    queryKey: ["quotations", page, search, status],
+    queryFn: () => quotationApi.getQuotations(page, search, status),
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,

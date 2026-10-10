@@ -30,10 +30,10 @@
 - Sec 8 Validity + Notifications: estimate_valid_till / price_validity_date / payment flags fields nahi; due-calc + notify trigger backend kaam. Bina backend: dates save nahi, expiry alerts nahi.
 - Sec 7 Quick-add (Floor/Area/Brand/Product): backend READY ✅ — create APIs hain, naam required. Bina backend-change ban sakta hai.
 
-## 8. Validity + Project Notifications 🟡 Pending
+## 8. Validity + Project Notifications 🟡 In Progress
 
-- [Pending] Backend: estimate_valid_till, price_validity_date, hardware/final payment flags, due-notification trigger — backend chahiye
-- [Pending] Estimate form me Valid Till date field
+- [Pending] Backend: status/project conversion, hardware/final payment flags, due-notification trigger
+- [Complete ✅] Estimate form (Create & Edit) + Quotation List me `quotation_validity_date` field & column added
 - [Pending] Convert dialog me Price Validity date picker (manual date)
 - [Pending] Project Notifications page (Operations → Projects ke neeche): expiring/stagnant list + Extend (1 month/custom) / Client Paid → X din baad yaad dilao / Close actions
 - [Pending] Projects list me validity badge/warning (expiring highlight)
@@ -41,6 +41,7 @@
 ## 6. Sidebar flow (Operations) 🟡 Pending
 
 - [Pending] Backend: `"Project"` + `"Closed"` status, follow-up date/frequency, payment-done flag — backend chahiye
+- [Complete ✅] Quotation list me Status filter dropdown (All Status, Pending, Approved, Cancel) + API `&status=` query param added
 - [Pending] Estimates = sirf non-converted (rename + converted hide)
 - [Pending] Actions me Convert to Project button → Projects me move
 - [Pending] Closed Projects page (final payment done wale)

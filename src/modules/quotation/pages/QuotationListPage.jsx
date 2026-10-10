@@ -16,7 +16,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   useQuotationsQuery,
   useUpdateQuotationFinishWorkDateMutation,
@@ -27,11 +33,12 @@ const QuotationListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [finishDateDialogOpen, setFinishDateDialogOpen] = useState(false);
   const [selectedQuotation, setSelectedQuotation] = useState(null);
   const [finishDate, setFinishDate] = useState("");
 
-  const { data: responseData, isLoading, isFetching, isError, refetch } = useQuotationsQuery(page, searchTerm);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useQuotationsQuery(page, searchTerm, statusFilter);
   const updateFinishWorkDateMutation = useUpdateQuotationFinishWorkDateMutation();
 
   const handleOpenFinishDateDialog = (quotation) => {
@@ -56,7 +63,17 @@ const QuotationListPage = () => {
   };
 
   const paginationData = responseData?.data;
-  const quotationList = paginationData?.data || [];
+  const rawQuotationList = paginationData?.data || [];
+
+  const filteredData = rawQuotationList.filter((item) => {
+    if (statusFilter === "all") return true;
+    const itemStatus = item.quotation_status?.toLowerCase();
+    const filter = statusFilter.toLowerCase();
+    if (filter === "cancel") {
+      return itemStatus === "cancel" || itemStatus === "cancelled";
+    }
+    return itemStatus === filter;
+  });
 
   const columns = [
     {
@@ -70,6 +87,14 @@ const QuotationListPage = () => {
       cell: ({ row }) =>
         row.original.quotation_date
           ? moment(row.original.quotation_date).format("DD-MM-YYYY")
+          : "-",
+    },
+    {
+      header: "Validity Date",
+      accessorKey: "quotation_validity_date",
+      cell: ({ row }) =>
+        row.original.quotation_validity_date
+          ? moment(row.original.quotation_validity_date).format("DD-MM-YYYY")
           : "-",
     },
     {
@@ -193,7 +218,26 @@ const QuotationListPage = () => {
       />
       <DataTable
         isLoading={isLoading || isFetching}
-        data={quotationList}
+        extraButton={
+          <Select
+            value={statusFilter}
+            onValueChange={(val) => {
+              setStatusFilter(val);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Select Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="Pending">Pending</SelectItem>
+              <SelectItem value="Approved">Approved</SelectItem>
+              <SelectItem value="Cancel">Cancel</SelectItem>
+            </SelectContent>
+          </Select>
+        }
+        data={filteredData}
         columns={columns}
         searchPlaceholder="Search Quotations..."
         pageSize={50}

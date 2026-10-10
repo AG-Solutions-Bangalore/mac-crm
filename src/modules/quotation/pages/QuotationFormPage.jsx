@@ -156,6 +156,7 @@ const QuotationFormPage = () => {
 
   const [formData, setFormData] = useState({
     quotation_date: new Date().toISOString().split("T")[0],
+    quotation_validity_date: "",
     quotation_buyer_id: "",
     quotation_property_id: "",
     quotation_category_id: "", // Comma-separated category IDs
@@ -298,6 +299,7 @@ const QuotationFormPage = () => {
       const data = fetchedData.data;
       const nextForm = {
         quotation_date: data.quotation_date || "",
+        quotation_validity_date: data.quotation_validity_date || "",
         quotation_buyer_id: data.quotation_buyer_id?.toString() || "",
         quotation_property_id: data.quotation_property_id?.toString() || "",
         quotation_category_id: data.quotation_category_id || "",
@@ -344,6 +346,7 @@ const QuotationFormPage = () => {
       setInitialSnapshot(
         JSON.stringify({
           quotation_date: new Date().toISOString().split("T")[0],
+          quotation_validity_date: "",
           quotation_buyer_id: "",
           quotation_property_id: "",
           quotation_category_id: "",
@@ -377,6 +380,7 @@ const QuotationFormPage = () => {
         formData.quotation_category_id ||
         formData.quotation_service_id ||
         formData.quotation_remarks ||
+        formData.quotation_validity_date ||
         (formData.quotation_date && formData.quotation_date !== todayStr)
     );
     const hasItems = servicesState.some(
@@ -1398,7 +1402,7 @@ const QuotationFormPage = () => {
             <h3 className="text-lg font-semibold mb-4 text-slate-800">
               Basic Details
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {/* Quotation Date */}
               <div className="space-y-2">
                 <Label className="flex">
@@ -1410,6 +1414,19 @@ const QuotationFormPage = () => {
                   value={formData.quotation_date}
                   onChange={handleInputChange}
                   required
+                />
+              </div>
+
+              {/* Validity Date */}
+              <div className="space-y-2">
+                <Label className="flex">
+                  Validity Date
+                </Label>
+                <Input
+                  type="date"
+                  name="quotation_validity_date"
+                  value={formData.quotation_validity_date || ""}
+                  onChange={handleInputChange}
                 />
               </div>
 
