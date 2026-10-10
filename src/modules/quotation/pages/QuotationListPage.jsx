@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Edit, GitBranch, FileText, CalendarDays } from "lucide-react";
+import { Edit, GitBranch, FileText, CalendarDays, MoreHorizontal } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
@@ -14,6 +14,12 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -84,26 +90,35 @@ const QuotationListPage = () => {
     {
       header: "Date",
       accessorKey: "quotation_date",
-      cell: ({ row }) =>
-        row.original.quotation_date
-          ? moment(row.original.quotation_date).format("DD-MM-YYYY")
-          : "-",
+      cell: ({ row }) => (
+        <span className="whitespace-nowrap">
+          {row.original.quotation_date
+            ? moment(row.original.quotation_date).format("DD-MM-YYYY")
+            : "-"}
+        </span>
+      ),
     },
     {
       header: "Validity Date",
       accessorKey: "quotation_validity_date",
-      cell: ({ row }) =>
-        row.original.quotation_validity_date
-          ? moment(row.original.quotation_validity_date).format("DD-MM-YYYY")
-          : "-",
+      cell: ({ row }) => (
+        <span className="whitespace-nowrap">
+          {row.original.quotation_validity_date
+            ? moment(row.original.quotation_validity_date).format("DD-MM-YYYY")
+            : "-"}
+        </span>
+      ),
     },
     {
       header: "Finish Work Date",
       accessorKey: "quotation_finish_work_date",
-      cell: ({ row }) =>
-        row.original.quotation_finish_work_date
-          ? moment(row.original.quotation_finish_work_date).format("DD-MM-YYYY")
-          : "-",
+      cell: ({ row }) => (
+        <span className="whitespace-nowrap">
+          {row.original.quotation_finish_work_date
+            ? moment(row.original.quotation_finish_work_date).format("DD-MM-YYYY")
+            : "-"}
+        </span>
+      ),
     },
     {
       header: "Buyer",
@@ -126,7 +141,11 @@ const QuotationListPage = () => {
       accessorKey: "quotation_amount",
       cell: ({ row }) => {
         const val = row.original.quotation_amount;
-        return val ? `₹${Number(val).toLocaleString()}` : "-";
+        return (
+          <span className="whitespace-nowrap">
+            {val ? `₹${Number(val).toLocaleString()}` : "-"}
+          </span>
+        );
       },
     },
     {
@@ -154,63 +173,59 @@ const QuotationListPage = () => {
       header: "Actions",
       accessorKey: "actions",
       enableSorting: false,
-      cell: ({ row }) => (
-        <div className="flex gap-2">
-          {!row.original.quotation_finish_work_date && (
-            <abbr title="Edit Quotation">
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={() => navigate(`/quotation-list/edit/${row.original.id}`)}
-              >
-                <Edit className="h-4 w-4" />
+      cell: ({ row }) => {
+        const q = row.original;
+        const canEdit = !q.quotation_finish_work_date;
+        const canFinishDate =
+          q.quotation_status === "Approved" && !q.quotation_finish_work_date;
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="outline" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
+                <span className="sr-only">Open actions</span>
               </Button>
-            </abbr>
-          )}
-
-          <abbr title="View Report">
-            <Button
-              size="icon"
-              variant="outline"
-              className="text-slate-600 hover:text-slate-800"
-              onClick={() => navigate(`/quotation-report/${row.original.id}`)}
-            >
-              <FileText className="h-4 w-4" />
-            </Button>
-          </abbr>
-
-          <abbr title="Revised Quotations">
-            <Button
-              size="icon"
-              variant="outline"
-              className="text-blue-600 hover:text-blue-700"
-              onClick={() => navigate(`/quotation-list/revised/${row.original.id}`)}
-            >
-              <GitBranch className="h-4 w-4" />
-            </Button>
-          </abbr>
-
-          {row.original.quotation_status === "Approved" && !row.original.quotation_finish_work_date && (
-            <abbr title="Add Finish Work Date">
-              <Button
-                size="icon"
-                variant="outline"
-                className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                onClick={() => handleOpenFinishDateDialog(row.original)}
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[11rem]">
+              {canEdit && (
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() => navigate(`/quotation-list/edit/${q.id}`)}
+                >
+                  <Edit className="h-4 w-4" /> Edit Quotation
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => navigate(`/quotation-report/${q.id}`)}
               >
-                <CalendarDays className="h-4 w-4" />
-              </Button>
-            </abbr>
-          )}
-        </div>
-      ),
+                <FileText className="h-4 w-4" /> View Report
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => navigate(`/quotation-list/revised/${q.id}`)}
+              >
+                <GitBranch className="h-4 w-4" /> Revised Quotations
+              </DropdownMenuItem>
+              {canFinishDate && (
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() => handleOpenFinishDateDialog(q)}
+                >
+                  <CalendarDays className="h-4 w-4" /> Add Finish Work Date
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
     },
   ];
 
   if (isError && !responseData) return <ApiErrorPage onRetry={refetch} />;
 
   return (
-    <div className="px-5">
+    <div className="px-1">
       <PageHeader
         icon={FileText}
         title="Quotations"

@@ -19,7 +19,7 @@ import {
 import { toggleSidebar as toggleSidebarAction } from "@/store/ui/uiSlice";
 import { useDispatch, useSelector } from "react-redux";
 
-const SIDEBAR_WIDTH = "18.75rem";
+const SIDEBAR_WIDTH = "13.5rem";
 const SIDEBAR_WIDTH_MOBILE = "18.75rem";
 const SIDEBAR_WIDTH_ICON = "3.5rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
