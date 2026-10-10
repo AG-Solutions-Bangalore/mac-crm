@@ -129,31 +129,48 @@
 
 ---
 
+## Recent Completed Work ✅ (English)
+
+### 1. Validity Date & Dynamic Expiry Badges
+- **Form Integration:** `quotation_validity_date` added to Quotation Create and Edit forms in Basic Details; integrated into form state, pristine snapshots, `isDirty` tracking, and save payloads.
+- **List Column:** Added "Validity Date" column in `QuotationListPage`.
+- **Dynamic Badges:** Real-time visual status badges:
+  - 🔴 **Expired** (past date)
+  - 🟡 **Expiring Soon** (`Expiring today` or `Expiring in Xd` if within 7 days)
+  - 🟢 **Valid** (safe date)
+
+### 2. Status Filter & "Project" Status Support
+- **Status Filter:** Added Status filter dropdown on Quotation List (`All Status`, `Pending`, `Approved`, `Project`, `Cancel`) with API query parameter integration (`&status=`) and instant client-side fallback filtering.
+- **"Project" Status:** Backend enabled `"Project"` status. Added `"Project"` option in form status dropdowns and dedicated badges (`pill-in_progress`) on list tables (`QuotationListPage`, `RevQuotationListPage`).
+
+### 3. Convert Estimate to Project Flow
+- **Actions Menu:** Added **"Convert to Project"** button in Quotation List for non-project quotes.
+- **Confirmation Modal:** Clean confirmation dialog displaying quotation summary (Buyer, Property, Amount) without redundant inputs.
+- **Instant Save & Auto-Close:** Converts status to `"Project"` via API, immediately closes modal, triggers success toast, and refetches the list.
+
+---
+
 ## All Pending — with context (English)
 
-> Source: items marked 🟡 / `[Pending]` above (Sec 5, 6, 8). Recent work (Sec 9, 10, 11) is complete — build passes. Sec 7 inline quick-add is marked ✅, so it is excluded.
+> Updated status following completion of Convert dialog, Status filter, "Project" status, and Validity dates.
 
-### P1. Convert Estimate to Project 🟡 — blocked on backend
-- **Context:** There is no way today to move a won estimate into execution. The status API (`PATCH /quotations/{id}/status`) only accepts `Pending/Cancel/Approved`, and there is no `/projects` API (returns 404).
-- **Frontend scope:** Actions-column "Convert to Project" button + confirm + toast; hide converted quotes from the estimates list; new Projects page (`/project-list`) + sidebar item.
-- **Blocked by:** backend must accept `"Project"` status (or expose a convert API) and confirm the projects listing contract.
-- **User impact if built without backend:** button errors, nothing moves/hides.
+### P1. Dedicated Projects Page & Sidebar Flow 🟡 — ready for frontend
+- **Context:** Operations needs separate pages/buckets for active Projects vs initial Estimates. Now that `"Project"` status is active and filterable, a dedicated Projects page can be built.
+- **Frontend scope:**
+  - Create dedicated Projects page (`/project-list`) displaying quotations where `quotation_status === "Project"`.
+  - Add "Projects" link under Operations in the sidebar (`app-sidebar.jsx`).
+  - Optionally hide converted `"Project"` records from default Estimates view (or rely on the existing status filter).
+  - Hide "Complaint" from sidebar (`app-sidebar.jsx`) while keeping route intact.
+- **Backend dependency for Closed Projects:** Closed Projects page remains blocked until backend implements `"Closed"` status or `is_payment_completed` flag in DB.
 
-### P2. Sidebar flow — Estimates / Projects / Closed Projects 🟡 — blocked on backend
-- **Context:** Operations needs three clean buckets: Estimates (only non-converted), Projects (converted/in-progress), Closed Projects (final payment done). Today there are no `"Project"`/`"Closed"` statuses, no payment-done flag in DB, and no server-side list filter.
-- **Frontend scope:** rename/filter Estimates to non-converted only; Projects page; Closed Projects page (final-payment-done only).
-- **Blocked by:** new statuses + payment-done flag + server-side filtering.
-- **User impact if built without backend:** pages show wrong/empty data.
-- **Note — conflict in this file:** Sec 5 (line 13) says "Complaint hidden (route kept)" as Completed, but Sec 6 still lists "Complaint hide" as pending. Needs a decision: hide-only (frontend, no backend) vs something more.
-
-### P3. Follow-up reminders with snooze / next date 🟡 — blocked on backend
+### P2. Follow-up reminders with snooze / next date 🟡 — blocked on backend
 - **Context:** Quotations have no follow-up date/frequency field, and the Notification module is broadcast-only (no auto-due engine), so reminders can't be saved or triggered.
-- **Frontend scope:** reminder frequency on the quote (5/7/10/14/custom); snooze or next-date action on the notification.
-- **Blocked by:** follow-up date/frequency fields + due-notification trigger on the backend.
-- **User impact if built without backend:** reminders won't save or fire.
+- **Frontend scope:** Reminder frequency on the quote (5/7/10/14/custom); snooze or next-date action on the notification.
+- **Blocked by:** Follow-up date/frequency fields + automated due-notification scheduler on the backend.
+- **User impact if built without backend:** Reminders won't save or trigger.
 
-### P4. Validity dates + Project Notifications page + badges 🟡 — blocked on backend
-- **Context:** There are no `estimate_valid_till` / `price_validity_date` / hardware/final-payment flags, and no due-calculation + notify trigger, so expiry can't be computed or alerted.
-- **Frontend scope:** Valid Till field on the estimate form; Price Validity date picker in the convert dialog; Project Notifications page (Operations → under Projects) with expiring/stagnant list + Extend (1 month/custom) / Client Paid (remind after X days) / Close actions; validity badge/warning in the Projects list.
-- **Blocked by:** new date/payment fields + due-notification trigger on the backend.
-- **User impact if built without backend:** dates won't persist, no expiry alerts.
+### P3. Project Notifications Page (Stagnant/Expiring Projects) 🟡 — blocked on backend
+- **Context:** While visual expiry badges are now active on the list page, a centralized Operations dashboard for expiring/stagnant projects with quick actions is needed.
+- **Frontend scope:** Project Notifications page (Operations → under Projects) listing stagnant/expiring projects with quick actions: Extend (1 month / custom), Client Paid (remind after X days), and Close Project.
+- **Blocked by:** Backend due-calculation logic, notification triggers, and extend/snooze APIs.
+- **User impact if built without backend:** Page cannot fetch automated stagnant alerts or persist extension webhooks.
