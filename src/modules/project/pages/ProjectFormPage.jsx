@@ -89,8 +89,14 @@ const groupSubsToServices = (subsList) => {
     ];
   }
 
-  const serviceMap = {};
-  subsList.forEach((item) => {
+  // NOTE: Map() used (not {}) — plain objects auto-sort integer-like keys,
+  // which broke API order. Map keeps insertion order.
+  const serviceMap = new Map();
+  // Oldest first: backend may return DESC, we always render 1,2,3... (old top, new bottom)
+  const orderedSubs = [...subsList].sort(
+    (a, b) => (Number(a.id) || 0) - (Number(b.id) || 0)
+  );
+  orderedSubs.forEach((item) => {
     const serviceId = (
       item.project_sub_service_id ??
       item.quotation_sub_service_id ??
@@ -119,31 +125,33 @@ const groupSubsToServices = (subsList) => {
       item.product_id
     )?.toString() || "";
 
-    if (!serviceMap[serviceId]) {
-      serviceMap[serviceId] = {
+    if (!serviceMap.has(serviceId)) {
+      serviceMap.set(serviceId, {
         serviceId,
         serviceName: item.sub_service_name || item.service_name || "",
-        floors: {},
-      };
+        floors: new Map(),
+      });
     }
+    const svc = serviceMap.get(serviceId);
 
-    if (!serviceMap[serviceId].floors[floorId]) {
-      serviceMap[serviceId].floors[floorId] = {
+    if (!svc.floors.has(floorId)) {
+      svc.floors.set(floorId, {
         floorId,
         floorName: item.floor_name || item.property_floor || "",
-        areas: {},
-      };
+        areas: new Map(),
+      });
     }
+    const flr = svc.floors.get(floorId);
 
-    if (!serviceMap[serviceId].floors[floorId].areas[areaId]) {
-      serviceMap[serviceId].floors[floorId].areas[areaId] = {
+    if (!flr.areas.has(areaId)) {
+      flr.areas.set(areaId, {
         areaId,
         areaName: item.area_name || item.property_area || "",
         products: [],
-      };
+      });
     }
 
-    serviceMap[serviceId].floors[floorId].areas[areaId].products.push({
+    flr.areas.get(areaId).products.push({
       id: item.id || null,
       productId,
       productName: item.product_name || "",
@@ -153,13 +161,13 @@ const groupSubsToServices = (subsList) => {
     });
   });
 
-  return Object.values(serviceMap).map((srv) => ({
+  return [...serviceMap.values()].map((srv) => ({
     serviceId: srv.serviceId,
     serviceName: srv.serviceName,
-    floors: Object.values(srv.floors).map((f) => ({
+    floors: [...srv.floors.values()].map((f) => ({
       floorId: f.floorId,
       floorName: f.floorName,
-      areas: Object.values(f.areas).map((a) => ({
+      areas: [...f.areas.values()].map((a) => ({
         areaId: a.areaId,
         areaName: a.areaName,
         products: a.products,
@@ -1149,33 +1157,39 @@ const ProjectFormPage = () => {
       (p) => p.id?.toString() === pid?.toString()
     );
 
+  // Row product options: STRICT — only products of this row's Service.
+  // Dusri service ka product dikhega hi nahi; khaali ho to hint bolega.
+  // Auto-switch nahi hoga.
   const getRowProductOptions = (rowServiceId) => {
     if (!rowServiceId) return [];
+    const sid = rowServiceId?.toString();
     const matched = productsList.filter(
-      (p) => p.service_id?.toString() === rowServiceId?.toString()
+      (p) => p.service_id?.toString() === sid
     );
-    let base = matched;
-    if (base.length === 0) {
-      const catMatched = catProductsList.filter(
-        (p) => p.service_id?.toString() === rowServiceId?.toString()
-      );
-      if (catMatched.length > 0) {
-        base = catMatched;
-      } else {
-        base = catProductsList.filter(
-          (p) =>
-            checkedCategories.includes(p.category_id?.toString()) &&
-            !matched.some((m) => m.id === p.id)
-        );
+    const catMatched = catProductsList.filter(
+      (p) => p.service_id?.toString() === sid
+    );
+    const merged = [...matched];
+    const seen = new Set(matched.map((p) => p.id?.toString()));
+    catMatched.forEach((p) => {
+      if (!seen.has(p.id?.toString())) {
+        merged.push(p);
+        seen.add(p.id?.toString());
       }
-    }
-    const seen = new Set(base.map((p) => p.id?.toString()));
-    return [
-      ...base,
-      ...extraProducts.filter((e) => !seen.has(e.id?.toString())),
-    ];
+    });
+    extraProducts.forEach((e) => {
+      if (
+        e.service_id?.toString() === sid &&
+        !seen.has(e.id?.toString())
+      ) {
+        merged.push(e);
+        seen.add(e.id?.toString());
+      }
+    });
+    return merged;
   };
 
+  // Product select: NO auto-set. Row Service kabhi khud nahi badlega.
   const handleProductSelect = (
     serviceIndex,
     floorIndex,
@@ -1198,20 +1212,7 @@ const ProjectFormPage = () => {
       return;
     }
     const matched = knownProduct || findProductById(val);
-    const realSvc = matched?.service_id?.toString();
-    if (realSvc && srv.serviceId && realSvc !== srv.serviceId?.toString()) {
-      const svcName =
-        services.find((s) => s.id?.toString() === realSvc)?.service_name ||
-        matched?.service_name ||
-        realSvc;
-      handleNestedFieldChange(serviceIndex, null, null, null, "serviceId", realSvc);
-      setFormData((prev) => {
-        const cur = prev.project_service_id ? prev.project_service_id.split(",") : [];
-        if (cur.includes(realSvc)) return prev;
-        return { ...prev, project_service_id: [...cur, realSvc].join(",") };
-      });
-      toast.info(`Row Service auto-set to '${svcName}'`);
-    }
+    // No service auto-switch: jo Service row me select hai wahi rahega.
     handleNestedFieldChange(
       serviceIndex,
       floorIndex,
@@ -1397,6 +1398,22 @@ const ProjectFormPage = () => {
         });
 
         const srv = servicesState[target.serviceIndex];
+        // Quick-add explicit case: naya product aur service par bana to row switch
+        if (sid && srv?.serviceId && sid !== srv.serviceId?.toString()) {
+          const svcName =
+            services.find((s) => s.id?.toString() === sid)?.service_name ||
+            freshProduct.service_name ||
+            sid;
+          handleNestedFieldChange(
+            target.serviceIndex,
+            null,
+            null,
+            null,
+            "serviceId",
+            sid
+          );
+          toast.info(`New product is under '${svcName}' — row switched to it`);
+        }
         handleProductSelect(
           target.serviceIndex,
           target.floorIndex,
