@@ -786,6 +786,17 @@ const RevQuotationFormPage = () => {
     return `No '${catNames}' products under '${rowSvcName}'. Found ${others.join(", ")} — tick that Service above.`;
   };
 
+  // Product label with category prefix so same-name products under different
+  // categories (e.g. "2M - 4 Control" under Frameless vs Brass) look distinct.
+  const getProductLabel = (p) => {
+    const catName =
+      p?.category_name ||
+      categories.find((c) => c.id?.toString() === p?.category_id?.toString())
+        ?.category_name ||
+      "";
+    return catName ? `${catName} - ${p?.product_name}` : p?.product_name;
+  };
+
   // Row product options: checked-list match, phir all-services list me row-service
   // match (master me abhi-abhi add hua product bhi dikhe), phir category fallback.
   const getRevRowProductOptions = (rowServiceId) => {
@@ -1205,7 +1216,7 @@ const RevQuotationFormPage = () => {
                                             srv.serviceId
                                           ).map((p) => ({
                                             value: p.id?.toString(),
-                                            label: p.product_name,
+                                            label: getProductLabel(p),
                                           }))}
                                           value={prod.productId}
                                           onChange={(option) =>

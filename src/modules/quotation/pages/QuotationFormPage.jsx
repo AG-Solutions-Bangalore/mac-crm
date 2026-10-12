@@ -1031,6 +1031,17 @@ const QuotationFormPage = () => {
       (p) => p.id?.toString() === pid?.toString(),
     );
 
+  // Product label with category prefix so same-name products under different
+  // categories (e.g. "2M - 4 Control" under Frameless vs Brass) look distinct.
+  const getProductLabel = (p) => {
+    const catName =
+      p?.category_name ||
+      categories.find((c) => c.id?.toString() === p?.category_id?.toString())
+        ?.category_name ||
+      "";
+    return catName ? `${catName} - ${p?.product_name}` : p?.product_name;
+  };
+
   // Row product options: pehle row-service match (checked list), phir
   // all-services list me row-service match, phir category ke saare products
   // (+ just-created) — data hai to dikhega, khaali nahi rahega.
@@ -1856,7 +1867,7 @@ const QuotationFormPage = () => {
                                               srv.serviceId,
                                             ).map((p) => ({
                                               value: p.id?.toString(),
-                                              label: p.product_name,
+                                              label: getProductLabel(p),
                                             }))}
                                             value={prod.productId}
                                             onChange={(option) =>

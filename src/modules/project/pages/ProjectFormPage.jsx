@@ -1076,13 +1076,24 @@ const ProjectFormPage = () => {
     return Array.from(map.values());
   };
 
+  // Product label with category prefix so same-name products under different
+  // categories (e.g. "2M - 4 Control" under Frameless vs Brass) look distinct.
+  const getProductLabel = (p) => {
+    const catName =
+      p?.category_name ||
+      categories.find((c) => c.id?.toString() === p?.category_id?.toString())
+        ?.category_name ||
+      "";
+    return catName ? `${catName} - ${p?.product_name}` : p?.product_name;
+  };
+
   const getProductOptions = (prod, rowServiceId) => {
     const base = getRowProductOptions(rowServiceId);
     const map = new Map();
     base.forEach((p) => {
       map.set(p.id?.toString(), {
         value: p.id?.toString(),
-        label: p.product_name,
+        label: getProductLabel(p),
       });
     });
     if (prod?.productId && !map.has(prod.productId)) {
@@ -1391,7 +1402,7 @@ const ProjectFormPage = () => {
           target.floorIndex,
           target.areaIndex,
           target.prodIndex,
-          { value: freshProduct.id.toString(), label: freshProduct.product_name },
+          { value: freshProduct.id.toString(), label: getProductLabel(freshProduct) },
           srv,
           freshProduct
         );
