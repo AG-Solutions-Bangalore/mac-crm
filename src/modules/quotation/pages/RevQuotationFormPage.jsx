@@ -60,34 +60,42 @@ const groupSubsToServices = (subsList) => {
     ];
   }
 
-  const serviceMap = {};
-  subsList.forEach((item) => {
+  // NOTE: Map() used (not {}) — plain objects auto-sort integer-like keys,
+  // which broke API order. Map keeps insertion order.
+  const serviceMap = new Map();
+  // Oldest first: backend may return DESC, we always render 1,2,3... (old top, new bottom)
+  const orderedSubs = [...subsList].sort(
+    (a, b) => (Number(a.id) || 0) - (Number(b.id) || 0)
+  );
+  orderedSubs.forEach((item) => {
     const serviceId = item.quotation_sub_service_id?.toString() || "";
     const floorId = item.quotation_sub_floor_id?.toString() || "";
     const areaId = item.quotation_sub_area_id?.toString() || "";
 
-    if (!serviceMap[serviceId]) {
-      serviceMap[serviceId] = {
+    if (!serviceMap.has(serviceId)) {
+      serviceMap.set(serviceId, {
         serviceId,
-        floors: {},
-      };
+        floors: new Map(),
+      });
     }
+    const svc = serviceMap.get(serviceId);
 
-    if (!serviceMap[serviceId].floors[floorId]) {
-      serviceMap[serviceId].floors[floorId] = {
+    if (!svc.floors.has(floorId)) {
+      svc.floors.set(floorId, {
         floorId,
-        areas: {},
-      };
+        areas: new Map(),
+      });
     }
+    const flr = svc.floors.get(floorId);
 
-    if (!serviceMap[serviceId].floors[floorId].areas[areaId]) {
-      serviceMap[serviceId].floors[floorId].areas[areaId] = {
+    if (!flr.areas.has(areaId)) {
+      flr.areas.set(areaId, {
         areaId,
         products: [],
-      };
+      });
     }
 
-    serviceMap[serviceId].floors[floorId].areas[areaId].products.push({
+    flr.areas.get(areaId).products.push({
       id: item.id || null,
       productId: item.quotation_sub_product_id?.toString() || "",
       price: Number(item.quotation_sub_price) || 0,
@@ -96,11 +104,11 @@ const groupSubsToServices = (subsList) => {
     });
   });
 
-  return Object.values(serviceMap).map((srv) => ({
+  return [...serviceMap.values()].map((srv) => ({
     serviceId: srv.serviceId,
-    floors: Object.values(srv.floors).map((f) => ({
+    floors: [...srv.floors.values()].map((f) => ({
       floorId: f.floorId,
-      areas: Object.values(f.areas).map((a) => ({
+      areas: [...f.areas.values()].map((a) => ({
         areaId: a.areaId,
         products: a.products,
       })),
@@ -786,20 +794,29 @@ const RevQuotationFormPage = () => {
     return `No '${catNames}' products under '${rowSvcName}'. Found ${others.join(", ")} — tick that Service above.`;
   };
 
-  // Row product options: checked-list match, phir all-services list me row-service
-  // match (master me abhi-abhi add hua product bhi dikhe), phir category fallback.
+  // Product label with category prefix so same-name products under different
+  // categories (e.g. "2M - 4 Control" under Frameless vs Brass) look distinct.
+  const getProductLabel = (p) => {
+    const catName =
+      p?.category_name ||
+      categories.find((c) => c.id?.toString() === p?.category_id?.toString())
+        ?.category_name ||
+      "";
+    return catName ? `${catName} - ${p?.product_name}` : p?.product_name;
+  };
+
+  // Row product options: STRICT — only products of this row's Service.
+  // Dusri service ka product dikhega hi nahi; khaali ho to hint bolega.
+  // Auto-switch nahi hoga.
   const getRevRowProductOptions = (rowServiceId) => {
     if (!rowServiceId) return [];
+    const sid = rowServiceId?.toString();
     const matched = productsList.filter(
-      (p) => p.service_id?.toString() === rowServiceId?.toString()
+      (p) => p.service_id?.toString() === sid
     );
     if (matched.length > 0) return matched;
-    const catMatched = catProductsList.filter(
-      (p) => p.service_id?.toString() === rowServiceId?.toString()
-    );
-    if (catMatched.length > 0) return catMatched;
-    return catProductsList.filter((p) =>
-      checkedCategories.includes(p.category_id?.toString())
+    return catProductsList.filter(
+      (p) => p.service_id?.toString() === sid
     );
   };
 
@@ -1205,7 +1222,7 @@ const RevQuotationFormPage = () => {
                                             srv.serviceId
                                           ).map((p) => ({
                                             value: p.id?.toString(),
-                                            label: p.product_name,
+                                            label: getProductLabel(p),
                                           }))}
                                           value={prod.productId}
                                           onChange={(option) =>

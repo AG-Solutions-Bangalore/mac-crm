@@ -9,6 +9,7 @@ import {
   useRevQuotationQuery,
   useGetProductsForQuotationQuery,
 } from "../hooks/useQuotation";
+import { useProjectQuery } from "../../project/hooks/useProject";
 import { useActiveFloorsQuery } from "../../floor/hooks/useFloor";
 import { useActiveAreasQuery } from "../../area/hooks/useArea";
 import { useActiveServicesQuery } from "../../service/hooks/useService";
@@ -69,6 +70,11 @@ export default function QuotationReportPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isRevised = searchParams.get("type") === "rev";
+  // Project mode: Projects list "View Report" bhejta hai (?type=project) taaki
+  // PROJECT id se project record khule — warna same numeric id wala QUOTATION
+  // khul jata hai (ids alag sequences hai, e.g. project 5 = XYZ, quotation 5 = Manjunath).
+  const isProject = searchParams.get("type") === "project";
+  const docLabel = isProject ? "Project" : "Quotation";
   const [viewMode, setViewMode] = useState("presentation"); // 'presentation' | 'table'
   // Consultancy & Design % and Installation % — both editable from header bar,
   // each applied on the grand total. No % is shown in the printed proposal.
@@ -80,11 +86,15 @@ export default function QuotationReportPage() {
   // Queries
   const { data: parentData, isLoading: parentLoading } = useQuotationQuery(
     id,
-    !isRevised
+    !isRevised && !isProject
   );
   const { data: revData, isLoading: revLoading } = useRevQuotationQuery(
     id,
     isRevised
+  );
+  const { data: projectData, isLoading: projectLoading } = useProjectQuery(
+    id,
+    isProject
   );
   const { data: floorsData, isLoading: floorsLoading } = useActiveFloorsQuery();
   const { data: areasData, isLoading: areasLoading } = useActiveAreasQuery();
@@ -96,7 +106,11 @@ export default function QuotationReportPage() {
   const { data: categoriesData, isLoading: categoriesLoading } =
     useActiveCategoriesQuery();
 
-  const quotationDetail = isRevised ? revData?.data : parentData?.data;
+  const quotationDetail = isProject
+    ? projectData?.data
+    : isRevised
+      ? revData?.data
+      : parentData?.data;
 
   // Logged-in user (fallback for "Prepared By")
   const authUser = useSelector((state) => state.auth?.user);
@@ -121,8 +135,9 @@ export default function QuotationReportPage() {
     );
 
   const isLoading =
-    (!isRevised && parentLoading) ||
+    (!isRevised && !isProject && parentLoading) ||
     (isRevised && revLoading) ||
+    (isProject && projectLoading) ||
     floorsLoading ||
     areasLoading ||
     servicesLoading ||
@@ -137,7 +152,7 @@ export default function QuotationReportPage() {
   if (!quotationDetail) {
     return (
       <div className="p-8 text-center space-y-4">
-        <p className="text-red-500 font-semibold">Quotation not found.</p>
+        <p className="text-red-500 font-semibold">{docLabel} not found.</p>
         <Button variant="outline" onClick={() => navigate(-1)}>
           <ArrowLeft className="w-4 h-4 mr-2" /> Back
         </Button>
@@ -167,23 +182,28 @@ export default function QuotationReportPage() {
     products.find((p) => p.id?.toString() === pid?.toString());
 
   // Build items array
+  // Sub key normalization: project subs me project_sub_* keys hoti hai
+  // (converted me dono sets hoti hai) — quotation_sub_* par fallback.
+  const subVal = (sub, base) =>
+    sub[`project_sub_${base}`] ?? sub[`quotation_sub_${base}`];
   const items = subs.map((sub, idx) => {
-    const prodDetails = getProductDetails(sub.quotation_sub_product_id);
+    const prodDetails = getProductDetails(subVal(sub, "product_id"));
     const brandName =
       brands.find((b) => b.id?.toString() === prodDetails?.brand_id?.toString())
         ?.brand_name || "-";
     const warranty = prodDetails?.product_warranty || "-";
-    const appName = getServiceName(sub.quotation_sub_service_id);
-    const floorName = getFloorName(sub.quotation_sub_floor_id);
-    const areaName = getAreaName(sub.quotation_sub_area_id);
+    const appName = getServiceName(subVal(sub, "service_id"));
+    const floorName = getFloorName(subVal(sub, "floor_id"));
+    const areaName = getAreaName(subVal(sub, "area_id"));
     const productName =
-      prodDetails?.product_name || "Product ID: " + sub.quotation_sub_product_id;
+      prodDetails?.product_name || "Product ID: " + subVal(sub, "product_id");
 
     // Resolve category/finish selected under categories
     const categoryObj = categories.find(
       (c) =>
         c.id?.toString() === prodDetails?.category_id?.toString() ||
-        c.id?.toString() === sub.quotation_category_id?.toString()
+        c.id?.toString() === sub.quotation_category_id?.toString() ||
+        c.id?.toString() === sub.project_category_id?.toString()
     );
     const finishName =
       categoryObj?.category_name ||
@@ -199,13 +219,13 @@ export default function QuotationReportPage() {
       floor: floorName,
       area: areaName,
       product: productName,
-      quantity: Number(sub.quotation_sub_quantity) || 0,
-      price: Number(sub.quotation_sub_price) || 0,
-      totalPrice: Number(sub.quotation_sub_amount) || 0,
+      quantity: Number(subVal(sub, "quantity")) || 0,
+      price: Number(subVal(sub, "price")) || 0,
+      totalPrice: Number(subVal(sub, "amount")) || 0,
       finish: finishName,
       brand: brandName,
       warranty: warranty,
-      notes: sub.quotation_sub_notes || `${floorName} - ${areaName}`,
+      notes: subVal(sub, "notes") || `${floorName} - ${areaName}`,
     };
   });
 
@@ -329,7 +349,7 @@ export default function QuotationReportPage() {
 
   const handleExportExcel = () => {
     const workbook = createStyledQuotationWorkbook({ items });
-    downloadBlob(workbook, `MAKc_Quotation_${quotationNo}.xlsx`);
+    downloadBlob(workbook, `MAKc_${docLabel}_${quotationNo}.xlsx`);
   };
 
   // Light-only theme (theme switcher removed)
@@ -507,6 +527,7 @@ export default function QuotationReportPage() {
       {/* Header Actions Component (navigation + view + charges % + prepared-by + export/print) */}
       <ReportHeaderActions
         quotationNo={quotationNo}
+        docLabel={docLabel}
         viewMode={viewMode}
         setViewMode={setViewMode}
         onNavigateBack={() => navigate(-1)}
@@ -544,6 +565,7 @@ export default function QuotationReportPage() {
               propertyType={propertyType}
               projectAddress={projectAddress}
               quotationNo={quotationNo}
+              docLabel={docLabel}
               quotationDate={quotationDate}
               contactPerson={contactPerson}
               contactPhone={contactPhone}

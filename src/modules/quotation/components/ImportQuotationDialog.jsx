@@ -252,7 +252,8 @@ export const parseQuotationTSV = ({
   }
 
   // Construct nested servicesState structure: Service -> Floor -> Area -> Product
-  const serviceGroupMap = {};
+  // NOTE: Map() keeps Excel row order; plain {} would numeric-sort integer keys.
+  const serviceGroupMap = new Map();
 
   parsedRows.forEach((row) => {
     const serviceId = row.matchedService?.id?.toString() || (services[0]?.id?.toString() || "");
@@ -260,28 +261,30 @@ export const parseQuotationTSV = ({
     const areaId = row.matchedArea?.id?.toString() || (areas[0]?.id?.toString() || "");
     const productId = row.matchedProduct?.id?.toString() || "";
 
-    if (!serviceGroupMap[serviceId]) {
-      serviceGroupMap[serviceId] = {
+    if (!serviceGroupMap.has(serviceId)) {
+      serviceGroupMap.set(serviceId, {
         serviceId,
-        floors: {},
-      };
+        floors: new Map(),
+      });
     }
+    const svc = serviceGroupMap.get(serviceId);
 
-    if (!serviceGroupMap[serviceId].floors[floorId]) {
-      serviceGroupMap[serviceId].floors[floorId] = {
+    if (!svc.floors.has(floorId)) {
+      svc.floors.set(floorId, {
         floorId,
-        areas: {},
-      };
+        areas: new Map(),
+      });
     }
+    const flr = svc.floors.get(floorId);
 
-    if (!serviceGroupMap[serviceId].floors[floorId].areas[areaId]) {
-      serviceGroupMap[serviceId].floors[floorId].areas[areaId] = {
+    if (!flr.areas.has(areaId)) {
+      flr.areas.set(areaId, {
         areaId,
         products: [],
-      };
+      });
     }
 
-    serviceGroupMap[serviceId].floors[floorId].areas[areaId].products.push({
+    flr.areas.get(areaId).products.push({
       id: null,
       productId,
       price: row.price,
@@ -291,11 +294,11 @@ export const parseQuotationTSV = ({
     });
   });
 
-  const nestedState = Object.values(serviceGroupMap).map((srv) => ({
+  const nestedState = [...serviceGroupMap.values()].map((srv) => ({
     serviceId: srv.serviceId,
-    floors: Object.values(srv.floors).map((f) => ({
+    floors: [...srv.floors.values()].map((f) => ({
       floorId: f.floorId,
-      areas: Object.values(f.areas).map((a) => ({
+      areas: [...f.areas.values()].map((a) => ({
         areaId: a.areaId,
         products: a.products,
       })),

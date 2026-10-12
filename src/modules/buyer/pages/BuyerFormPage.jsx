@@ -76,9 +76,7 @@ const BuyerFormPage = () => {
       newErrors.buyer_mobile = "Mobile must be a 10-digit number";
     }
 
-    if (!formData.buyer_email.trim()) {
-      newErrors.buyer_email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.buyer_email.trim())) {
+    if (formData.buyer_email?.trim() && !/\S+@\S+\.\S+/.test(formData.buyer_email.trim())) {
       newErrors.buyer_email = "Invalid email format";
     }
 
@@ -178,7 +176,7 @@ const BuyerFormPage = () => {
               {/* Email */}
               <div className="space-y-2">
                 <Label htmlFor="buyer_email" className="flex items-center gap-1">
-                  Email Address <RedStar />
+                  Email Address
                 </Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -188,7 +186,7 @@ const BuyerFormPage = () => {
                     type="email"
                     value={formData.buyer_email}
                     onChange={handleChange}
-                    placeholder="Enter email address"
+                    placeholder="Enter email address (optional)"
                     className="pl-10"
                   />
                 </div>

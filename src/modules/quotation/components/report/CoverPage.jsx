@@ -28,6 +28,7 @@ export default function CoverPage({
   propertyType,
   projectAddress,
   quotationNo,
+  docLabel = "Quotation",
   quotationDate,
   contactPerson,
   contactPhone,
@@ -293,7 +294,7 @@ export default function CoverPage({
               { label: "Client", value: clientName },
               { label: "Client Contact", value: clientPhone || "-" },
               { label: "Property Type", value: propertyType || projectAddress || "-" },
-              { label: "Quotation Ref", value: `#${quotationNo}`, color: "#0284c7" },
+              { label: `${docLabel} Ref`, value: `#${quotationNo}`, color: "#0284c7" },
               { label: "Proposal Date", value: quotationDate },
             ].map((f, i) => (
               <div key={i}>

@@ -158,6 +158,11 @@ const ProjectListPage = () => {
         if (status === "Approved") {
           return <span className="pill pill-approved">Approved</span>;
         }
+        // Closed badge (backend "Closed" status aate hi bina code-change dikhega;
+        // abhi backend me Closed nahi hai to filter khaali dikhega).
+        if (status === "Closed") {
+          return <span className="pill pill-rejected">Closed</span>;
+        }
 
         return (
           <ToggleStatus
@@ -196,7 +201,7 @@ const ProjectListPage = () => {
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
-                onClick={() => navigate(`/quotation-report/${p.id}`)}
+                onClick={() => navigate(`/quotation-report/${p.id}?type=project`)}
               >
                 <FileText className="h-4 w-4 mr-2" /> View Report
               </DropdownMenuItem>
@@ -284,6 +289,7 @@ const ProjectListPage = () => {
               <SelectItem value="Pending">Pending</SelectItem>
               <SelectItem value="Approved">Approved</SelectItem>
               <SelectItem value="Cancel">Cancel</SelectItem>
+              <SelectItem value="Closed">Closed</SelectItem>
             </SelectContent>
           </Select>
         }

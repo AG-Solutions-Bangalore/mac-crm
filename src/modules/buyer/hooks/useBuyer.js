@@ -67,3 +67,24 @@ export function useActiveBuyersQuery() {
     retry: 1,
   });
 }
+
+export function useBuyerQuotationSummaryQuery(
+  fromDate,
+  toDate,
+  buyerId = "",
+  enabled = true
+) {
+  return useQuery({
+    queryKey: ["buyer-quotation-summary", fromDate, toDate, buyerId || "all"],
+    queryFn: () =>
+      buyerApi.getBuyerQuotationSummary({
+        from_date: fromDate,
+        to_date: toDate,
+        buyer_id: buyerId || undefined,
+      }),
+    enabled: Boolean(fromDate && toDate) && enabled,
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+}

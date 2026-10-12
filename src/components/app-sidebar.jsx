@@ -149,16 +149,20 @@ const NAVIGATION_CONFIG = {
       url: "#",
       icon: FileText,
       isActive: false,
-      items: [
-        {
-          title: "Client Report",
-          url: "/client-report",
-        },
-        {
-          title: "Service Request",
-          url: "/service-request-report",
-        },
-      ],
+        items: [
+          {
+            title: "Client Report",
+            url: "/client-report",
+          },
+          {
+            title: "Buyer Billing",
+            url: "/buyer-billing-report",
+          },
+          {
+            title: "Service Request",
+            url: "/service-request-report",
+          },
+        ],
     },
     SETTINGS: {
       title: "Settings",
@@ -185,7 +189,6 @@ const USER_ROLE_PERMISSIONS = {
       "QUOTATION",
       "PROJECT",
       "SERVICEREQUEST",
-      "COMPLAINT",
       "NOTIFICATION",
       // "SETTINGS",
     ],
@@ -207,7 +210,6 @@ const USER_ROLE_PERMISSIONS = {
       "QUOTATION",
       "PROJECT",
       "SERVICEREQUEST",
-      "COMPLAINT",
       "NOTIFICATION",
     ],
     navMainReport: ["REPORT_MENU"],
@@ -228,7 +230,6 @@ const USER_ROLE_PERMISSIONS = {
       "QUOTATION",
       "PROJECT",
       "SERVICEREQUEST",
-      "COMPLAINT",
       "NOTIFICATION",
       "BLOG",
       "GALLERY",
@@ -251,7 +252,6 @@ const USER_ROLE_PERMISSIONS = {
       "QUOTATION",
       "PROJECT",
       "SERVICEREQUEST",
-      "COMPLAINT",
       "NOTIFICATION",
     ],
     navMainReport: ["REPORT_MENU"],
