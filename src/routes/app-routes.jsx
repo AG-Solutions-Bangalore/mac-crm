@@ -39,6 +39,7 @@ import ClientListPage from "@/modules/client/pages/ClientListPage";
 import ClientFormPage from "@/modules/client/pages/ClientFormPage";
 import RequestListPage from "@/modules/service-request/pages/RequestListPage";
 import Client from "@/app/reports/Client";
+import BuyerBilling from "@/app/reports/BuyerBilling";
 import Request_service from "@/app/reports/Request_service";
 import QuotationReportPage from "@/modules/quotation/pages/QuotationReportPage";
 import ComplaintListPage from "@/modules/complaint/pages/ComplaintListPage";
@@ -449,6 +450,14 @@ function AppRoutes() {
             element={
               <Suspense fallback={<LoadingBar />}>
                 <Client />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/buyer-billing-report"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <BuyerBilling />
               </Suspense>
             }
           />

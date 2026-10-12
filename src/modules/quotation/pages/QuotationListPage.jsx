@@ -44,6 +44,9 @@ const QuotationListPage = () => {
   const [page, setPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  // Estimates-only view: converted (Project) quotes hidden by default (client-side,
+  // backend has no hide-converted filter yet). Specific status selection overrides it.
+  const [hideConverted, setHideConverted] = useState(true);
   const [finishDateDialogOpen, setFinishDateDialogOpen] = useState(false);
   const [selectedQuotation, setSelectedQuotation] = useState(null);
   const [finishDate, setFinishDate] = useState("");
@@ -168,8 +171,13 @@ const QuotationListPage = () => {
   const rawQuotationList = paginationData?.data || [];
 
   const filteredData = rawQuotationList.filter((item) => {
-    if (statusFilter === "all") return true;
     const itemStatus = item.quotation_status?.toLowerCase();
+    // Estimates-only: "All Status" me converted (Project) rows chhupao jab toggle on ho.
+    // Koi specific status select ho to wahi jeetega (Project select = converted dikhenge).
+    if (statusFilter === "all") {
+      if (hideConverted && itemStatus === "project") return false;
+      return true;
+    }
     const filter = statusFilter.toLowerCase();
     if (filter === "cancel") {
       return itemStatus === "cancel" || itemStatus === "cancelled";
@@ -365,24 +373,38 @@ const QuotationListPage = () => {
       <DataTable
         isLoading={isLoading || isFetching}
         extraButton={
-          <Select
-            value={statusFilter}
-            onValueChange={(val) => {
-              setStatusFilter(val);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Select Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="Pending">Pending</SelectItem>
-              <SelectItem value="Approved">Approved</SelectItem>
-              <SelectItem value="Project">Project</SelectItem>
-              <SelectItem value="Cancel">Cancel</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-3">
+            <label
+              className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 cursor-pointer select-none whitespace-nowrap"
+              title="Hide quotes already converted to projects"
+            >
+              <input
+                type="checkbox"
+                checked={hideConverted}
+                onChange={(e) => setHideConverted(e.target.checked)}
+                className="rounded border-slate-300 dark:border-slate-700 h-3.5 w-3.5"
+              />
+              Estimates only
+            </label>
+            <Select
+              value={statusFilter}
+              onValueChange={(val) => {
+                setStatusFilter(val);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Select Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="Pending">Pending</SelectItem>
+                <SelectItem value="Approved">Approved</SelectItem>
+                <SelectItem value="Project">Project</SelectItem>
+                <SelectItem value="Cancel">Cancel</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         }
         data={filteredData}
         columns={columns}

@@ -39,4 +39,17 @@ export const buyerApi = {
     const response = await apiClient.get("/activeBuyers");
     return response.data;
   },
+  // Buyer-wise billing: all quotation sheets combined per customer.
+  // POST /buyer-quotation-summary-report {from_date, to_date, buyer_id?}
+  // Returns flat quotation rows (same shape as /quotation) for the filter —
+  // frontend aggregates count + total per buyer.
+  getBuyerQuotationSummary: async ({ from_date, to_date, buyer_id }) => {
+    const payload = { from_date, to_date };
+    if (buyer_id) payload.buyer_id = buyer_id;
+    const response = await apiClient.post(
+      "/buyer-quotation-summary-report",
+      payload
+    );
+    return response.data;
+  },
 };

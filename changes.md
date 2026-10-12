@@ -130,13 +130,22 @@
 - `saveWithoutNavigate` success par id/`true` return karta hai (dialog ke Save & Leave ke liye); `handleSaveAsNew` snapshot clear karke naye edit par le jata hai.
 
 ## 11. Product dropdown — naya product turant dikhega ✅
-
 - Root cause: `useCreateProductMutation` / `useUpdateProductMutation` sirf `["products"]` invalidate karte the, `["products-for-quotation"]` (5-min stale) stale reh jata tha — master se add kiya product dropdown me nahi aata tha. Ab dono jagah `products-for-quotation` bhi invalidate hota hai (`src/modules/product/hooks/useProduct.js`).
 - Quick-add (`saveProductQA`) ab naye product ki category bhi auto-tick karta hai (pehle sirf service tick hota tha, category filter se product gayab lagta tha).
 - Row options fallback strong kiya (`getRowProductOptions`): pehle checked-list me row-service match, phir all-services list me row-service match (stale-list bypass — master me abhi add hua product bhi dikhe), phir category fallback + just-created items.
 - Rev form me koi fallback nahi tha (strict filter) — `getRevRowProductOptions` add kiya + price lookup combined list (`productsList + catProductsList`) se.
 - Quotation + Revised + Project forms me **Refresh Products** button (`RefreshCw`): `products-for-quotation` invalidate + refetch + toast — master me product add karke page chhode bina list refresh karo. (Project form me bhi same button hai.)
 - Note: dropdown ab bhi top Categories/Services checkboxes se filter hota hai — naye product ki category tick honi chahiye, nahi to hint batayega (kis service me products hai).
+
+## 12. Buyer email optional + product dropdown category prefix ✅
+- **Buyer email optional:** Add New Buyer quick-add dialog (Quotation + Project forms) aur main Buyer form me Email mandatory hataya — khaali email par error nahi, bhara ho to format check; label se red `*` hataya, placeholder `(optional)`; `buyerApi.createBuyer` khaali email ko `""` bhejta hai (BE me bhi optional hona chahiye).
+- **Product dropdown disambiguation:** same naam ke products (e.g. `2M - 4 Control` under Frameless vs Brass) ab `Category - Product` prefix ke saath dikhte hai — Quotation, Project + RevQuotation forms me `getProductLabel()` helper (`category_name` ya `category_id` lookup se); search dono hisso par kaam karta hai.
+
+## 13. Buyer-wise billing — 1 customer ka combined total ✅ (Reports section)
+
+- **Backend API:** `POST /buyer-quotation-summary-report {from_date, to_date, buyer_id?}` — note: GET par `405`, bina dates ke `{"data":[]}`; dates ke saath quotation rows (same shape as `/quotation`) lautata hai, aggregation frontend karta hai (live verified: 13 rows).
+- **Frontend:** `buyerApi.getBuyerQuotationSummary` + `useBuyerQuotationSummaryQuery` (5-min cache, reuse-ready); **Report section me naya `Buyer Billing` page** (`/buyer-billing-report`, sidebar Reports menu me) — From/To date + Buyer dropdown filter, per-buyer table (Sheets / Pending ₹ / Approved ₹ / Project ₹ / **Total Billed ₹**, total-desc sort), grand summary strip, Excel export, click par sheets-detail dialog (ref, date, services, amount, status).
+- **Note:** Cancel ko total se bahar rakha hai (backend se confirmation pending). Pehle Buyer List me columns lagaye the — user feedback par wahan se hatakar Report section me shift kiya (Buyer List original jaisi).
 
 ---
 
@@ -195,14 +204,14 @@
 
 > Code-verified just now: every item below was grepped in `src` and genuinely not found. Everything else claimed ✅ above was also re-verified.
 
-### P1. Estimates-only view (converted hide + rename) 🟡 — needs decision (+ optional backend filter)
-- **Context:** Converted quotes (`quotation_status === "Project"`) still appear in the Quotation list — only the Convert menu item hides for them (`QuotationListPage.jsx:333`). Sidebar still says "Quotations", not "Estimates".
-- **Frontend scope:** rename "Quotations" → "Estimates" (or keep both) + hide/filter converted rows (client-side one-liner, or `&status=` server filter).
-- **User impact:** estimates and projects look mixed today.
+### P1. Estimates-only view (converted hide) ✅ DONE (frontend, client-side)
+- **Done:** "Estimates only" checkbox (default ON) next to status filter — "All Status" me converted (`quotation_status === "Project"`) rows client-side hide; koi specific status select ho to wahi jeetega (Project select = converted dikhenge).
+- **Note:** rename revert kiya — sidebar + list title wapas "Quotations" (routes `/quotation-list` untouched they). Backend pagination totals me converted count shamil rahega (server-side hide filter abhi nahi hai) — list page par sirf non-converted rows dikhengi.
 
-### P2. Closed Projects Page 🟡 — blocked on backend
-- **Context:** Operations will eventually need a separate section for finalized/closed projects. No `"Closed"` status or payment-done flag exists in code/DB.
-- **Blocked by:** Backend implementing `"Closed"` status or `is_payment_completed` flag in DB.
+### P2. Closed Projects Page 🟡 — filter ready, backend pending
+- **Context:** Operations will eventually need a separate section for finalized/closed projects. No `"Closed"` status or payment-done flag exists in code/DB (live API verified: `/project?status=Closed` filter ignore karke saare 5 projects lauta deta hai).
+- **Done (frontend):** Project list status dropdown me `Closed` option added (`ProjectListPage.jsx`) — `&status=Closed` param plumbing se jata hai + client fallback filter; `Closed` badge (`pill-rejected`) ready taaki backend status aate hi bina code-change dikhe. Abhi select karne par list khaali dikhegi (koi Closed row nahi hai).
+- **NOT done (backend block):** "Mark as Closed" action nahi lagaya — backend unknown status reject/ignore karega. Backend implementing `"Closed"` status or `is_payment_completed` flag in DB.
 
 ### P3. Follow-up reminders with snooze / next date 🟡 — blocked on backend
 - **Context:** Only mock data exists (`home.jsx` "Mock" badges). Quotations have no follow-up date/frequency field, and the Notification module (`/notification-list`) is broadcast-only (no auto-due engine), so reminders can't be saved or triggered.
@@ -216,6 +225,5 @@
 - **Blocked by:** Backend due-calculation logic, notification triggers, and extend/snooze APIs.
 - **User impact if built without backend:** Page cannot fetch automated stagnant alerts or persist extension webhooks.
 
-### P5. Complaint sidebar visibility — needs decision 🟡
-- **Context:** Complaint is currently visible in the sidebar for all roles (screenshot + `app-sidebar.jsx` confirmed). This file earlier claimed it hidden — that was incorrect, now fixed.
-- **Scope:** One-line hide (route intact) if desired, else close as won't-do.
+### P5. Complaint sidebar visibility ✅ DONE
+- **Done:** Complaint sabhi roles ke sidebar se hata diya (`app-sidebar.jsx` me 4 role arrays se `"COMPLAINT"` key removed). Config + `/complaint-list` route intact — URL se page ab bhi khulta hai.
