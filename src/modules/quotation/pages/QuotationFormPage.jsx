@@ -932,9 +932,7 @@ const QuotationFormPage = () => {
     } else if (newBuyer.buyer_mobile.length !== 10) {
       errs.buyer_mobile = "Mobile must be a 10-digit number";
     }
-    if (!newBuyer.buyer_email.trim()) {
-      errs.buyer_email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(newBuyer.buyer_email.trim())) {
+    if (newBuyer.buyer_email?.trim() && !/\S+@\S+\.\S+/.test(newBuyer.buyer_email.trim())) {
       errs.buyer_email = "Invalid email format";
     }
     setBuyerFormErrors(errs);
@@ -943,7 +941,7 @@ const QuotationFormPage = () => {
       const res = await createBuyerMutation.mutateAsync({
         buyer_name: newBuyer.buyer_name.trim(),
         buyer_mobile: newBuyer.buyer_mobile.trim(),
-        buyer_email: newBuyer.buyer_email.trim(),
+        buyer_email: newBuyer.buyer_email?.trim() || "",
         buyer_address: newBuyer.buyer_address?.trim() || "",
       });
       // Backend shape varies — handle {data:{id}}, {data:{data:{id}}}, {id}
@@ -2229,7 +2227,7 @@ const QuotationFormPage = () => {
               </div>
               <div className="space-y-1.5">
                 <Label>
-                  Email Address <span className="text-red-500">*</span>
+                  Email Address
                 </Label>
                 <Input
                   type="email"
@@ -2237,7 +2235,7 @@ const QuotationFormPage = () => {
                   onChange={(e) =>
                     setNewBuyer((p) => ({ ...p, buyer_email: e.target.value }))
                   }
-                  placeholder="Enter email"
+                  placeholder="Enter email (optional)"
                 />
                 {buyerFormErrors.buyer_email && (
                   <p className="text-xs text-red-500">

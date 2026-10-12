@@ -14,7 +14,7 @@ export const buyerApi = {
     const formData = new FormData();
     formData.append("buyer_name", buyerData.buyer_name);
     formData.append("buyer_mobile", buyerData.buyer_mobile);
-    formData.append("buyer_email", buyerData.buyer_email);
+    formData.append("buyer_email", buyerData.buyer_email?.trim() || "");
     if (buyerData.buyer_address) {
       formData.append("buyer_address", buyerData.buyer_address);
     }
