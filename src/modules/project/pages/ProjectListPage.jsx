@@ -201,7 +201,7 @@ const ProjectListPage = () => {
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
-                onClick={() => navigate(`/quotation-report/${p.id}`)}
+                onClick={() => navigate(`/quotation-report/${p.id}?type=project`)}
               >
                 <FileText className="h-4 w-4 mr-2" /> View Report
               </DropdownMenuItem>

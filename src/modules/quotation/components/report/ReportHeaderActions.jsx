@@ -15,6 +15,7 @@ const PCT_PRESETS = [5, 7, 10, 15];
 // This bar is `quotation-no-print` so it never appears in print output.
 export default function ReportHeaderActions({
   quotationNo,
+  docLabel = "Quotation",
   viewMode,
   setViewMode,
   onNavigateBack,
@@ -73,7 +74,7 @@ export default function ReportHeaderActions({
         </Button>
         <div>
           <h1 className="text-lg sm:text-xl md:text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
-            Quotation #{quotationNo}
+            {docLabel} #{quotationNo}
           </h1>
         </div>
       </div>

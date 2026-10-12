@@ -142,10 +142,14 @@
 - **Product dropdown disambiguation:** same naam ke products (e.g. `2M - 4 Control` under Frameless vs Brass) ab `Category - Product` prefix ke saath dikhte hai — Quotation, Project + RevQuotation forms me `getProductLabel()` helper (`category_name` ya `category_id` lookup se); search dono hisso par kaam karta hai.
 
 ## 13. Buyer-wise billing — 1 customer ka combined total ✅ (Reports section)
-
 - **Backend API:** `POST /buyer-quotation-summary-report {from_date, to_date, buyer_id?}` — note: GET par `405`, bina dates ke `{"data":[]}`; dates ke saath quotation rows (same shape as `/quotation`) lautata hai, aggregation frontend karta hai (live verified: 13 rows).
 - **Frontend:** `buyerApi.getBuyerQuotationSummary` + `useBuyerQuotationSummaryQuery` (5-min cache, reuse-ready); **Report section me naya `Buyer Billing` page** (`/buyer-billing-report`, sidebar Reports menu me) — From/To date + Buyer dropdown filter, per-buyer table (Sheets / Pending ₹ / Approved ₹ / Project ₹ / **Total Billed ₹**, total-desc sort), grand summary strip, Excel export, click par sheets-detail dialog (ref, date, services, amount, status).
 - **Note:** Cancel ko total se bahar rakha hai (backend se confirmation pending). Pehle Buyer List me columns lagaye the — user feedback par wahan se hatakar Report section me shift kiya (Buyer List original jaisi).
+
+## 14. Project View Report — sahi record + sahi label ✅
+
+- **Bug:** Projects list ka "View Report" `/quotation-report/{project.id}` kholta tha, jo hamesha QUOTATION id se record uthata tha — project ids aur quotation ids alag sequences hai (e.g. project 5 = XYZ, quotation 5 = Mr. Manjunath), to galat record + "Quotation" label dikhta tha.
+- **Fix (`?type=rev` pattern par):** Projects list ab `/quotation-report/{id}?type=project` bhejta hai; `QuotationReportPage` project mode me `useProjectQuery` se PROJECT record uthata hai; subs keys normalize (`project_sub_* ?? quotation_sub_*`); header `Project #`, cover `Project Ref`, Excel `MAKc_Project_*.xlsx`, not-found text bhi dynamic. Quotation/Rev flows untouched.
 
 ---
 
