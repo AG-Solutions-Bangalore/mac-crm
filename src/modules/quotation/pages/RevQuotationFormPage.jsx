@@ -235,6 +235,10 @@ const RevQuotationFormPage = () => {
   // Fetch parent quotation for prefilling revised quote details on CREATE mode, and checking finish work date
   const { data: parentQuotationData, isLoading: parentLoading } = useQuotationQuery(parentId);
   const parentFinishWorkDate = parentQuotationData?.data?.quotation_finish_work_date;
+  const parentStatus = parentQuotationData?.data?.quotation_status;
+  // After parent Approved/Project -> view-only, block create/edit (direct URL guard included)
+  const isParentApprovedLocked = parentStatus === "Approved" || parentStatus === "Project";
+  const isLocked = Boolean(parentFinishWorkDate) || isParentApprovedLocked;
 
   // Fetch revised quotation on EDIT mode
   const { data: revQuotationData, isLoading: revLoading, isError, refetch } = useRevQuotationQuery(revId, isEdit);
@@ -735,6 +739,14 @@ const RevQuotationFormPage = () => {
   // Save button working file me hi rehta hai — revised list par redirect nahi hota.
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isLocked) {
+      toast.error(
+        isParentApprovedLocked
+          ? "Parent quotation is approved. Revised quotations cannot be created or edited."
+          : "Parent quotation is finalized. Revisions cannot be created or edited."
+      );
+      return;
+    }
     const result = await saveRevWithoutNavigate();
     if (!result) return;
     if (!isEdit && typeof result === "string") {
@@ -883,6 +895,16 @@ const RevQuotationFormPage = () => {
           <div>
             <p className="font-semibold text-sm">Parent Quotation Finalized</p>
             <p className="text-xs opacity-90">The parent quotation has a finish work date. Revisions cannot be created or edited.</p>
+          </div>
+        </div>
+      )}
+
+      {!parentFinishWorkDate && isParentApprovedLocked && (
+        <div className="mt-4 bg-slate-500/10 border border-slate-500/20 text-slate-700 dark:text-slate-300 p-4 rounded-xl flex items-center gap-3">
+          <FileText className="h-5 w-5 text-slate-500" />
+          <div>
+            <p className="font-semibold text-sm">Parent Quotation Approved — View Only</p>
+            <p className="text-xs opacity-90">This quotation is approved. You can check details, but revisions cannot be created or edited.</p>
           </div>
         </div>
       )}
@@ -1401,7 +1423,7 @@ const RevQuotationFormPage = () => {
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting || !!parentFinishWorkDate}>
+          <Button type="submit" disabled={isSubmitting || isLocked}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...

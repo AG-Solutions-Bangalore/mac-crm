@@ -27,6 +27,11 @@ const RevQuotationListPage = () => {
   const paginationData = responseData?.data;
   const revQuotationList = paginationData?.data || [];
   const parentFinishWorkDate = parentQuotationData?.data?.quotation_finish_work_date;
+  const parentStatus = parentQuotationData?.data?.quotation_status;
+  // After parent is Approved/Project -> revised list becomes view-only.
+  // User can check (view list + reports) but cannot add / edit / approve.
+  const isParentApprovedLocked = parentStatus === "Approved" || parentStatus === "Project";
+  const isLocked = Boolean(parentFinishWorkDate) || isParentApprovedLocked;
 
   const handleApprove = (revId) => {
     setPendingApproveId(revId);
@@ -91,6 +96,15 @@ const RevQuotationListPage = () => {
             </span>
           );
         }
+        if (isLocked) {
+          if (status === "Pending") {
+            return <span className="text-xs font-bold text-amber-500">{status}</span>;
+          }
+          if (status === "Cancel" || status === "Cancelled") {
+            return <span className="text-xs font-bold text-red-500">{status}</span>;
+          }
+          return <span className="text-xs font-bold text-slate-500">{status}</span>;
+        }
         return (
           <ToggleStatus
             initialStatus={status}
@@ -110,7 +124,7 @@ const RevQuotationListPage = () => {
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex gap-2">
-          {!parentFinishWorkDate && (
+          {!isLocked && (
             <abbr title="Edit Revised Quotation">
               <Button
                 size="icon"
@@ -133,7 +147,7 @@ const RevQuotationListPage = () => {
             </Button>
           </abbr>
 
-          {!parentFinishWorkDate &&
+          {!isLocked &&
             !revQuotationList.some((q) => q.quotation_status === "Approved") &&
             row.original.quotation_status !== "Approved" && (
               <abbr title="Approve & Finalize">
@@ -181,6 +195,16 @@ const RevQuotationListPage = () => {
         </div>
       )}
 
+      {!parentFinishWorkDate && isParentApprovedLocked && (
+        <div className="mb-4 bg-slate-500/10 border border-slate-500/20 text-slate-700 dark:text-slate-300 p-4 rounded-xl flex items-center gap-3">
+          <CheckCircle2 className="h-5 w-5 text-slate-500" />
+          <div>
+            <p className="font-semibold text-sm">Parent Quotation Approved — View Only</p>
+            <p className="text-xs opacity-90">This quotation is approved. You can check revised quotations and reports, but cannot add, edit, or approve revisions.</p>
+          </div>
+        </div>
+      )}
+
       <DataTable
         isLoading={isLoading || isFetching}
         data={revQuotationList}
@@ -193,7 +217,7 @@ const RevQuotationListPage = () => {
           setPage(1);
         }}
         addButton={
-          !parentFinishWorkDate
+          !isLocked
             ? {
                 onClick: () => navigate(`/quotation-list/revised/${parentId}/create`),
                 label: "Add Revised Quotation",

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Edit, GitBranch, FileText, CalendarDays, MoreHorizontal, FolderKanban } from "lucide-react";
+import { Edit, FileText, CalendarDays, FolderKanban } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
@@ -14,12 +14,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -306,56 +300,55 @@ const QuotationListPage = () => {
       enableSorting: false,
       cell: ({ row }) => {
         const q = row.original;
-        const canEdit = !q.quotation_finish_work_date;
         const canFinishDate =
           q.quotation_status === "Approved" && !q.quotation_finish_work_date;
+        const showConvertButton = q.quotation_status === "Approved";
         return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="outline" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Open actions</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[11rem]">
-              {canEdit && (
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => navigate(`/quotation-list/edit/${q.id}`)}
-                >
-                  <Edit className="h-4 w-4" /> Edit Quotation
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => navigate(`/quotation-report/${q.id}`)}
-              >
-                <FileText className="h-4 w-4" /> View Report
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="cursor-pointer"
+          <div className="flex items-center gap-2">
+            <abbr title="Edit Quotation">
+              <Button
+                size="icon"
+                variant="outline"
                 onClick={() => navigate(`/quotation-list/revised/${q.id}`)}
               >
-                <GitBranch className="h-4 w-4" /> Revised Quotations
-              </DropdownMenuItem>
-              {q.quotation_status !== "Project" && (
-                <DropdownMenuItem
-                  className="cursor-pointer text-blue-600 focus:text-blue-700 focus:bg-blue-50 dark:focus:bg-blue-950/40 font-medium"
-                  onClick={() => handleOpenConvertDialog(q)}
-                >
-                  <FolderKanban className="h-4 w-4" /> Convert to Project
-                </DropdownMenuItem>
-              )}
-              {canFinishDate && (
-                <DropdownMenuItem
-                  className="cursor-pointer"
+                <Edit className="h-4 w-4" />
+              </Button>
+            </abbr>
+            <abbr title="View Report">
+              <Button
+                size="icon"
+                variant="outline"
+                className="text-slate-600 hover:text-slate-800"
+                onClick={() => navigate(`/quotation-report/${q.id}`)}
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
+            </abbr>
+            {canFinishDate && (
+              <abbr title="Add Finish Work Date">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
                   onClick={() => handleOpenFinishDateDialog(q)}
                 >
-                  <CalendarDays className="h-4 w-4" /> Add Finish Work Date
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                  <CalendarDays className="h-4 w-4" />
+                </Button>
+              </abbr>
+            )}
+            {showConvertButton && (
+              <abbr title="Convert to Project">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                  onClick={() => handleOpenConvertDialog(q)}
+                >
+                  <FolderKanban className="h-4 w-4" />
+                </Button>
+              </abbr>
+            )}
+          </div>
         );
       },
     },
