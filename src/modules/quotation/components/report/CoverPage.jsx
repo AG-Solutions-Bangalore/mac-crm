@@ -1,5 +1,5 @@
 import React from "react";
-import { Sliders, Layers, Lock, Wifi, Video, Volume2, Lightbulb } from "lucide-react";
+import { Sliders, Layers, Lock, Wifi, Video, Volume2, Lightbulb, Sparkles, Star } from "lucide-react";
 import logoImg from "@/assets/MAKc-Logo.svg";
 import isoImg from "@/assets/iso.png";
 import heroBgImg from "@/assets/hero_bg-light-1392.png";
@@ -207,38 +207,55 @@ export default function CoverPage({
         </div>
       </div>
 
-      {/* ── CAPTION (tightly follows client name — no big gap) ── */}
-      <div style={{ position: "relative", zIndex: 2, paddingTop: "2px", paddingLeft: PAGE_PX, paddingRight: PAGE_PX, paddingBottom: "10px", boxSizing: "border-box", width: "100%", flex: "0 0 auto", display: "flex", alignItems: "flex-start", background: "transparent" }}>
+      {/* ── CAPTION CARD (tightly follows client name — no big gap) ── */}
+      <div style={{ position: "relative", zIndex: 2, paddingTop: "14px", paddingLeft: PAGE_PX, paddingRight: PAGE_PX, paddingBottom: "12px", boxSizing: "border-box", width: "100%", flex: "0 0 auto", display: "flex", alignItems: "flex-start", background: "transparent" }}>
         <div
           className="makc-caption-card"
           style={{
+            position: "relative",
             width: "100%",
-            display: "flex", justifyContent: "space-between", alignItems: "flex-end",
-            background: "rgba(255,255,255,0.82)",
-            backdropFilter: "blur(6px)",
-            border: "1px solid rgba(203,213,225,0.9)",
-            borderRadius: "12px",
-            padding: "10px 16px",
-            boxShadow: "0 8px 24px rgba(15,23,42,0.10)",
+            display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px",
+            background: "linear-gradient(135deg, #f5faff 0%, #ffffff 100%)",
+           
+            borderRadius: "14px",
+            padding: "13px 18px",
+            overflow: "hidden",
           }}
         >
-          <div>
-            <p style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.16em", color: "#0284c7", textTransform: "uppercase", margin: 0 }}>
-              Intelligent Craftsmanship
-            </p>
-            <p style={{ fontSize: "18px", fontWeight: 800, color: "#0b1526", margin: "3px 0 0" }}>
-              Seamless Control at Your Fingertips
-            </p>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+            {/* Icon chip */}
+            <div
+              style={{
+                width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                background: "linear-gradient(135deg,#e0f2fe,#bae6fd)",
+                border: "1px solid #7dd3fc",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <Sparkles style={{ width: 18, height: 18, color: "#0284c7" }} />
+            </div>
+
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: "9.5px", fontWeight: 800, letterSpacing: "0.18em", color: "#0284c7", textTransform: "uppercase", margin: 0 }}>
+                Intelligent Craftsmanship
+              </p>
+              <p style={{ fontSize: "18px", fontWeight: 800, color: "#0b1526", margin: "3px 0 0", lineHeight: 1.25, letterSpacing: "-0.01em" }}>
+                Seamless Control at Your Fingertips
+              </p>
+            </div>
           </div>
+
           <span
-            className="bg-amber-200"
             style={{
-              fontSize: "11.5px", fontWeight: 700, color: "#0b1526",
-              // background: "#fef3c7",
-              border: "1px solid #fde047",
-              borderRadius: "6px", padding: "6px 14px", whiteSpace: "nowrap",
+              display: "inline-flex", alignItems: "center", gap: "6px", flexShrink: 0,
+              fontSize: "11.5px", fontWeight: 800, color: "#7c2d12",
+              background: "linear-gradient(135deg,#fef3c7,#fde68a)",
+              border: "1px solid #f5d97e",
+              borderRadius: "999px", padding: "7px 14px", whiteSpace: "nowrap",
+              boxShadow: "0 2px 8px rgba(245,158,11,0.22)",
             }}
           >
+            <Star style={{ width: 12, height: 12, fill: "#b45309", color: "#b45309" }} />
             800+ Projects Completed
           </span>
         </div>
