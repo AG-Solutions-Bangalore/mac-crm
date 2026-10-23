@@ -24,6 +24,8 @@ import AboutWhyPage from "../components/report/AboutWhyPage";
 import DynamicProposalDocument from "../components/report/DynamicProposalDocument";
 import CompactTableView from "../components/report/CompactTableView";
 import { createStyledQuotationWorkbook, downloadBlob } from "@/app/reports/quotation-xlsx";
+import heroBgImg from "@/assets/hero_bg-light-1392.png";
+
 
 const headers = [
   "Application",
@@ -59,8 +61,7 @@ const formatMoney = (value) => {
 
 // Bright white villa hero (covers ~72% of the cover page background)
 const MOCK_IMAGES = {
-  coverBg:
-    "https://makcautomations.com/images/hero_bg-light-1392.webp",
+  coverBg: heroBgImg,
   page2Hero:
     "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1600&auto=format&fit=crop",
 };

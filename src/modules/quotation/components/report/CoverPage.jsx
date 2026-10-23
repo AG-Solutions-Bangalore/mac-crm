@@ -2,7 +2,7 @@ import React from "react";
 import { Sliders, Layers, Lock, Wifi, Video, Volume2, Lightbulb } from "lucide-react";
 import logoImg from "@/assets/MAKc-Logo.svg";
 import isoImg from "@/assets/iso.png";
-import heroBgImg from "@/assets/hero_bg-light-1392.webp";
+import heroBgImg from "@/assets/hero_bg-light-1392.png";
 
 const SERVICES = [
   { title: "Smart Switches", icon: Sliders },
