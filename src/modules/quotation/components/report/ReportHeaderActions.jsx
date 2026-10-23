@@ -9,6 +9,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import PreparedByPicker from "./PreparedByPicker";
 
 const PCT_PRESETS = [5, 7, 10, 15];
 
@@ -145,28 +146,12 @@ export default function ReportHeaderActions({
           "Installation charge % of grand total (5 / 7 / 10 / 15 or custom)"
         )}
 
-        {/* Prepared-by selector */}
-        {preparedByOptions.length > 0 && (
-          <label
-            className="flex h-[46px] shrink-0 items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-[11px] font-semibold focus-within:border-sky-400"
-            title="Prepared by"
-          >
-            <span className="whitespace-nowrap text-muted-foreground">
-              Prepared By
-            </span>
-            <select
-              value={preparedById}
-              onChange={(e) => onPreparedByChange?.(e.target.value)}
-              className="max-w-[170px] bg-transparent text-xs font-bold text-foreground outline-none cursor-pointer"
-            >
-              {preparedByOptions.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} · {p.phone}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
+        {/* Prepared-by selector — searchable, quick add/edit, manage link */}
+        <PreparedByPicker
+          value={preparedById}
+          options={preparedByOptions}
+          onChange={onPreparedByChange}
+        />
 
         <Button
           variant="outline"

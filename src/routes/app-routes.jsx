@@ -67,6 +67,8 @@ import RevQuotationListPage from "@/modules/quotation/pages/RevQuotationListPage
 import RevQuotationFormPage from "@/modules/quotation/pages/RevQuotationFormPage";
 import ProjectListPage from "@/modules/project/pages/ProjectListPage";
 import ProjectFormPage from "@/modules/project/pages/ProjectFormPage";
+import SalesTeamListPage from "@/modules/sales-team/pages/SalesTeamListPage";
+import SalesTeamFormPage from "@/modules/sales-team/pages/SalesTeamFormPage";
 
 function AppRoutes() {
   return (
@@ -280,6 +282,32 @@ function AppRoutes() {
             element={
               <Suspense fallback={<LoadingBar />}>
                 <BrandFormPage />
+              </Suspense>
+            }
+          />
+
+          {/* Sales Team */}
+          <Route
+            path="/sales-team-list"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <SalesTeamListPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/sales-team-list/create"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <SalesTeamFormPage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/sales-team-list/edit/:id"
+            element={
+              <Suspense fallback={<LoadingBar />}>
+                <SalesTeamFormPage />
               </Suspense>
             }
           />
