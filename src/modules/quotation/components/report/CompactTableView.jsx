@@ -138,10 +138,6 @@ export default function CompactTableView({
                 <CardDescription style={{ color: LIGHT.mutedText }}>Home automation project quotation breakdown</CardDescription>
               </div>
             </div>
-            <div className="text-left text-sm md:text-right">
-              <div className="font-semibold" style={{ color: LIGHT.mutedText }}>Net Project Value</div>
-              <div className="text-xl font-bold" style={{ color: LIGHT.accent }}>{formatMoney(netTotal)}</div>
-            </div>
           </div>
         </CardHeader>
         <CardContent>
