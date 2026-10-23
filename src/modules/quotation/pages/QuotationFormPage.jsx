@@ -729,6 +729,61 @@ const QuotationFormPage = () => {
     });
   };
 
+  // Error wale field par scroll + focus, taaki user ko dhoondhna na pade
+  const focusErrorField = (field) => {
+    if (!field) return;
+    const target = document.querySelector(`[data-error-field="${field}"]`);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    const isDirectControl = target.matches("button, select, textarea");
+    const innerInput = isDirectControl
+      ? target
+      : target.querySelector(
+          'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+
+    // react-select ka asli control dhoondo (jispar 1px border hai) —
+    // wrapper par alag ring lagane ki zaroorat nahi.
+    let control = null;
+    if (isDirectControl) {
+      control = target;
+    } else if (innerInput && innerInput.type !== "checkbox") {
+      let el = innerInput;
+      while (el && el !== target) {
+        if (parseFloat(window.getComputedStyle(el).borderTopWidth) > 0) {
+          control = el;
+          break;
+        }
+        el = el.parentElement;
+      }
+    }
+
+    // Extra ring nahi — control ka apna border hi red ho jaye
+    if (control) {
+      const prevBorder = control.style.borderColor;
+      const prevShadow = control.style.boxShadow;
+      control.style.borderColor = "rgb(239, 68, 68)";
+      control.style.boxShadow = "0 0 0 1px rgb(239, 68, 68)";
+      const clearError = () => {
+        control.style.borderColor = prevBorder;
+        control.style.boxShadow = prevShadow;
+        target.removeEventListener("focusout", clearError);
+      };
+      target.addEventListener("focusout", clearError, { once: true });
+    }
+
+    if (innerInput) {
+      window.setTimeout(() => {
+        try {
+          innerInput.focus({ preventScroll: true });
+        } catch {
+          innerInput.focus();
+        }
+      }, 350);
+    }
+  };
+
   const validateForm = () => {
     let newErrors = {};
     if (!formData.quotation_buyer_id)
@@ -738,17 +793,21 @@ const QuotationFormPage = () => {
 
     if (newErrors.quotation_buyer_id || newErrors.quotation_property_id) {
       toast.error("Please select a Buyer and Property at the top of the form.");
-      window.scrollTo({ top: 0, behavior: "smooth" });
       setErrors(newErrors);
+      focusErrorField(
+        newErrors.quotation_buyer_id ? "buyer" : "property"
+      );
       return false;
     }
 
     if (!formData.quotation_category_id) {
       toast.error("Please select at least one Category");
+      focusErrorField("categories");
       return false;
     }
     if (!formData.quotation_service_id) {
       toast.error("Please select at least one Service");
+      focusErrorField("services");
       return false;
     }
 
@@ -757,6 +816,7 @@ const QuotationFormPage = () => {
       const srv = servicesState[s];
       if (!srv.serviceId) {
         toast.error(`Please select a Service in Service block #${s + 1}`);
+        focusErrorField(`service-${s}`);
         return false;
       }
       for (let f = 0; f < srv.floors.length; f++) {
@@ -765,6 +825,7 @@ const QuotationFormPage = () => {
           toast.error(
             `Please select a Floor under Service block #${s + 1}, floor block #${f + 1}`,
           );
+          focusErrorField(`floor-${s}-${f}`);
           return false;
         }
         for (let a = 0; a < floor.areas.length; a++) {
@@ -773,6 +834,7 @@ const QuotationFormPage = () => {
             toast.error(
               `Please select an Area under Service block #${s + 1}, Floor block #${f + 1}, area block #${a + 1}`,
             );
+            focusErrorField(`area-${s}-${f}-${a}`);
             return false;
           }
           for (let p = 0; p < area.products.length; p++) {
@@ -781,6 +843,7 @@ const QuotationFormPage = () => {
               toast.error(
                 `Please complete Product selection under Service #${s + 1} ➔ Floor #${f + 1} ➔ Area #${a + 1}, product #${p + 1}`,
               );
+              focusErrorField(`product-${s}-${f}-${a}-${p}`);
               return false;
             }
             hasLineItems = true;
@@ -791,6 +854,7 @@ const QuotationFormPage = () => {
 
     if (!hasLineItems) {
       toast.error("Please add at least one quotation item");
+      focusErrorField("line-items");
       return false;
     }
 
@@ -1488,7 +1552,7 @@ const QuotationFormPage = () => {
               </div>
 
               {/* Buyer Select */}
-              <div className="space-y-2">
+              <div className="space-y-2" data-error-field="buyer">
                 <Label className="flex">
                   Buyer <RedStar />
                 </Label>
@@ -1535,7 +1599,7 @@ const QuotationFormPage = () => {
               </div>
 
               {/* Property Select */}
-              <div className="space-y-2">
+              <div className="space-y-2" data-error-field="property">
                 <Label className="flex">
                   Property <RedStar />
                 </Label>
@@ -1565,7 +1629,10 @@ const QuotationFormPage = () => {
                 <Label className="block text-sm font-semibold mb-3 text-slate-700 dark:text-slate-300">
                   Categories <RedStar />
                 </Label>
-                <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg max-h-[160px] overflow-y-auto border dark:border-slate-800">
+                <div
+                  className="grid grid-cols-2 gap-2 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg max-h-[160px] overflow-y-auto border dark:border-slate-800"
+                  data-error-field="categories"
+                >
                   {categories.map((cat) => (
                     <label
                       key={cat.id}
@@ -1590,7 +1657,10 @@ const QuotationFormPage = () => {
                 <Label className="block text-sm font-semibold mb-3 text-slate-700 dark:text-slate-300">
                   Services <RedStar />
                 </Label>
-                <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg max-h-[160px] overflow-y-auto border dark:border-slate-800">
+                <div
+                  className="grid grid-cols-2 gap-2 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg max-h-[160px] overflow-y-auto border dark:border-slate-800"
+                  data-error-field="services"
+                >
                   {services.map((srv) => (
                     <label
                       key={srv.id}
@@ -1708,7 +1778,10 @@ const QuotationFormPage = () => {
                   >
                     {/* Service Header */}
                     <div className="flex items-center justify-between gap-4 border-b dark:border-slate-800 pb-3">
-                      <div className="flex items-center gap-3 w-full md:w-1/2">
+                      <div
+                        className="flex items-center gap-3 w-full md:w-1/2"
+                        data-error-field={`service-${serviceIndex}`}
+                      >
                         <Label className="text-sm font-bold text-slate-900 dark:text-slate-100 shrink-0">
                           Service
                         </Label>
@@ -1767,7 +1840,10 @@ const QuotationFormPage = () => {
 
                           {/* Floor Header */}
                           <div className="flex items-center justify-between gap-4 border-b dark:border-slate-800 pb-2">
-                            <div className="flex items-center gap-3 w-full md:w-1/2">
+                            <div
+                              className="flex items-center gap-3 w-full md:w-1/2"
+                              data-error-field={`floor-${serviceIndex}-${floorIndex}`}
+                            >
                               <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">
                                 Floor
                               </Label>
@@ -1829,7 +1905,10 @@ const QuotationFormPage = () => {
 
                                 {/* Area Header */}
                                 <div className="flex items-center justify-between gap-4">
-                                  <div className="flex items-center gap-3 w-full md:w-2/3">
+                                  <div
+                                    className="flex items-center gap-3 w-full md:w-2/3"
+                                    data-error-field={`area-${serviceIndex}-${floorIndex}-${areaIndex}`}
+                                  >
                                     <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">
                                       Area
                                     </Label>
@@ -1909,7 +1988,10 @@ const QuotationFormPage = () => {
                                         className="grid grid-cols-1 md:grid-cols-6 gap-3 items-center border-b dark:border-slate-800/60 pb-2 mb-2 last:border-0 last:pb-0 last:mb-0"
                                       >
                                         {/* Product select */}
-                                        <div className="col-span-3">
+                                        <div
+                                          className="col-span-3"
+                                          data-error-field={`product-${serviceIndex}-${floorIndex}-${areaIndex}-${prodIndex}`}
+                                        >
                                           <SelectWithAdd
                                             options={getRowProductOptions(
                                               srv.serviceId,
@@ -2086,6 +2168,7 @@ const QuotationFormPage = () => {
                 <button
                   type="button"
                   onClick={addService}
+                  data-error-field="line-items"
                   className="w-full py-2.5 border border-dashed border-purple-300 hover:border-purple-400 bg-purple-50/50 hover:bg-purple-50 dark:bg-purple-950/10 dark:hover:bg-purple-950/20 text-purple-800 dark:text-purple-300 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all duration-200 mt-6"
                 >
                   <Plus size={14} /> Add Service
