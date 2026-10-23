@@ -350,7 +350,25 @@ export default function QuotationReportPage() {
     { section: "Payment Cycle", label: "Installation & Pre-Commissioning", amount: netTotal * 0.1, percentage: "10%" },
   ];
 
-  const handlePrint = () => {
+  // Hero PNG bada hai — print/PDF se pehle ensure karo ki cover image load/decode ho chuki hai
+  // (4s timeout, taaki slow network par print block na ho).
+  const handlePrint = async () => {
+    try {
+      const img = new Image();
+      img.src = HERO_BG_URL;
+      const load = img.decode
+        ? img.decode()
+        : new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+      await Promise.race([
+        load.catch(() => {}),
+        new Promise((resolve) => setTimeout(resolve, 4000)),
+      ]);
+    } catch {
+      // image load fail ho to bhi print chale
+    }
     window.print();
   };
 
