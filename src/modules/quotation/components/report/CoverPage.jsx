@@ -2,7 +2,16 @@ import React from "react";
 import { Sliders, Layers, Lock, Wifi, Video, Volume2, Lightbulb, Sparkles, Star } from "lucide-react";
 import logoImg from "@/assets/MAKc-Logo.svg";
 import isoImg from "@/assets/iso.png";
-import heroBgImg from "@/assets/hero_bg-light-1392.png";
+
+// Hero background is served from the CRM API (large enhanced PNG).
+// Preload once so the cover photo is ready by the time the report renders/prints.
+export const HERO_BG_URL =
+  "https://makcautomations.com/crmapi/public/assets/images/crm_images/hero_bg-light-1392.png";
+
+if (typeof window !== "undefined") {
+  const preloadHero = new Image();
+  preloadHero.src = HERO_BG_URL;
+}
 
 const SERVICES = [
   { title: "Smart Switches", icon: Sliders },
@@ -32,7 +41,7 @@ export default function CoverPage({
   quotationDate,
   contactPerson,
   contactPhone,
-  bgImage = heroBgImg,
+  bgImage = HERO_BG_URL,
 }) {
   return (
     <div
@@ -69,8 +78,11 @@ export default function CoverPage({
         }}
       >
         <img
-          src={bgImage || heroBgImg}
+          src={bgImage || HERO_BG_URL}
           alt="Smart home"
+          loading="eager"
+          decoding="async"
+          fetchpriority="high"
           style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%", display: "block" }}
         />
         {/* Reverse overlay: white at top for crisp text legibility, fading to transparent toward bottom so bg image shows properly */}
@@ -215,8 +227,10 @@ export default function CoverPage({
             position: "relative",
             width: "100%",
             display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px",
-            background: "linear-gradient(135deg, #f5faff 0%, #ffffff 100%)",
-           
+            background: "rgba(255,255,255,0.5)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            
             borderRadius: "14px",
             padding: "13px 18px",
             overflow: "hidden",

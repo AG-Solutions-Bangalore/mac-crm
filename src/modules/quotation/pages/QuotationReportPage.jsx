@@ -19,12 +19,11 @@ import { useActivePropertiesQuery } from "../../property/hooks/useProperty";
 import { useActiveCategoriesQuery } from "../../category/hooks/useCategory";
 
 import ReportHeaderActions from "../components/report/ReportHeaderActions";
-import CoverPage from "../components/report/CoverPage";
+import CoverPage, { HERO_BG_URL } from "../components/report/CoverPage";
 import AboutWhyPage from "../components/report/AboutWhyPage";
 import DynamicProposalDocument from "../components/report/DynamicProposalDocument";
 import CompactTableView from "../components/report/CompactTableView";
 import { createStyledQuotationWorkbook, downloadBlob } from "@/app/reports/quotation-xlsx";
-import heroBgImg from "@/assets/hero_bg-light-1392.png";
 
 
 const headers = [
@@ -61,7 +60,7 @@ const formatMoney = (value) => {
 
 // Bright white villa hero (covers ~72% of the cover page background)
 const MOCK_IMAGES = {
-  coverBg: heroBgImg,
+  coverBg: HERO_BG_URL,
   page2Hero:
     "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1600&auto=format&fit=crop",
 };
