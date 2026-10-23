@@ -31,7 +31,6 @@ const headers = [
   "Area",
   "Product",
   "Quantity",
-  "Price",
   "Total Price",
   "Finish",
   "Brand",
