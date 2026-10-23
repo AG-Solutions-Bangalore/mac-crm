@@ -843,16 +843,12 @@ const QuotationFormPage = () => {
     handleSaveAndLeave,
   } = useUnsavedChangesGuard({ isDirty, onSave: saveWithoutNavigate });
 
-  // Save button ab working file me hi rehta hai — list par redirect nahi hota.
+  // Save ke baad hamesha previous screen (quotation list) par wapas jao.
   const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await saveWithoutNavigate();
     if (!result) return;
-    if (!isEdit && typeof result === "string") {
-      // Create ke baad naye quotation ke edit page par (working file me hi raho)
-      navigate(`/quotation-list/edit/${result}`, { replace: true });
-    }
-    // Edit mode me yahi raho — refetch upar ho chuka hai, toast dikh chuka hai.
+    navigate("/quotation-list", { replace: true });
   };
 
   // Edit mode: same quotation ko naye quotation ke roop me, aaj ki date ke saath save karo.

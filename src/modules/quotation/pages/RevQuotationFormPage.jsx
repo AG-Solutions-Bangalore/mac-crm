@@ -736,7 +736,7 @@ const RevQuotationFormPage = () => {
     handleSaveAndLeave,
   } = useUnsavedChangesGuard({ isDirty, onSave: saveRevWithoutNavigate });
 
-  // Save button working file me hi rehta hai — revised list par redirect nahi hota.
+  // Save ke baad hamesha previous screen (revisions list) par wapas jao.
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (isLocked) {
@@ -749,9 +749,13 @@ const RevQuotationFormPage = () => {
     }
     const result = await saveRevWithoutNavigate();
     if (!result) return;
-    if (!isEdit && typeof result === "string") {
-      navigate(`/quotation-list/revised/${parentId}/edit/${result}`, { replace: true });
-    }
+    const destinationParentId = parentId || formData.quotation_id;
+    navigate(
+      destinationParentId
+        ? `/quotation-list/revised/${destinationParentId}`
+        : "/quotation-list",
+      { replace: true }
+    );
   };
 
   const buyers = buyersData?.data || [];
