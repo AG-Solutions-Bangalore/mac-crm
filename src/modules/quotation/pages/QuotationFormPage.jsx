@@ -1136,12 +1136,12 @@ const QuotationFormPage = () => {
   // Product label with category prefix so same-name products under different
   // categories (e.g. "2M - 4 Control" under Frameless vs Brass) look distinct.
   const getProductLabel = (p) => {
-    const catName =
-      p?.category_name ||
-      categories.find((c) => c.id?.toString() === p?.category_id?.toString())
-        ?.category_name ||
+    const brandName =
+      p?.brand_name ||
+      brands.find((b) => b.id?.toString() === p?.brand_id?.toString())
+        ?.brand_name ||
       "";
-    return catName ? `${catName} - ${p?.product_name}` : p?.product_name;
+    return brandName ? `${p?.product_name} - (${brandName})` : p?.product_name;
   };
 
   // Row product options: STRICT — only products of this row's Service.

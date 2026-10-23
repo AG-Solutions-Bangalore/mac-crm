@@ -24,6 +24,7 @@ import { useActiveServicesQuery } from "../../service/hooks/useService";
 import { useActiveCategoriesQuery } from "../../category/hooks/useCategory";
 import { useActiveFloorsQuery } from "../../floor/hooks/useFloor";
 import { useActiveAreasQuery } from "../../area/hooks/useArea";
+import { useActiveBrandsQuery } from "../../brand/hooks/useBrand";
 import MemoizedSelect from "@/components/common/memoized-select";
 import ConfirmDialog from "@/components/common/confirm-dialog";
 import UnsavedChangesDialog from "@/components/common/unsaved-changes-dialog";
@@ -233,6 +234,7 @@ const RevQuotationFormPage = () => {
   const { data: categoriesData, isLoading: categoriesLoading } = useActiveCategoriesQuery();
   const { data: floorsData, isLoading: floorsLoading } = useActiveFloorsQuery();
   const { data: areasData, isLoading: areasLoading } = useActiveAreasQuery();
+  const { data: brandsData, isLoading: brandsLoading } = useActiveBrandsQuery();
 
   // Fetch parent quotation for prefilling revised quote details on CREATE mode, and checking finish work date
   const { data: parentQuotationData, isLoading: parentLoading } = useQuotationQuery(parentId);
@@ -852,6 +854,7 @@ const RevQuotationFormPage = () => {
   const categories = categoriesData?.data || [];
   const floors = floorsData?.data || [];
   const areas = areasData?.data || [];
+  const brands = brandsData?.data || [];
 
   const checkedCategories = formData.quotation_category_id ? formData.quotation_category_id.split(",") : [];
   const checkedServices = formData.quotation_service_id ? formData.quotation_service_id.split(",") : [];
@@ -901,12 +904,12 @@ const RevQuotationFormPage = () => {
   // Product label with category prefix so same-name products under different
   // categories (e.g. "2M - 4 Control" under Frameless vs Brass) look distinct.
   const getProductLabel = (p) => {
-    const catName =
-      p?.category_name ||
-      categories.find((c) => c.id?.toString() === p?.category_id?.toString())
-        ?.category_name ||
+    const brandName =
+      p?.brand_name ||
+      brands.find((b) => b.id?.toString() === p?.brand_id?.toString())
+        ?.brand_name ||
       "";
-    return catName ? `${catName} - ${p?.product_name}` : p?.product_name;
+    return brandName ? `${p?.product_name} - (${brandName})` : p?.product_name;
   };
 
   // Row product options: STRICT — only products of this row's Service.
@@ -931,6 +934,7 @@ const RevQuotationFormPage = () => {
     categoriesLoading ||
     floorsLoading ||
     areasLoading ||
+    brandsLoading ||
     parentLoading ||
     (isEdit && revLoading);
 
