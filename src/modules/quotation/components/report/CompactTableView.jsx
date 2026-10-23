@@ -55,6 +55,7 @@ export default function CompactTableView({
   headers,
   tableRows,
   items,
+  showPrice = false,
   grandTotal,
   consultancyFee = 0,
   installationFee,
@@ -175,6 +176,9 @@ export default function CompactTableView({
                       <TableCell style={{ color: LIGHT.bodyText }}>{row.area || "-"}</TableCell>
                       <TableCell className="font-bold" style={{ color: LIGHT.headingText }}>{row.product}</TableCell>
                       <TableCell className="font-bold text-center" style={{ color: LIGHT.accent }}>{row.quantity || "-"}</TableCell>
+                      {showPrice && (
+                        <TableCell style={{ color: LIGHT.bodyText }}>{formatMoney(row.price)}</TableCell>
+                      )}
                       <TableCell className="font-bold" style={{ color: LIGHT.accent }}>{formatMoney(row.totalPrice)}</TableCell>
                       <TableCell className="font-medium text-center" style={{ color: LIGHT.bodyText }}>
                         {row.finish || "-"}
@@ -188,7 +192,7 @@ export default function CompactTableView({
                       className="font-bold break-inside-avoid"
                       style={{ background: LIGHT.summaryBg, borderColor: LIGHT.headerBorder }}
                     >
-                      <TableCell colSpan={5} className="uppercase text-xs tracking-wider" style={{ color: LIGHT.accentStrong }}>
+                      <TableCell colSpan={showPrice ? 6 : 5} className="uppercase text-xs tracking-wider" style={{ color: LIGHT.accentStrong }}>
                         {row.label}
                       </TableCell>
                       <TableCell style={{ color: LIGHT.accent }}>{formatMoney(row.totalPrice)}</TableCell>

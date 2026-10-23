@@ -75,6 +75,8 @@ export default function QuotationReportPage() {
   const isProject = searchParams.get("type") === "project";
   const docLabel = isProject ? "Project" : "Quotation";
   const [viewMode, setViewMode] = useState("presentation"); // 'presentation' | 'table'
+  // Price column toggle for compact table — hidden by default, applies to print/PDF too
+  const [showPrice, setShowPrice] = useState(false);
   // Consultancy & Design % and Installation % — both editable from header bar,
   // each applied on the grand total. No % is shown in the printed proposal.
   const [consultancyPct, setConsultancyPct] = useState(5);
@@ -537,6 +539,8 @@ export default function QuotationReportPage() {
         preparedById={preparedById}
         onPreparedByChange={setPreparedById}
         preparedByOptions={PREPARED_BY_OPTIONS}
+        showPrice={showPrice}
+        onTogglePrice={() => setShowPrice((prev) => !prev)}
         onExportExcel={handleExportExcel}
         onPrint={handlePrint}
       />
@@ -545,7 +549,16 @@ export default function QuotationReportPage() {
       <div className="makc-pdf-container">
         {viewMode === "table" ? (
           <CompactTableView
-            headers={headers}
+            headers={
+              showPrice
+                ? [
+                    ...headers.slice(0, 5),
+                    "Price",
+                    ...headers.slice(5),
+                  ]
+                : headers
+            }
+            showPrice={showPrice}
             tableRows={tableRows}
             items={items}
             grandTotal={grandTotal}

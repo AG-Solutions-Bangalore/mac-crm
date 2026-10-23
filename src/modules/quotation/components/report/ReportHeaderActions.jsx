@@ -5,6 +5,8 @@ import {
   Printer,
   LayoutGrid,
   Layers,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -26,6 +28,8 @@ export default function ReportHeaderActions({
   preparedById,
   onPreparedByChange,
   preparedByOptions = [],
+  showPrice = false,
+  onTogglePrice,
   onExportExcel,
   onPrint,
 }) {
@@ -106,6 +110,22 @@ export default function ReportHeaderActions({
             <Layers className="w-3.5 h-3.5 mr-1.5 text-sky-500" /> Compact Data Table
           </Button>
         </div>
+
+        {/* Toggle Price column visibility (also affects print / PDF output) */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onTogglePrice}
+          title={showPrice ? "Hide Price column in table and PDF" : "Show Price column in table and PDF"}
+          className="h-[46px] font-medium bg-background text-foreground border-border hover:bg-muted"
+        >
+          {showPrice ? (
+            <EyeOff className="mr-2 h-4 w-4 text-sky-500" />
+          ) : (
+            <Eye className="mr-2 h-4 w-4 text-sky-500" />
+          )}
+          {showPrice ? "Hide Price" : "Show Price"}
+        </Button>
 
         {/* Consultancy & Design % — presets 5/7/10/15 or any custom value */}
         {renderPctInput(
