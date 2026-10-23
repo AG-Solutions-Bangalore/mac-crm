@@ -31,6 +31,7 @@ import {
   BookOpen,
   Image,
   FolderKanban,
+  Contact,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
@@ -97,6 +98,12 @@ const NAVIGATION_CONFIG = {
       title: "Products",
       url: "/product-list",
       icon: Package,
+      isActive: false,
+    },
+    SALES_TEAM: {
+      title: "Sales Team",
+      url: "/sales-team-list",
+      icon: Contact,
       isActive: false,
     },
     QUOTATION: {
@@ -186,6 +193,7 @@ const USER_ROLE_PERMISSIONS = {
       "BRAND",
       "CATEGORY",
       "PRODUCT",
+      "SALES_TEAM",
       "QUOTATION",
       "PROJECT",
       "SERVICEREQUEST",
@@ -207,6 +215,7 @@ const USER_ROLE_PERMISSIONS = {
       "BRAND",
       "CATEGORY",
       "PRODUCT",
+      "SALES_TEAM",
       "QUOTATION",
       "PROJECT",
       "SERVICEREQUEST",
@@ -227,6 +236,7 @@ const USER_ROLE_PERMISSIONS = {
       "BRAND",
       "CATEGORY",
       "PRODUCT",
+      "SALES_TEAM",
       "QUOTATION",
       "PROJECT",
       "SERVICEREQUEST",
@@ -249,6 +259,7 @@ const USER_ROLE_PERMISSIONS = {
       "BRAND",
       "CATEGORY",
       "PRODUCT",
+      "SALES_TEAM",
       "QUOTATION",
       "PROJECT",
       "SERVICEREQUEST",

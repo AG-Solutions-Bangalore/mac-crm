@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { ArrowLeft } from "lucide-react";
@@ -17,13 +17,16 @@ import { useActiveBrandsQuery } from "../../brand/hooks/useBrand";
 import { useBuyerQuery } from "../../buyer/hooks/useBuyer";
 import { useActivePropertiesQuery } from "../../property/hooks/useProperty";
 import { useActiveCategoriesQuery } from "../../category/hooks/useCategory";
+import { useActiveSalesTeamQuery } from "../../sales-team/hooks/useSalesTeam";
+import { getSalesTeamMemberId } from "../../sales-team/api/salesTeamApi";
 
 import ReportHeaderActions from "../components/report/ReportHeaderActions";
-import CoverPage from "../components/report/CoverPage";
+import CoverPage, { HERO_BG_URL } from "../components/report/CoverPage";
 import AboutWhyPage from "../components/report/AboutWhyPage";
 import DynamicProposalDocument from "../components/report/DynamicProposalDocument";
 import CompactTableView from "../components/report/CompactTableView";
 import { createStyledQuotationWorkbook, downloadBlob } from "@/app/reports/quotation-xlsx";
+
 
 const headers = [
   "Application",
@@ -31,19 +34,11 @@ const headers = [
   "Area",
   "Product",
   "Quantity",
-  "Price",
   "Total Price",
   "Finish",
   "Brand",
   "Warranty",
-];
-
-// Prepared-by directory (selectable from report header)
-export const PREPARED_BY_OPTIONS = [
-  { id: "abhay", name: "Mr. Abhay Kumar Agarwal", phone: "9324226077" },
-  { id: "manan", name: "Mr. Manan Abhay Kumar", phone: "8197783287" },
-  { id: "bikash", name: "Mr. Bikash Pradhan Newar", phone: "8197785095" },
-  { id: "vinod", name: "Mr. Vinod Kumar", phone: "7338504441" },
+  "Remarks",
 ];
 
 const formatMoney = (value) => {
@@ -59,8 +54,7 @@ const formatMoney = (value) => {
 
 // Bright white villa hero (covers ~72% of the cover page background)
 const MOCK_IMAGES = {
-  coverBg:
-    "https://makcautomations.com/images/hero_bg-light-1392.webp",
+  coverBg: HERO_BG_URL,
   page2Hero:
     "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?q=80&w=1600&auto=format&fit=crop",
 };
@@ -76,12 +70,52 @@ export default function QuotationReportPage() {
   const isProject = searchParams.get("type") === "project";
   const docLabel = isProject ? "Project" : "Quotation";
   const [viewMode, setViewMode] = useState("presentation"); // 'presentation' | 'table'
+  // Price column toggle for compact table — hidden by default, applies to print/PDF too
+  const [showPrice, setShowPrice] = useState(false);
   // Consultancy & Design % and Installation % — both editable from header bar,
   // each applied on the grand total. No % is shown in the printed proposal.
   const [consultancyPct, setConsultancyPct] = useState(5);
   const [installPct, setInstallPct] = useState(5);
-  // Prepared-by selection (defaults to Vinod Kumar, overridable from header)
+  // Prepared-by selection (defaults to first active sales team member, overridable from header)
   const [preparedById, setPreparedById] = useState("vinod");
+
+  // Sales team members for the Prepared By dropdown — GET /panel-fetch-sales-team
+  // (endpoint already returns active members, so no extra status filter).
+  const { data: salesTeamData } = useActiveSalesTeamQuery();
+  const activeMembers = (() => {
+    const payload = salesTeamData?.data ?? salesTeamData;
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data)) return payload.data;
+    const keys = ["members", "sales_team", "salesTeam", "list", "records"];
+    for (const key of keys) {
+      if (Array.isArray(payload?.[key])) return payload[key];
+    }
+    return [];
+  })();
+  const preparedByOptions = activeMembers.map((m) => {
+    const apiId = getSalesTeamMemberId(m);
+    const fallbackId = m.mobile || m.phone || m.email || m.name || "";
+    return {
+      id: String(apiId || fallbackId),
+      name: m.name || "Sales Team Member",
+      phone: m.mobile || m.phone || "",
+      email: m.email || "",
+      mobile: m.mobile || m.phone || "",
+      status: m.status || "Active",
+      isApiMember: Boolean(apiId),
+    };
+  });
+
+  // Keep the dropdown valid once members load (fallback: newest first member)
+  useEffect(() => {
+    if (!preparedByOptions.length) return;
+    setPreparedById((prev) =>
+      preparedByOptions.some((p) => String(p.id) === String(prev))
+        ? prev
+        : preparedByOptions[0].id
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [salesTeamData]);
 
   // Queries
   const { data: parentData, isLoading: parentLoading } = useQuotationQuery(
@@ -225,6 +259,11 @@ export default function QuotationReportPage() {
       finish: finishName,
       brand: brandName,
       warranty: warranty,
+      remarks:
+        subVal(sub, "notes") ||
+        quotationDetail?.quotation_remarks ||
+        quotationDetail?.project_remarks ||
+        "",
       notes: subVal(sub, "notes") || `${floorName} - ${areaName}`,
     };
   });
@@ -317,7 +356,9 @@ export default function QuotationReportPage() {
     : "August 7, 2026";
   // Prepared-by — selectable from header (defaults to Vinod Kumar),
   // falling back to quotation / logged-in user when no match.
-  const selectedPreparer = PREPARED_BY_OPTIONS.find((p) => p.id === preparedById);
+  const selectedPreparer = preparedByOptions.find(
+    (p) => String(p.id) === String(preparedById)
+  );
   const contactPerson =
     selectedPreparer?.name ||
     quotationDetail.sales_person ||
@@ -343,7 +384,25 @@ export default function QuotationReportPage() {
     { section: "Payment Cycle", label: "Installation & Pre-Commissioning", amount: netTotal * 0.1, percentage: "10%" },
   ];
 
-  const handlePrint = () => {
+  // Hero PNG bada hai — print/PDF se pehle ensure karo ki cover image load/decode ho chuki hai
+  // (4s timeout, taaki slow network par print block na ho).
+  const handlePrint = async () => {
+    try {
+      const img = new Image();
+      img.src = HERO_BG_URL;
+      const load = img.decode
+        ? img.decode()
+        : new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+      await Promise.race([
+        load.catch(() => {}),
+        new Promise((resolve) => setTimeout(resolve, 4000)),
+      ]);
+    } catch {
+      // image load fail ho to bhi print chale
+    }
     window.print();
   };
 
@@ -537,7 +596,9 @@ export default function QuotationReportPage() {
         onInstallPctChange={setInstallPct}
         preparedById={preparedById}
         onPreparedByChange={setPreparedById}
-        preparedByOptions={PREPARED_BY_OPTIONS}
+        preparedByOptions={preparedByOptions}
+        showPrice={showPrice}
+        onTogglePrice={() => setShowPrice((prev) => !prev)}
         onExportExcel={handleExportExcel}
         onPrint={handlePrint}
       />
@@ -546,7 +607,16 @@ export default function QuotationReportPage() {
       <div className="makc-pdf-container">
         {viewMode === "table" ? (
           <CompactTableView
-            headers={headers}
+            headers={
+              showPrice
+                ? [
+                    ...headers.slice(0, 5),
+                    "Price",
+                    ...headers.slice(5),
+                  ]
+                : headers
+            }
+            showPrice={showPrice}
             tableRows={tableRows}
             items={items}
             grandTotal={grandTotal}

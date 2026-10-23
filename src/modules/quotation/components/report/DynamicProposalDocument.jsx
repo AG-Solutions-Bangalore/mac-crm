@@ -48,7 +48,7 @@ const formatWarranty = (val) => {
 // ─── Table Head Cell (category tables) ─────────────────────────────────────
 // Light header row + dark navy text, matching the reference layout.
 // Solid background set on each cell (not transparent) so it survives print.
-function TH({ children, align = "left", width, isLight }) {
+function TH({ children, align = "left", width, isLight, nowrap = false }) {
   return (
     <th
       style={{
@@ -61,7 +61,7 @@ function TH({ children, align = "left", width, isLight }) {
         background: "#eaf0f7",
         width: width,
         overflowWrap: "break-word",
-        whiteSpace: "normal",
+        whiteSpace: nowrap ? "nowrap" : "normal",
       }}
     >
       {children}
@@ -392,20 +392,21 @@ export default function DynamicProposalDocument({
                   {/* Fluid table — fills the section width with wrapping text,
                     so no per-section scrollbar is needed on any screen size */}
                   <div>
-                    <table className="makc-proposal-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+                    <table className="makc-proposal-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
                       <thead style={{ background: "#eaf0f7" }}>
                         <tr>
-                          <TH width={hasFinish ? "13%" : "14%"} isLight={isLight}>Area / Room</TH>
-                          <TH width={hasFinish ? "21%" : "24%"} isLight={isLight}>Product / System Specification</TH>
+                          <TH width={hasFinish ? "12%" : "13%"} isLight={isLight}>Area / Room</TH>
+                          <TH width={hasFinish ? "22%" : "25%"} isLight={isLight}>Product / System Specification</TH>
                           <TH align="center" width="6%" isLight={isLight}>Qty</TH>
-                          <TH align="right" width={hasFinish ? "11%" : "12%"} isLight={isLight}>Unit Price</TH>
-                          <TH align="right" width={hasFinish ? "11%" : "12%"} isLight={isLight}>Total Price</TH>
+                          <TH align="right" width={hasFinish ? "10%" : "11%"} isLight={isLight}>Unit Price</TH>
+                          <TH align="right" width={hasFinish ? "10%" : "11%"} isLight={isLight}>Total Price</TH>
                           {/* Finish column — shows category finish data directly as text */}
                           {hasFinish && (
-                            <TH align="center" width="11%" isLight={isLight}>Finish</TH>
+                            <TH align="center" width="10%" isLight={isLight}>Finish</TH>
                           )}
-                          <TH align="left" width={hasFinish ? "17%" : "20%"} isLight={isLight}>Brand</TH>
-                          <TH align="center" width={hasFinish ? "11%" : "12%"} isLight={isLight}>Warranty</TH>
+                          <TH align="left" width="1%" isLight={isLight} nowrap>Brand</TH>
+                          <TH align="center" width={hasFinish ? "10%" : "11%"} isLight={isLight}>Warranty</TH>
+                          <TH align="left" width={hasFinish ? "10%" : "7%"} isLight={isLight}>Remarks</TH>
                         </tr>
                       </thead>
                       <tbody>
@@ -414,7 +415,7 @@ export default function DynamicProposalDocument({
                             {/* FLOOR subheader — rendered once per floor */}
                             {floor.name !== "" && (
                               <tr style={{ background: "#d7e9f7" }} className="break-inside-avoid">
-                                <FloorSectionHeader floorName={floor.name} colSpan={hasFinish ? 8 : 7} />
+                                <FloorSectionHeader floorName={floor.name} colSpan={hasFinish ? 9 : 8} />
                               </tr>
                             )}
                             {floor.areas.map((area, ai) => (
@@ -447,11 +448,6 @@ export default function DynamicProposalDocument({
                                     )}
                                     <TD isLight={isLight} style={{ fontWeight: 500, color: t.productText, fontSize: "11px" }}>
                                       {item.product}
-                                      {item.notes && item.notes !== `${item.floor} - ${item.area}` && (
-                                        <div style={{ fontSize: "8.5px", color: t.notesText, marginTop: "2px", fontWeight: 400 }}>
-                                          {item.notes}
-                                        </div>
-                                      )}
                                     </TD>
                                     <TD isLight={isLight} align="center" style={{ fontWeight: 800, color: t.qtyText, fontSize: "11.5px" }}>
                                       {item.quantity}
@@ -473,6 +469,9 @@ export default function DynamicProposalDocument({
                                     </TD>
                                     <TD isLight={isLight} align="center" style={{ fontWeight: 700, color: t.warrantyText, fontSize: "11px" }}>
                                       {formatWarranty(item.warranty)}
+                                    </TD>
+                                    <TD isLight={isLight} align="left" style={{ color: t.notesText, fontSize: "10px", fontWeight: 500 }}>
+                                      {item.remarks || "-"}
                                     </TD>
                                   </tr>
                                 ))}

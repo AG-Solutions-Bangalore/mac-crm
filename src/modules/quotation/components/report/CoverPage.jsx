@@ -1,8 +1,17 @@
 import React from "react";
-import { Sliders, Layers, Lock, Wifi, Video, Volume2, Lightbulb } from "lucide-react";
+import { Sliders, Layers, Lock, Wifi, Video, Volume2, Lightbulb, Sparkles, Star } from "lucide-react";
 import logoImg from "@/assets/MAKc-Logo.svg";
 import isoImg from "@/assets/iso.png";
-import heroBgImg from "@/assets/hero_bg-light-1392.webp";
+
+// Hero background is served from the CRM API (large enhanced PNG).
+// Preload once so the cover photo is ready by the time the report renders/prints.
+export const HERO_BG_URL =
+  "https://makcautomations.com/crmapi/public/assets/images/crm_images/hero_bg-light-1392.png";
+
+if (typeof window !== "undefined") {
+  const preloadHero = new Image();
+  preloadHero.src = HERO_BG_URL;
+}
 
 const SERVICES = [
   { title: "Smart Switches", icon: Sliders },
@@ -32,7 +41,7 @@ export default function CoverPage({
   quotationDate,
   contactPerson,
   contactPhone,
-  bgImage = heroBgImg,
+  bgImage = HERO_BG_URL,
 }) {
   return (
     <div
@@ -69,8 +78,11 @@ export default function CoverPage({
         }}
       >
         <img
-          src={bgImage || heroBgImg}
+          src={bgImage || HERO_BG_URL}
           alt="Smart home"
+          loading="eager"
+          decoding="async"
+          fetchpriority="high"
           style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%", display: "block" }}
         />
         {/* Reverse overlay: white at top for crisp text legibility, fading to transparent toward bottom so bg image shows properly */}
@@ -207,38 +219,57 @@ export default function CoverPage({
         </div>
       </div>
 
-      {/* ── CAPTION (tightly follows client name — no big gap) ── */}
-      <div style={{ position: "relative", zIndex: 2, paddingTop: "2px", paddingLeft: PAGE_PX, paddingRight: PAGE_PX, paddingBottom: "10px", boxSizing: "border-box", width: "100%", flex: "0 0 auto", display: "flex", alignItems: "flex-start", background: "transparent" }}>
+      {/* ── CAPTION CARD (tightly follows client name — no big gap) ── */}
+      <div style={{ position: "relative", zIndex: 2, paddingTop: "14px", paddingLeft: PAGE_PX, paddingRight: PAGE_PX, paddingBottom: "12px", boxSizing: "border-box", width: "100%", flex: "0 0 auto", display: "flex", alignItems: "flex-start", background: "transparent" }}>
         <div
           className="makc-caption-card"
           style={{
+            position: "relative",
             width: "100%",
-            display: "flex", justifyContent: "space-between", alignItems: "flex-end",
-            background: "rgba(255,255,255,0.82)",
-            backdropFilter: "blur(6px)",
-            border: "1px solid rgba(203,213,225,0.9)",
-            borderRadius: "12px",
-            padding: "10px 16px",
-            boxShadow: "0 8px 24px rgba(15,23,42,0.10)",
+            display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px",
+            background: "rgba(255,255,255,0.5)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            
+            borderRadius: "14px",
+            padding: "13px 18px",
+            overflow: "hidden",
           }}
         >
-          <div>
-            <p style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.16em", color: "#0284c7", textTransform: "uppercase", margin: 0 }}>
-              Intelligent Craftsmanship
-            </p>
-            <p style={{ fontSize: "18px", fontWeight: 800, color: "#0b1526", margin: "3px 0 0" }}>
-              Seamless Control at Your Fingertips
-            </p>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+            {/* Icon chip */}
+            <div
+              style={{
+                width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                background: "linear-gradient(135deg,#e0f2fe,#bae6fd)",
+                border: "1px solid #7dd3fc",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <Sparkles style={{ width: 18, height: 18, color: "#0284c7" }} />
+            </div>
+
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: "9.5px", fontWeight: 800, letterSpacing: "0.18em", color: "#0284c7", textTransform: "uppercase", margin: 0 }}>
+                Intelligent Craftsmanship
+              </p>
+              <p style={{ fontSize: "18px", fontWeight: 800, color: "#0b1526", margin: "3px 0 0", lineHeight: 1.25, letterSpacing: "-0.01em" }}>
+                Seamless Control at Your Fingertips
+              </p>
+            </div>
           </div>
+
           <span
-            className="bg-amber-200"
             style={{
-              fontSize: "11.5px", fontWeight: 700, color: "#0b1526",
-              // background: "#fef3c7",
-              border: "1px solid #fde047",
-              borderRadius: "6px", padding: "6px 14px", whiteSpace: "nowrap",
+              display: "inline-flex", alignItems: "center", gap: "6px", flexShrink: 0,
+              fontSize: "11.5px", fontWeight: 800, color: "#7c2d12",
+              background: "linear-gradient(135deg,#fef3c7,#fde68a)",
+              border: "1px solid #f5d97e",
+              borderRadius: "999px", padding: "7px 14px", whiteSpace: "nowrap",
+              boxShadow: "0 2px 8px rgba(245,158,11,0.22)",
             }}
           >
+            <Star style={{ width: 12, height: 12, fill: "#b45309", color: "#b45309" }} />
             800+ Projects Completed
           </span>
         </div>

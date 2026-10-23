@@ -89,12 +89,14 @@ export function useDeleteQuotationSubMutation() {
 }
 
 export function useRevQuotationsQuery(quotationId, page = 1, search = "", enabled = true) {
+  const normalizedId = quotationId?.toString() || "";
   return useQuery({
-    queryKey: ["rev-quotations", quotationId, page, search],
+    queryKey: ["rev-quotations", normalizedId, page, search],
     queryFn: () => quotationApi.getRevQuotations(quotationId, page, search),
     enabled: !!quotationId && enabled,
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
+    refetchOnMount: "always",
     refetchOnWindowFocus: false,
     retry: 1,
   });
@@ -115,8 +117,10 @@ export function useCreateRevQuotationMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: quotationApi.createRevQuotation,
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["rev-quotations", variables.quotation_id] });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quotations"] });
+      queryClient.invalidateQueries({ queryKey: ["rev-quotations"] });
+      queryClient.invalidateQueries({ queryKey: ["rev-quotation"] });
     },
   });
 }
@@ -126,6 +130,7 @@ export function useUpdateRevQuotationMutation() {
   return useMutation({
     mutationFn: ({ id, data }) => quotationApi.updateRevQuotation(id, data),
     onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["quotations"] });
       queryClient.invalidateQueries({ queryKey: ["rev-quotations"] });
       queryClient.invalidateQueries({ queryKey: ["rev-quotation", variables.id] });
     },
@@ -137,6 +142,7 @@ export function useUpdateRevQuotationStatusMutation() {
   return useMutation({
     mutationFn: ({ id, status }) => quotationApi.updateRevQuotationStatus(id, status),
     onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["quotations"] });
       queryClient.invalidateQueries({ queryKey: ["rev-quotations"] });
       queryClient.invalidateQueries({ queryKey: ["rev-quotation", variables.id] });
     },
@@ -148,6 +154,7 @@ export function useDeleteRevQuotationSubMutation() {
   return useMutation({
     mutationFn: quotationApi.deleteRevQuotationSub,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quotations"] });
       queryClient.invalidateQueries({ queryKey: ["rev-quotations"] });
     },
   });
