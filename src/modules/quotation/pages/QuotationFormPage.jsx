@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet, UserPlus, Copy, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -205,6 +205,12 @@ const QuotationFormPage = () => {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   // Unsaved-changes guard: pristine snapshot vs current form
   const [initialSnapshot, setInitialSnapshot] = useState(null);
+  // Create mode: Services + Categories sab default selected rahenge
+  const [defaultSelection, setDefaultSelection] = useState({
+    categories: "",
+    services: "",
+  });
+  const defaultsAppliedRef = useRef(false);
 
   // Buyer quick-add (single reusable SelectWithAdd + inline dialog)
   const [buyerDialogOpen, setBuyerDialogOpen] = useState(false);
@@ -385,8 +391,8 @@ const QuotationFormPage = () => {
     const hasBasic = Boolean(
       formData.quotation_buyer_id ||
         formData.quotation_property_id ||
-        formData.quotation_category_id ||
-        formData.quotation_service_id ||
+        (formData.quotation_category_id || "") !== defaultSelection.categories ||
+        (formData.quotation_service_id || "") !== defaultSelection.services ||
         formData.quotation_remarks ||
         formData.quotation_validity_date ||
         (formData.quotation_date && formData.quotation_date !== todayStr)
@@ -401,7 +407,14 @@ const QuotationFormPage = () => {
         )
     );
     return hasBasic || hasItems;
-  }, [initialSnapshot, snapshotKey, isEdit, formData, servicesState]);
+  }, [
+    initialSnapshot,
+    snapshotKey,
+    isEdit,
+    formData,
+    servicesState,
+    defaultSelection,
+  ]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -890,6 +903,27 @@ const QuotationFormPage = () => {
   const categories = categoriesData?.data || [];
   const floors = floorsData?.data || [];
   const areas = areasData?.data || [];
+
+  // Create mode: masters load hone par Services + Categories sab tick ho jaye
+  useEffect(() => {
+    if (isEdit || defaultsAppliedRef.current) return;
+    if (!categories.length || !services.length) return;
+    defaultsAppliedRef.current = true;
+    const categoryIds = categories
+      .map((c) => c.id?.toString())
+      .filter(Boolean)
+      .join(",");
+    const serviceIds = services
+      .map((s) => s.id?.toString())
+      .filter(Boolean)
+      .join(",");
+    setDefaultSelection({ categories: categoryIds, services: serviceIds });
+    setFormData((prev) => ({
+      ...prev,
+      quotation_category_id: prev.quotation_category_id || categoryIds,
+      quotation_service_id: prev.quotation_service_id || serviceIds,
+    }));
+  }, [isEdit, categories, services]);
 
   // Buyer options for the single reusable SelectWithAdd
   // (extraBuyers = abhi-abhi banaya hua buyer, refetch se pehle turant dikhe)

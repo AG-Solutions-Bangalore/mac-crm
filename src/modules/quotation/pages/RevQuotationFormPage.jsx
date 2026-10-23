@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -189,6 +189,8 @@ const RevQuotationFormPage = () => {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [initialSnapshot, setInitialSnapshot] = useState(null);
+  // Create mode: Services + Categories sab default selected rahenge
+  const revDefaultsAppliedRef = useRef(false);
 
   const handleApplyImport = ({ nestedState, serviceIds, categoryIds }) => {
     const currentServices = formData.quotation_service_id
@@ -262,52 +264,74 @@ const RevQuotationFormPage = () => {
 
   // 1. Prefill from parent quotation on CREATE mode
   useEffect(() => {
-    if (!isEdit && parentQuotationData?.data) {
-      const parent = parentQuotationData.data;
-      const nextForm = {
-        quotation_id: parent.id?.toString() || parentId,
-        quotation_date_rev: new Date().toISOString().split("T")[0],
-        quotation_buyer_id: parent.quotation_buyer_id?.toString() || "",
-        quotation_property_id: parent.quotation_property_id?.toString() || "",
-        quotation_category_id: parent.quotation_category_id || "",
-        quotation_service_id: parent.quotation_service_id || "",
-        quotation_remarks: parent.quotation_remarks || "",
-        quotation_status: "Pending",
-      };
-      setFormData(nextForm);
+    if (isEdit || revDefaultsAppliedRef.current) return;
+    if (!parentQuotationData?.data) return;
 
-      let nextServices = null;
-      if (parent.subs && Array.isArray(parent.subs) && parent.subs.length > 0) {
-        nextServices = groupSubsToServices(parent.subs);
-        setServicesState(nextServices);
-      }
-      setInitialSnapshot(
-        JSON.stringify({
-          formData: nextForm,
-          servicesState:
-            nextServices ||
-            [
-              {
-                serviceId: "",
-                floors: [
-                  {
-                    floorId: "",
-                    areas: [
-                      {
-                        areaId: "",
-                        products: [
-                          { id: null, productId: "", price: 0, quantity: 1, status: "Pending" },
-                        ],
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-        })
-      );
+    const parent = parentQuotationData.data;
+    const categoriesReady = Array.isArray(categoriesData?.data);
+    const servicesReady = Array.isArray(servicesData?.data);
+    const allCategoryIds = categoriesReady
+      ? categoriesData.data
+          .map((c) => c.id?.toString())
+          .filter(Boolean)
+          .join(",")
+      : "";
+    const allServiceIds = servicesReady
+      ? servicesData.data
+          .map((s) => s.id?.toString())
+          .filter(Boolean)
+          .join(",")
+      : "";
+
+    const nextForm = {
+      quotation_id: parent.id?.toString() || parentId,
+      quotation_date_rev: new Date().toISOString().split("T")[0],
+      quotation_buyer_id: parent.quotation_buyer_id?.toString() || "",
+      quotation_property_id: parent.quotation_property_id?.toString() || "",
+      // Create mode: sab Categories + Services default selected
+      quotation_category_id: allCategoryIds || parent.quotation_category_id || "",
+      quotation_service_id: allServiceIds || parent.quotation_service_id || "",
+      quotation_remarks: parent.quotation_remarks || "",
+      quotation_status: "Pending",
+    };
+    setFormData(nextForm);
+
+    let nextServices = null;
+    if (parent.subs && Array.isArray(parent.subs) && parent.subs.length > 0) {
+      nextServices = groupSubsToServices(parent.subs);
+      setServicesState(nextServices);
     }
-  }, [isEdit, parentQuotationData, parentId]);
+    setInitialSnapshot(
+      JSON.stringify({
+        formData: nextForm,
+        servicesState:
+          nextServices ||
+          [
+            {
+              serviceId: "",
+              floors: [
+                {
+                  floorId: "",
+                  areas: [
+                    {
+                      areaId: "",
+                      products: [
+                        { id: null, productId: "", price: 0, quantity: 1, status: "Pending" },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+      })
+    );
+
+    // Masters load hone ke baad ek hi baar apply karo (refetch par user edits na ude)
+    if (categoriesReady && servicesReady) {
+      revDefaultsAppliedRef.current = true;
+    }
+  }, [isEdit, parentQuotationData, parentId, categoriesData, servicesData]);
 
   // 2. Populate from revised quotation on EDIT mode
   useEffect(() => {
