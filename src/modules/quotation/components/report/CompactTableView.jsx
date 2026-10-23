@@ -152,7 +152,12 @@ export default function CompactTableView({
                     <TableHead
                       key={header}
                       className="text-xs font-semibold"
-                      style={{ color: LIGHT.mutedText }}
+                      style={{
+                        color: LIGHT.mutedText,
+                        ...(header === "Brand"
+                          ? { width: "1%", whiteSpace: "nowrap" }
+                          : {}),
+                      }}
                     >
                       {header}
                     </TableHead>
@@ -179,8 +184,9 @@ export default function CompactTableView({
                       <TableCell className="font-medium text-center" style={{ color: LIGHT.bodyText }}>
                         {row.finish || "-"}
                       </TableCell>
-                      <TableCell className="font-bold whitespace-nowrap" style={{ color: LIGHT.headingText }}>{row.brand || "-"}</TableCell>
+                      <TableCell className="font-bold whitespace-nowrap" style={{ color: LIGHT.headingText, width: "1%" }}>{row.brand || "-"}</TableCell>
                       <TableCell className="font-bold" style={{ color: LIGHT.green }}>{formatWarranty(row.warranty)}</TableCell>
+                      <TableCell style={{ color: LIGHT.bodyText }}>{row.remarks || "-"}</TableCell>
                     </TableRow>
                   ) : (
                     <TableRow
@@ -193,7 +199,7 @@ export default function CompactTableView({
                       </TableCell>
                       <TableCell style={{ color: LIGHT.accent }}>{formatMoney(row.totalPrice)}</TableCell>
                       <TableCell />
-                      <TableCell colSpan={2} />
+                      <TableCell colSpan={3} />
                     </TableRow>
                   )
                 )}

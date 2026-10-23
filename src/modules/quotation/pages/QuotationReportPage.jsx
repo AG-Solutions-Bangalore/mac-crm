@@ -35,6 +35,7 @@ const headers = [
   "Finish",
   "Brand",
   "Warranty",
+  "Remarks",
 ];
 
 // Prepared-by directory (selectable from report header)
@@ -226,6 +227,11 @@ export default function QuotationReportPage() {
       finish: finishName,
       brand: brandName,
       warranty: warranty,
+      remarks:
+        subVal(sub, "notes") ||
+        quotationDetail?.quotation_remarks ||
+        quotationDetail?.project_remarks ||
+        "",
       notes: subVal(sub, "notes") || `${floorName} - ${areaName}`,
     };
   });
