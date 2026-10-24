@@ -114,6 +114,7 @@ const groupSubsToServices = (subsList) => {
       price: Number(item.quotation_sub_price) || 0,
       quantity: Number(item.quotation_sub_quantity) || 1,
       status: item.quotation_sub_status || "Pending",
+      notes: item.quotation_sub_notes ?? item.project_sub_notes ?? "",
     });
   });
 
@@ -148,6 +149,7 @@ const flattenServicesToSubs = (servicesList) => {
               quotation_sub_amount:
                 Number(product.price) * Number(product.quantity),
               quotation_sub_status: product.status || "Pending",
+              quotation_sub_notes: product.notes || "",
             });
           }
         });
@@ -190,6 +192,7 @@ const QuotationFormPage = () => {
                   price: 0,
                   quantity: 1,
                   status: "Pending",
+                  notes: "",
                 },
               ],
             },
@@ -2117,6 +2120,25 @@ const QuotationFormPage = () => {
                                           >
                                             <Trash2 size={14} />
                                           </Button>
+                                        </div>
+
+                                        {/* Remark / Notes (per item) */}
+                                        <div className="col-span-full">
+                                          <Input
+                                            value={prod.notes || ""}
+                                            onChange={(e) =>
+                                              handleNestedFieldChange(
+                                                serviceIndex,
+                                                floorIndex,
+                                                areaIndex,
+                                                prodIndex,
+                                                "notes",
+                                                e.target.value,
+                                              )
+                                            }
+                                            className="h-8 text-xs bg-transparent border-slate-200 dark:border-slate-800"
+                                            placeholder="Remark / Notes (optional) — shown in the report"
+                                          />
                                         </div>
                                       </div>
                                     );

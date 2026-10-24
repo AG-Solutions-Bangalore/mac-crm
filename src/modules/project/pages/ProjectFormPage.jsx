@@ -158,6 +158,7 @@ const groupSubsToServices = (subsList) => {
       price: Number(item.project_sub_price ?? item.quotation_sub_price ?? item.sub_price ?? item.price) || 0,
       quantity: Number(item.project_sub_quantity ?? item.quotation_sub_quantity ?? item.sub_quantity ?? item.quantity) || 1,
       status: item.project_sub_status || item.quotation_sub_status || item.sub_status || "Pending",
+      notes: item.project_sub_notes ?? item.quotation_sub_notes ?? item.sub_notes ?? "",
     });
   });
 
@@ -199,6 +200,7 @@ const flattenServicesToSubs = (servicesList) => {
               project_sub_quantity: quantity,
               project_sub_amount: amount,
               project_sub_status: status,
+              project_sub_notes: product.notes || "",
               // Quotation dual keys for backend safety
               quotation_sub_service_id: Number(srv.serviceId),
               quotation_sub_floor_id: Number(floor.floorId),
@@ -208,6 +210,7 @@ const flattenServicesToSubs = (servicesList) => {
               quotation_sub_quantity: quantity,
               quotation_sub_amount: amount,
               quotation_sub_status: status,
+              quotation_sub_notes: product.notes || "",
             });
           }
         });
@@ -1925,8 +1928,9 @@ const ProjectFormPage = () => {
                                   return (
                                     <div
                                       key={prodIdx}
-                                      className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 p-2 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800"
+                                      className="p-2 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800 space-y-2"
                                     >
+                                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                                       <div className="flex-1 min-w-[200px]">
                                         <SelectWithAdd
                                           value={prod.productId}
@@ -2031,6 +2035,23 @@ const ProjectFormPage = () => {
                                           </Button>
                                         )}
                                       </div>
+                                      </div>
+
+                                      <Input
+                                        value={prod.notes || ""}
+                                        onChange={(e) =>
+                                          handleNestedFieldChange(
+                                            srvIdx,
+                                            flrIdx,
+                                            areaIdx,
+                                            prodIdx,
+                                            "notes",
+                                            e.target.value
+                                          )
+                                        }
+                                        placeholder="Remark / Notes (optional) — shown in the report"
+                                        className="h-8 text-xs"
+                                      />
                                     </div>
                                   );
                                 })}

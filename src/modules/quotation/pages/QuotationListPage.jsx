@@ -102,6 +102,7 @@ const QuotationListPage = () => {
         project_sub_quantity: Number(item.quotation_sub_quantity) || 1,
         project_sub_amount: Number(item.quotation_sub_amount) || 0,
         project_sub_status: item.quotation_sub_status || "Pending",
+        project_sub_notes: item.quotation_sub_notes || item.project_sub_notes || "",
         // Quotation dual keys
         quotation_sub_service_id: item.quotation_sub_service_id,
         quotation_sub_floor_id: item.quotation_sub_floor_id,
@@ -111,6 +112,7 @@ const QuotationListPage = () => {
         quotation_sub_quantity: Number(item.quotation_sub_quantity) || 1,
         quotation_sub_amount: Number(item.quotation_sub_amount) || 0,
         quotation_sub_status: item.quotation_sub_status || "Pending",
+        quotation_sub_notes: item.quotation_sub_notes || item.project_sub_notes || "",
       }));
 
       // 3. Create real project in /project table
