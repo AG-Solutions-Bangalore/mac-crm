@@ -69,7 +69,19 @@ export default function CoverPage({
       }}
     >
       {/* Enforce ui-sans-serif on every text in this page */}
-      <style>{`.makc-cover-page, .makc-cover-page * { font-family: ${FONT} !important; }`}</style>
+      <style>{`
+        .makc-cover-page, .makc-cover-page * { font-family: ${FONT} !important; }
+        @media (max-width: 760px) {
+          .makc-caption-card { padding: 12px 14px !important; border-radius: 12px !important; }
+          .makc-caption-title { font-size: 16px !important; }
+          .makc-caption-badge { font-size: 10.5px !important; padding: 6px 11px !important; }
+        }
+        @media (max-width: 480px) {
+          .makc-caption-card { padding: 11px 12px !important; row-gap: 8px !important; }
+          .makc-caption-title { font-size: 15px !important; }
+          .makc-caption-badge { font-size: 10px !important; padding: 5px 10px !important; }
+        }
+      `}</style>
       {/* ── HERO BACKGROUND — villa photo with smooth top-to-bottom overlay ── */}
       <div
         style={{
@@ -226,7 +238,9 @@ export default function CoverPage({
           style={{
             position: "relative",
             width: "100%",
-            display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px",
+            boxSizing: "border-box",
+            display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center",
+            columnGap: "16px", rowGap: "10px",
             background: "rgba(255,255,255,0.5)",
             backdropFilter: "blur(8px)",
             WebkitBackdropFilter: "blur(8px)",
@@ -236,7 +250,7 @@ export default function CoverPage({
             overflow: "hidden",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+          <div className="makc-caption-text" style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0, flex: "1 1 210px" }}>
             {/* Icon chip */}
             <div
               style={{
@@ -253,15 +267,16 @@ export default function CoverPage({
               <p style={{ fontSize: "9.5px", fontWeight: 800, letterSpacing: "0.18em", color: "#0284c7", textTransform: "uppercase", margin: 0 }}>
                 Intelligent Craftsmanship
               </p>
-              <p style={{ fontSize: "18px", fontWeight: 800, color: "#0b1526", margin: "3px 0 0", lineHeight: 1.25, letterSpacing: "-0.01em" }}>
+              <p className="makc-caption-title" style={{ fontSize: "18px", fontWeight: 800, color: "#0b1526", margin: "3px 0 0", lineHeight: 1.25, letterSpacing: "-0.01em", textWrap: "balance", overflowWrap: "break-word" }}>
                 Seamless Control at Your Fingertips
               </p>
             </div>
           </div>
 
           <span
+            className="makc-caption-badge"
             style={{
-              display: "inline-flex", alignItems: "center", gap: "6px", flexShrink: 0,
+              display: "inline-flex", alignItems: "center", gap: "6px", flexShrink: 0, marginLeft: "auto",
               fontSize: "11.5px", fontWeight: 800, color: "#7c2d12",
               background: "linear-gradient(135deg,#fef3c7,#fde68a)",
               border: "1px solid #f5d97e",
