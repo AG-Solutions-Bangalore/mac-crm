@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Edit, ArrowLeft, CheckCircle2, Award, FileText, CalendarDays } from "lucide-react";
+import { Edit, ArrowLeft, CheckCircle2, Award, FileText, CalendarDays, Trash2 } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
@@ -8,7 +8,7 @@ import ToggleStatus from "@/components/toogle/status-toogle";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/common/page-header";
 import ConfirmDialog from "@/components/common/confirm-dialog";
-import { useRevQuotationsQuery, useApproveRevQuotationMutation, useQuotationQuery } from "../hooks/useQuotation";
+import { useRevQuotationsQuery, useApproveRevQuotationMutation, useDeleteRevQuotationMutation, useQuotationQuery } from "../hooks/useQuotation";
 import moment from "moment";
 import { toast } from "sonner";
 
@@ -19,10 +19,13 @@ const RevQuotationListPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingApproveId, setPendingApproveId] = useState(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   const { data: responseData, isLoading, isFetching, isError, refetch } = useRevQuotationsQuery(parentId, page, searchTerm);
   const { data: parentQuotationData, isLoading: isParentLoading, isError: isParentError } = useQuotationQuery(parentId);
   const approveMutation = useApproveRevQuotationMutation();
+  const deleteMutation = useDeleteRevQuotationMutation();
 
   const paginationData = responseData?.data;
   const revQuotationList = paginationData?.data || [];
@@ -32,6 +35,13 @@ const RevQuotationListPage = () => {
   // User can check (view list + reports) but cannot add / edit / approve.
   const isParentApprovedLocked = parentStatus === "Approved" || parentStatus === "Project";
   const isLocked = Boolean(parentFinishWorkDate) || isParentApprovedLocked;
+  // Only the newest revision (highest id) is editable / approvable. Older
+  // revisions stay visible for reference and reports but cannot be changed.
+  const latestRevId = revQuotationList.reduce((latestId, rev) => {
+    const id = Number(rev.id);
+    if (Number.isNaN(id)) return latestId;
+    return latestId === null || id > latestId ? id : latestId;
+  }, null);
 
   const handleApprove = (revId) => {
     setPendingApproveId(revId);
@@ -48,6 +58,24 @@ const RevQuotationListPage = () => {
       toast.error(error.message || "Failed to approve revised quotation");
     } finally {
       setPendingApproveId(null);
+    }
+  };
+
+  const handleDelete = (revId) => {
+    setPendingDeleteId(revId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!pendingDeleteId) return;
+    try {
+      await deleteMutation.mutateAsync(pendingDeleteId);
+      toast.success("Revised quotation deleted successfully!");
+      refetch();
+    } catch (error) {
+      toast.error(error.message || "Failed to delete revised quotation");
+    } finally {
+      setPendingDeleteId(null);
     }
   };
 
@@ -122,48 +150,66 @@ const RevQuotationListPage = () => {
       header: "Actions",
       accessorKey: "actions",
       enableSorting: false,
-      cell: ({ row }) => (
-        <div className="flex gap-2">
-          {!isLocked && (
-            <abbr title="Edit Revised Quotation">
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={() => navigate(`/quotation-list/revised/${parentId}/edit/${row.original.id}`)}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-            </abbr>
-          )}
-
-          <abbr title="View Report">
-            <Button
-              size="icon"
-              variant="outline"
-              className="text-slate-600 hover:text-slate-800"
-              onClick={() => navigate(`/quotation-report/${row.original.id}?type=rev`)}
-            >
-              <FileText className="h-4 w-4" />
-            </Button>
-          </abbr>
-
-          {!isLocked &&
-            !revQuotationList.some((q) => q.quotation_status === "Approved") &&
-            row.original.quotation_status !== "Approved" && (
-              <abbr title="Approve & Finalize">
+      cell: ({ row }) => {
+        const isLatestRevision = Number(row.original.id) === latestRevId;
+        return (
+          <div className="flex gap-2">
+            {!isLocked && isLatestRevision && (
+              <abbr title="Edit Revised Quotation">
                 <Button
                   size="icon"
                   variant="outline"
-                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                  onClick={() => handleApprove(row.original.id)}
-                  disabled={approveMutation.isPending}
+                  onClick={() => navigate(`/quotation-list/revised/${parentId}/edit/${row.original.id}`)}
                 >
-                  <Award className="h-4 w-4" />
+                  <Edit className="h-4 w-4" />
                 </Button>
               </abbr>
             )}
-        </div>
-      ),
+
+            <abbr title="View Report">
+              <Button
+                size="icon"
+                variant="outline"
+                className="text-slate-600 hover:text-slate-800"
+                onClick={() => navigate(`/quotation-report/${row.original.id}?type=rev`)}
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
+            </abbr>
+
+            {!isLocked && !isLatestRevision && (
+              <abbr title="Delete Revised Quotation">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => handleDelete(row.original.id)}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </abbr>
+            )}
+
+            {!isLocked &&
+              isLatestRevision &&
+              !revQuotationList.some((q) => q.quotation_status === "Approved") &&
+              row.original.quotation_status !== "Approved" && (
+                <abbr title="Approve & Finalize">
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                    onClick={() => handleApprove(row.original.id)}
+                    disabled={approveMutation.isPending}
+                  >
+                    <Award className="h-4 w-4" />
+                  </Button>
+                </abbr>
+              )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -237,6 +283,14 @@ const RevQuotationListPage = () => {
         title="Approve Revised Quotation"
         description="Are you sure you want to approve this revised quotation? This will finalize the revised terms."
         confirmText="Approve"
+      />
+      <ConfirmDialog
+        isOpen={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Revised Quotation"
+        description="Are you sure you want to delete this revised quotation? This action cannot be undone."
+        confirmText="Delete"
       />
     </div>
   );
