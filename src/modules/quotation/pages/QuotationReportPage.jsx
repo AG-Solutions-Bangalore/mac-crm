@@ -74,6 +74,10 @@ export default function QuotationReportPage() {
   // Transient mode for the "PDF (No Price)" action — hides every monetary value
   // (rates, totals, net project cost, milestone amounts) only while printing.
   const [hidePricing, setHidePricing] = useState(false);
+  // Cover photo white veil strength (0–100 %) — preview and PDF/print are
+  // independent so the exported document can differ from the on-screen view.
+  const [coverPreviewOverlay, setCoverPreviewOverlay] = useState(95);
+  const [coverPdfOverlay, setCoverPdfOverlay] = useState(80);
   // Consultancy & Design % and Installation % — both editable from header bar,
   // each applied on the grand total. No % is shown in the printed proposal.
   const [consultancyPct, setConsultancyPct] = useState(5);
@@ -631,6 +635,10 @@ export default function QuotationReportPage() {
         onConsultancyPctChange={setConsultancyPct}
         installPct={installPct}
         onInstallPctChange={setInstallPct}
+        coverPreviewOverlay={coverPreviewOverlay}
+        onCoverPreviewOverlayChange={setCoverPreviewOverlay}
+        coverPdfOverlay={coverPdfOverlay}
+        onCoverPdfOverlayChange={setCoverPdfOverlay}
         preparedById={preparedById}
         onPreparedByChange={setPreparedById}
         preparedByOptions={preparedByOptions}
@@ -668,6 +676,8 @@ export default function QuotationReportPage() {
               contactPerson={contactPerson}
               contactPhone={contactPhone}
               bgImage={MOCK_IMAGES.coverBg}
+              previewOverlay={coverPreviewOverlay}
+              pdfOverlay={coverPdfOverlay}
             />
 
             {/* Dynamic Continuous Proposal Document (Scope, Pricing, Milestones, Terms & Approval) */}

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import PreparedByPicker from "./PreparedByPicker";
 
 const PCT_PRESETS = [5, 7, 10, 15];
+const OVERLAY_PRESETS = [0, 25, 50, 60, 75, 100];
 
 // Top bar: navigation + view switcher + Consultancy / Installation % inputs +
 // Prepared-by selector + Export Excel / Print-Save PDF actions.
@@ -25,6 +26,10 @@ export default function ReportHeaderActions({
   onConsultancyPctChange,
   installPct = 5,
   onInstallPctChange,
+  coverPreviewOverlay = 100,
+  onCoverPreviewOverlayChange,
+  coverPdfOverlay = 100,
+  onCoverPdfOverlayChange,
   preparedById,
   onPreparedByChange,
   preparedByOptions = [],
@@ -32,7 +37,7 @@ export default function ReportHeaderActions({
   onPrint,
   onPrintNoPrice,
 }) {
-  const renderPctInput = (label, value, onChange, listId, title) => (
+  const renderPctInput = (label, value, onChange, listId, title, presets = PCT_PRESETS) => (
     <label
       className="flex h-[46px] shrink-0 items-center gap-1 rounded-lg border border-border bg-background px-2.5 text-[11px] font-semibold focus-within:border-sky-400"
       title={title}
@@ -56,7 +61,7 @@ export default function ReportHeaderActions({
         className="w-10 bg-transparent text-center text-xs font-bold text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       />
       <datalist id={listId}>
-        {PCT_PRESETS.map((p) => (
+        {presets.map((p) => (
           <option key={p} value={p} />
         ))}
       </datalist>
@@ -126,6 +131,25 @@ export default function ReportHeaderActions({
           onInstallPctChange,
           "makc-install-presets",
           "Installation charge % of grand total (5 / 7 / 10 / 15 or custom)"
+        )}
+
+        {/* Cover photo veil strength — preview and PDF/print tune independently */}
+        {renderPctInput(
+          "Cover Preview %",
+          coverPreviewOverlay,
+          onCoverPreviewOverlayChange,
+          "makc-cover-preview-presets",
+          "White veil strength over the cover photo in the on-screen preview (0 = none, 100 = opaque)",
+          OVERLAY_PRESETS
+        )}
+
+        {renderPctInput(
+          "Cover PDF %",
+          coverPdfOverlay,
+          onCoverPdfOverlayChange,
+          "makc-cover-pdf-presets",
+          "White veil strength over the cover photo in the printed / saved PDF (0 = none, 100 = opaque)",
+          OVERLAY_PRESETS
         )}
 
         {/* Prepared-by selector — searchable, quick add/edit, manage link */}

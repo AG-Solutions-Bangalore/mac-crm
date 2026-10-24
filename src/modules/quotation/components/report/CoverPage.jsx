@@ -42,7 +42,20 @@ export default function CoverPage({
   contactPerson,
   contactPhone,
   bgImage = HERO_BG_URL,
+  // White veil strength over the hero photo (0–100 %). Kept separate for the
+  // on-screen preview and the printed / saved PDF so both can be tuned
+  // independently from the header controls.
+  previewOverlay = 100,
+  pdfOverlay = 100,
 }) {
+  const overlayGradient = (pct) => {
+    const strength = Math.min(100, Math.max(0, Number(pct) || 0)) / 100;
+    const alpha = (value) => +(strength * value).toFixed(3);
+    return `linear-gradient(to bottom, rgba(255,255,255,${strength}) 17%, rgba(255,255,255,${alpha(
+      0.92
+    )}) 24%, rgba(255,255,255,${alpha(0.2)}) 60%, rgba(255,255,255,0) 100%)`;
+  };
+
   return (
     <div
       className="makc-page makc-cover-page"
@@ -71,6 +84,11 @@ export default function CoverPage({
       {/* Enforce ui-sans-serif on every text in this page */}
       <style>{`
         .makc-cover-page, .makc-cover-page * { font-family: ${FONT} !important; }
+        /* Preview veil by default, PDF/print veil inside @media print */
+        .makc-cover-overlay { background: var(--makc-cover-overlay-preview); }
+        @media print {
+          .makc-cover-overlay { background: var(--makc-cover-overlay-print); }
+        }
         @media (max-width: 760px) {
           .makc-caption-card { padding: 12px 14px !important; border-radius: 12px !important; }
           .makc-caption-title { font-size: 16px !important; }
@@ -97,11 +115,13 @@ export default function CoverPage({
           fetchpriority="high"
           style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%", display: "block" }}
         />
-        {/* Reverse overlay: white at top for crisp text legibility, fading to transparent toward bottom so bg image shows properly */}
+        {/* White veil: strength is controlled separately for preview vs PDF/print */}
         <div
+          className="makc-cover-overlay"
           style={{
             position: "absolute", inset: 0,
-            background: "linear-gradient(to bottom, #ffffff 17%, rgba(255,255,255,0.92) 24%, rgba(255,255,255,0.20) 60%, rgba(255,255,255,0) 100%)",
+            "--makc-cover-overlay-preview": overlayGradient(previewOverlay),
+            "--makc-cover-overlay-print": overlayGradient(pdfOverlay),
           }}
         />
       </div>
@@ -127,16 +147,26 @@ export default function CoverPage({
           }}
         />
 
-        {/* Official ISO 9001:2015 SVG Stamp — no white box/background */}
-        <img
-          src={isoImg}
-          alt="ISO 9001:2015"
+        {/* Official ISO 9001:2015 stamp — white circular plate keeps the badge
+            identical in preview and PDF, even when the cover veil is reduced */}
+        <div
+          className="makc-iso-plate"
           style={{
-            height: "58px", width: "auto", objectFit: "contain", display: "block",
-            background: "transparent", backgroundColor: "transparent",
-            border: "none", boxShadow: "none", outline: "none", padding: 0,
+            width: "58px", height: "58px", borderRadius: "50%", flexShrink: 0,
+            background: "#ffffff", overflow: "hidden",
+            display: "flex", alignItems: "center", justifyContent: "center",
           }}
-        />
+        >
+          <img
+            src={isoImg}
+            alt="ISO 9001:2015"
+            style={{
+              width: "100%", height: "100%", objectFit: "contain", display: "block",
+              background: "transparent", backgroundColor: "transparent",
+              border: "none", boxShadow: "none", outline: "none", padding: 0,
+            }}
+          />
+        </div>
       </div>
 
       {/* ── HERO TEXT (dark text over white veil, photo full-bleed behind) ── */}
