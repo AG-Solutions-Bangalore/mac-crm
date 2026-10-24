@@ -5,8 +5,7 @@ import {
   Printer,
   LayoutGrid,
   Layers,
-  Eye,
-  EyeOff,
+  FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PreparedByPicker from "./PreparedByPicker";
@@ -29,10 +28,9 @@ export default function ReportHeaderActions({
   preparedById,
   onPreparedByChange,
   preparedByOptions = [],
-  showPrice = false,
-  onTogglePrice,
   onExportExcel,
   onPrint,
+  onPrintNoPrice,
 }) {
   const renderPctInput = (label, value, onChange, listId, title) => (
     <label
@@ -112,22 +110,6 @@ export default function ReportHeaderActions({
           </Button>
         </div>
 
-        {/* Toggle Price column visibility (also affects print / PDF output) */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onTogglePrice}
-          title={showPrice ? "Hide Price column in table and PDF" : "Show Price column in table and PDF"}
-          className="h-[46px] font-medium bg-background text-foreground border-border hover:bg-muted"
-        >
-          {showPrice ? (
-            <EyeOff className="mr-2 h-4 w-4 text-sky-500" />
-          ) : (
-            <Eye className="mr-2 h-4 w-4 text-sky-500" />
-          )}
-          {showPrice ? "Hide Price" : "Show Price"}
-        </Button>
-
         {/* Consultancy & Design % — presets 5/7/10/15 or any custom value */}
         {renderPctInput(
           "Consultancy %",
@@ -161,6 +143,17 @@ export default function ReportHeaderActions({
         >
           <Download className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           Export Excel
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onPrintNoPrice}
+          title="Print / save a PDF without any prices or the net project cost"
+          className="h-[46px] font-medium bg-background text-foreground border-border hover:bg-muted"
+        >
+          <FileText className="mr-2 h-4 w-4 text-sky-500" />
+          PDF (No Price)
         </Button>
 
         <Button

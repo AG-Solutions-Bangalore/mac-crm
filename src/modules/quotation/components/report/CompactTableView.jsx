@@ -55,7 +55,7 @@ export default function CompactTableView({
   headers,
   tableRows,
   items,
-  showPrice = false,
+  hidePricing = false,
   grandTotal,
   consultancyFee = 0,
   installationFee,
@@ -177,10 +177,9 @@ export default function CompactTableView({
                       <TableCell style={{ color: LIGHT.bodyText }}>{row.area || "-"}</TableCell>
                       <TableCell className="font-bold" style={{ color: LIGHT.headingText }}>{row.product}</TableCell>
                       <TableCell className="font-bold text-center" style={{ color: LIGHT.accent }}>{row.quantity || "-"}</TableCell>
-                      {showPrice && (
-                        <TableCell style={{ color: LIGHT.bodyText }}>{formatMoney(row.price)}</TableCell>
+                      {!hidePricing && (
+                        <TableCell className="font-bold" style={{ color: LIGHT.accent }}>{formatMoney(row.totalPrice)}</TableCell>
                       )}
-                      <TableCell className="font-bold" style={{ color: LIGHT.accent }}>{formatMoney(row.totalPrice)}</TableCell>
                       <TableCell className="font-medium text-center" style={{ color: LIGHT.bodyText }}>
                         {row.finish || "-"}
                       </TableCell>
@@ -194,12 +193,20 @@ export default function CompactTableView({
                       className="font-bold break-inside-avoid"
                       style={{ background: LIGHT.summaryBg, borderColor: LIGHT.headerBorder }}
                     >
-                      <TableCell colSpan={showPrice ? 6 : 5} className="uppercase text-xs tracking-wider" style={{ color: LIGHT.accentStrong }}>
+                      <TableCell
+                        colSpan={hidePricing ? headers.length : 5}
+                        className="uppercase text-xs tracking-wider"
+                        style={{ color: LIGHT.accentStrong }}
+                      >
                         {row.label}
                       </TableCell>
-                      <TableCell style={{ color: LIGHT.accent }}>{formatMoney(row.totalPrice)}</TableCell>
-                      <TableCell />
-                      <TableCell colSpan={3} />
+                      {!hidePricing && (
+                        <>
+                          <TableCell style={{ color: LIGHT.accent }}>{formatMoney(row.totalPrice)}</TableCell>
+                          <TableCell />
+                          <TableCell colSpan={3} />
+                        </>
+                      )}
                     </TableRow>
                   )
                 )}
@@ -207,29 +214,34 @@ export default function CompactTableView({
             </Table>
           </div>
           {/* Printed totals — per-service totals are in the table above;
-              grand + consultancy + installation + net shown here without any % */}
-          <div
-            className="mt-4 grid gap-2 break-inside-avoid md:grid-cols-4"
-          >
-            {[
-              { label: "Grand Total", value: formatMoney(grandTotal), color: LIGHT.headingText },
-              { label: "Consultancy & Design", value: formatMoney(consultancyFee), color: LIGHT.bodyText },
-              { label: "Installation", value: formatMoney(installationFee), color: LIGHT.bodyText },
-              { label: "Net Project Value", value: formatMoney(netTotal), color: LIGHT.accent },
-            ].map((s) => (
+              grand + consultancy + installation + net shown here without any %.
+              Fully hidden when printing the scope-only (no-price) PDF. */}
+          {!hidePricing && (
+            <>
               <div
-                key={s.label}
-                className="rounded-lg border px-3 py-2"
-                style={{ borderColor: LIGHT.cardBorder, background: LIGHT.summaryBg }}
+                className="mt-4 grid gap-2 break-inside-avoid md:grid-cols-4"
               >
-                <div className="text-[11px] font-semibold" style={{ color: LIGHT.mutedText }}>{s.label}</div>
-                <div className="text-base font-bold" style={{ color: s.color }}>{s.value}</div>
+                {[
+                  { label: "Grand Total", value: formatMoney(grandTotal), color: LIGHT.headingText },
+                  { label: "Consultancy & Design", value: formatMoney(consultancyFee), color: LIGHT.bodyText },
+                  { label: "Installation", value: formatMoney(installationFee), color: LIGHT.bodyText },
+                  { label: "Net Project Value", value: formatMoney(netTotal), color: LIGHT.accent },
+                ].map((s) => (
+                  <div
+                    key={s.label}
+                    className="rounded-lg border px-3 py-2"
+                    style={{ borderColor: LIGHT.cardBorder, background: LIGHT.summaryBg }}
+                  >
+                    <div className="text-[11px] font-semibold" style={{ color: LIGHT.mutedText }}>{s.label}</div>
+                    <div className="text-base font-bold" style={{ color: s.color }}>{s.value}</div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <p className="mt-3 text-right text-xs" style={{ color: LIGHT.mutedText }}>
-            All prices inclusive of applicable taxes, product, delivery and installation.
-          </p>
+              <p className="mt-3 text-right text-xs" style={{ color: LIGHT.mutedText }}>
+                All prices inclusive of applicable taxes, product, delivery and installation.
+              </p>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
