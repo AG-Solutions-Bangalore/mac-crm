@@ -99,6 +99,10 @@ export const quotationApi = {
     const response = await apiClient.put(`/rev-quotation/${id}`, data);
     return response.data;
   },
+  deleteRevQuotation: async (id) => {
+    const response = await apiClient.delete(`/rev-quotation/${id}`);
+    return response.data;
+  },
   updateRevQuotationStatus: async (id, status) => {
     const response = await apiClient.patch(`/rev-quotations/${id}/status`, {
       quotation_status: status,

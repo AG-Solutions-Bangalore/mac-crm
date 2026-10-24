@@ -137,6 +137,18 @@ export function useUpdateRevQuotationMutation() {
   });
 }
 
+export function useDeleteRevQuotationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: quotationApi.deleteRevQuotation,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quotations"] });
+      queryClient.invalidateQueries({ queryKey: ["rev-quotations"] });
+      queryClient.invalidateQueries({ queryKey: ["rev-quotation"] });
+    },
+  });
+}
+
 export function useUpdateRevQuotationStatusMutation() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { ArrowLeft } from "lucide-react";
@@ -70,8 +71,13 @@ export default function QuotationReportPage() {
   const isProject = searchParams.get("type") === "project";
   const docLabel = isProject ? "Project" : "Quotation";
   const [viewMode, setViewMode] = useState("presentation"); // 'presentation' | 'table'
-  // Price column toggle for compact table — hidden by default, applies to print/PDF too
-  const [showPrice, setShowPrice] = useState(false);
+  // Transient mode for the "PDF (No Price)" action — hides every monetary value
+  // (rates, totals, net project cost, milestone amounts) only while printing.
+  const [hidePricing, setHidePricing] = useState(false);
+  // Cover photo white veil strength (0–100 %) — preview and PDF/print are
+  // independent so the exported document can differ from the on-screen view.
+  const [coverPreviewOverlay, setCoverPreviewOverlay] = useState(95);
+  const [coverPdfOverlay, setCoverPdfOverlay] = useState(80);
   // Consultancy & Design % and Installation % — both editable from header bar,
   // each applied on the grand total. No % is shown in the printed proposal.
   const [consultancyPct, setConsultancyPct] = useState(5);
@@ -386,7 +392,7 @@ export default function QuotationReportPage() {
 
   // Hero PNG bada hai — print/PDF se pehle ensure karo ki cover image load/decode ho chuki hai
   // (4s timeout, taaki slow network par print block na ho).
-  const handlePrint = async () => {
+  const waitForHeroImage = async () => {
     try {
       const img = new Image();
       img.src = HERO_BG_URL;
@@ -403,13 +409,48 @@ export default function QuotationReportPage() {
     } catch {
       // image load fail ho to bhi print chale
     }
+  };
+
+  const handlePrint = async () => {
+    await waitForHeroImage();
     window.print();
+  };
+
+  // Print/save a scope-only PDF: rates, totals, net project cost and payment
+  // amounts are hidden just for this print job, then restored.
+  const handlePrintNoPrice = async () => {
+    await waitForHeroImage();
+    flushSync(() => setHidePricing(true));
+
+    let restored = false;
+    const restore = () => {
+      if (restored) return;
+      restored = true;
+      window.removeEventListener("afterprint", restore);
+      flushSync(() => setHidePricing(false));
+    };
+    window.addEventListener("afterprint", restore);
+
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve))
+    );
+
+    try {
+      window.print();
+    } finally {
+      setTimeout(restore, 1000);
+    }
   };
 
   const handleExportExcel = () => {
     const workbook = createStyledQuotationWorkbook({ items });
     downloadBlob(workbook, `MAKc_${docLabel}_${quotationNo}.xlsx`);
   };
+
+  // No-price PDF drops the total price column from the compact table.
+  const reportHeaders = hidePricing
+    ? headers.filter((header) => header !== "Total Price")
+    : headers;
 
   // Light-only theme (theme switcher removed)
   const printBgColor = "#ffffff";
@@ -594,29 +635,24 @@ export default function QuotationReportPage() {
         onConsultancyPctChange={setConsultancyPct}
         installPct={installPct}
         onInstallPctChange={setInstallPct}
+        coverPreviewOverlay={coverPreviewOverlay}
+        onCoverPreviewOverlayChange={setCoverPreviewOverlay}
+        coverPdfOverlay={coverPdfOverlay}
+        onCoverPdfOverlayChange={setCoverPdfOverlay}
         preparedById={preparedById}
         onPreparedByChange={setPreparedById}
         preparedByOptions={preparedByOptions}
-        showPrice={showPrice}
-        onTogglePrice={() => setShowPrice((prev) => !prev)}
         onExportExcel={handleExportExcel}
         onPrint={handlePrint}
+        onPrintNoPrice={handlePrintNoPrice}
       />
 
       {/* Main Content Area */}
       <div className="makc-pdf-container">
         {viewMode === "table" ? (
           <CompactTableView
-            headers={
-              showPrice
-                ? [
-                    ...headers.slice(0, 5),
-                    "Price",
-                    ...headers.slice(5),
-                  ]
-                : headers
-            }
-            showPrice={showPrice}
+            headers={reportHeaders}
+            hidePricing={hidePricing}
             tableRows={tableRows}
             items={items}
             grandTotal={grandTotal}
@@ -640,6 +676,8 @@ export default function QuotationReportPage() {
               contactPerson={contactPerson}
               contactPhone={contactPhone}
               bgImage={MOCK_IMAGES.coverBg}
+              previewOverlay={coverPreviewOverlay}
+              pdfOverlay={coverPdfOverlay}
             />
 
             {/* Dynamic Continuous Proposal Document (Scope, Pricing, Milestones, Terms & Approval) */}
@@ -655,6 +693,7 @@ export default function QuotationReportPage() {
               installPct={installPct}
               netTotal={netTotal}
               paymentRows={paymentRows}
+              hidePricing={hidePricing}
             />
 
             {/* Last Page: About MAKc & Awards Overview */}

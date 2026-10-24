@@ -42,7 +42,20 @@ export default function CoverPage({
   contactPerson,
   contactPhone,
   bgImage = HERO_BG_URL,
+  // White veil strength over the hero photo (0–100 %). Kept separate for the
+  // on-screen preview and the printed / saved PDF so both can be tuned
+  // independently from the header controls.
+  previewOverlay = 100,
+  pdfOverlay = 100,
 }) {
+  const overlayGradient = (pct) => {
+    const strength = Math.min(100, Math.max(0, Number(pct) || 0)) / 100;
+    const alpha = (value) => +(strength * value).toFixed(3);
+    return `linear-gradient(to bottom, rgba(255,255,255,${strength}) 17%, rgba(255,255,255,${alpha(
+      0.92
+    )}) 24%, rgba(255,255,255,${alpha(0.2)}) 60%, rgba(255,255,255,0) 100%)`;
+  };
+
   return (
     <div
       className="makc-page makc-cover-page"
@@ -69,7 +82,24 @@ export default function CoverPage({
       }}
     >
       {/* Enforce ui-sans-serif on every text in this page */}
-      <style>{`.makc-cover-page, .makc-cover-page * { font-family: ${FONT} !important; }`}</style>
+      <style>{`
+        .makc-cover-page, .makc-cover-page * { font-family: ${FONT} !important; }
+        /* Preview veil by default, PDF/print veil inside @media print */
+        .makc-cover-overlay { background: var(--makc-cover-overlay-preview); }
+        @media print {
+          .makc-cover-overlay { background: var(--makc-cover-overlay-print); }
+        }
+        @media (max-width: 760px) {
+          .makc-caption-card { padding: 12px 14px !important; border-radius: 12px !important; }
+          .makc-caption-title { font-size: 16px !important; }
+          .makc-caption-badge { font-size: 10.5px !important; padding: 6px 11px !important; }
+        }
+        @media (max-width: 480px) {
+          .makc-caption-card { padding: 11px 12px !important; row-gap: 8px !important; }
+          .makc-caption-title { font-size: 15px !important; }
+          .makc-caption-badge { font-size: 10px !important; padding: 5px 10px !important; }
+        }
+      `}</style>
       {/* ── HERO BACKGROUND — villa photo with smooth top-to-bottom overlay ── */}
       <div
         style={{
@@ -85,11 +115,13 @@ export default function CoverPage({
           fetchpriority="high"
           style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%", display: "block" }}
         />
-        {/* Reverse overlay: white at top for crisp text legibility, fading to transparent toward bottom so bg image shows properly */}
+        {/* White veil: strength is controlled separately for preview vs PDF/print */}
         <div
+          className="makc-cover-overlay"
           style={{
             position: "absolute", inset: 0,
-            background: "linear-gradient(to bottom, #ffffff 17%, rgba(255,255,255,0.92) 24%, rgba(255,255,255,0.20) 60%, rgba(255,255,255,0) 100%)",
+            "--makc-cover-overlay-preview": overlayGradient(previewOverlay),
+            "--makc-cover-overlay-print": overlayGradient(pdfOverlay),
           }}
         />
       </div>
@@ -115,16 +147,26 @@ export default function CoverPage({
           }}
         />
 
-        {/* Official ISO 9001:2015 SVG Stamp — no white box/background */}
-        <img
-          src={isoImg}
-          alt="ISO 9001:2015"
+        {/* Official ISO 9001:2015 stamp — white circular plate keeps the badge
+            identical in preview and PDF, even when the cover veil is reduced */}
+        <div
+          className="makc-iso-plate"
           style={{
-            height: "58px", width: "auto", objectFit: "contain", display: "block",
-            background: "transparent", backgroundColor: "transparent",
-            border: "none", boxShadow: "none", outline: "none", padding: 0,
+            width: "58px", height: "58px", borderRadius: "50%", flexShrink: 0,
+            background: "#ffffff", overflow: "hidden",
+            display: "flex", alignItems: "center", justifyContent: "center",
           }}
-        />
+        >
+          <img
+            src={isoImg}
+            alt="ISO 9001:2015"
+            style={{
+              width: "100%", height: "100%", objectFit: "contain", display: "block",
+              background: "transparent", backgroundColor: "transparent",
+              border: "none", boxShadow: "none", outline: "none", padding: 0,
+            }}
+          />
+        </div>
       </div>
 
       {/* ── HERO TEXT (dark text over white veil, photo full-bleed behind) ── */}
@@ -226,7 +268,9 @@ export default function CoverPage({
           style={{
             position: "relative",
             width: "100%",
-            display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px",
+            boxSizing: "border-box",
+            display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center",
+            columnGap: "16px", rowGap: "10px",
             background: "rgba(255,255,255,0.5)",
             backdropFilter: "blur(8px)",
             WebkitBackdropFilter: "blur(8px)",
@@ -236,7 +280,7 @@ export default function CoverPage({
             overflow: "hidden",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+          <div className="makc-caption-text" style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0, flex: "1 1 210px" }}>
             {/* Icon chip */}
             <div
               style={{
@@ -253,15 +297,16 @@ export default function CoverPage({
               <p style={{ fontSize: "9.5px", fontWeight: 800, letterSpacing: "0.18em", color: "#0284c7", textTransform: "uppercase", margin: 0 }}>
                 Intelligent Craftsmanship
               </p>
-              <p style={{ fontSize: "18px", fontWeight: 800, color: "#0b1526", margin: "3px 0 0", lineHeight: 1.25, letterSpacing: "-0.01em" }}>
+              <p className="makc-caption-title" style={{ fontSize: "18px", fontWeight: 800, color: "#0b1526", margin: "3px 0 0", lineHeight: 1.25, letterSpacing: "-0.01em", textWrap: "balance", overflowWrap: "break-word" }}>
                 Seamless Control at Your Fingertips
               </p>
             </div>
           </div>
 
           <span
+            className="makc-caption-badge"
             style={{
-              display: "inline-flex", alignItems: "center", gap: "6px", flexShrink: 0,
+              display: "inline-flex", alignItems: "center", gap: "6px", flexShrink: 0, marginLeft: "auto",
               fontSize: "11.5px", fontWeight: 800, color: "#7c2d12",
               background: "linear-gradient(135deg,#fef3c7,#fde68a)",
               border: "1px solid #f5d97e",

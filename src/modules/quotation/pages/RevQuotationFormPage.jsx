@@ -102,6 +102,7 @@ const groupSubsToServices = (subsList) => {
       price: Number(item.quotation_sub_price) || 0,
       quantity: Number(item.quotation_sub_quantity) || 1,
       status: item.quotation_sub_status || "Pending",
+      notes: item.quotation_sub_notes ?? item.project_sub_notes ?? "",
     });
   });
 
@@ -135,6 +136,7 @@ const flattenServicesToSubs = (servicesList) => {
               quotation_sub_quantity: Number(product.quantity),
               quotation_sub_amount: Number(product.price) * Number(product.quantity),
               quotation_sub_status: product.status || "Pending",
+              quotation_sub_notes: product.notes || "",
             });
           }
         });
@@ -176,6 +178,7 @@ const RevQuotationFormPage = () => {
                   price: 0,
                   quantity: 1,
                   status: "Pending",
+                  notes: "",
                 },
               ],
             },
@@ -901,15 +904,36 @@ const RevQuotationFormPage = () => {
     return `No '${catNames}' products under '${rowSvcName}'. Found ${others.join(", ")} — tick that Service above.`;
   };
 
-  // Product label with category prefix so same-name products under different
-  // categories (e.g. "2M - 4 Control" under Frameless vs Brass) look distinct.
+  // Product label with category + brand so same-name products under different
+  // frame types (No Frame / Frameless / Brass) look distinct.
   const getProductLabel = (p) => {
     const brandName =
       p?.brand_name ||
       brands.find((b) => b.id?.toString() === p?.brand_id?.toString())
         ?.brand_name ||
       "";
-    return brandName ? `${p?.product_name} - (${brandName})` : p?.product_name;
+    const catName =
+      p?.category_name ||
+      categories.find((c) => c.id?.toString() === p?.category_id?.toString())
+        ?.category_name ||
+      "";
+    const base = brandName
+      ? `${p?.product_name} - (${brandName})`
+      : p?.product_name;
+    return catName ? `${catName} - ${base}` : base;
+  };
+
+  // API can return the same product row more than once (multiple category /
+  // service matches). Keep one option per product id.
+  const dedupeProducts = (list = []) => {
+    const seenIds = new Set();
+    return list.filter((p) => {
+      const id = p?.id?.toString();
+      if (!id) return true;
+      if (seenIds.has(id)) return false;
+      seenIds.add(id);
+      return true;
+    });
   };
 
   // Row product options: STRICT — only products of this row's Service.
@@ -918,12 +942,12 @@ const RevQuotationFormPage = () => {
   const getRevRowProductOptions = (rowServiceId) => {
     if (!rowServiceId) return [];
     const sid = rowServiceId?.toString();
-    const matched = productsList.filter(
-      (p) => p.service_id?.toString() === sid
+    const matched = dedupeProducts(
+      productsList.filter((p) => p.service_id?.toString() === sid)
     );
     if (matched.length > 0) return matched;
-    return catProductsList.filter(
-      (p) => p.service_id?.toString() === sid
+    return dedupeProducts(
+      catProductsList.filter((p) => p.service_id?.toString() === sid)
     );
   };
 
@@ -1460,6 +1484,25 @@ const RevQuotationFormPage = () => {
                                         >
                                           <Trash2 size={14} />
                                         </Button>
+                                      </div>
+
+                                      {/* Remark / Notes (per item) */}
+                                      <div className="col-span-full">
+                                        <Input
+                                          value={prod.notes || ""}
+                                          onChange={(e) =>
+                                            handleNestedFieldChange(
+                                              serviceIndex,
+                                              floorIndex,
+                                              areaIndex,
+                                              prodIndex,
+                                              "notes",
+                                              e.target.value,
+                                            )
+                                          }
+                                          className="h-8 text-xs bg-transparent border-slate-200 dark:border-slate-800"
+                                          placeholder="Remark / Notes (optional) — shown in the report"
+                                        />
                                       </div>
                                     </div>
                                   );

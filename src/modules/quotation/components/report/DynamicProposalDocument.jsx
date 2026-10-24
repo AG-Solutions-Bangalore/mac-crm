@@ -190,6 +190,7 @@ export default function DynamicProposalDocument({
   installPct = 5,
   netTotal,
   paymentRows,
+  hidePricing = false,
 }) {
   // Group items data-driven: application -> floor -> area -> products.
   // Insertion order is preserved so floors/rooms render in quotation order.
@@ -331,7 +332,7 @@ export default function DynamicProposalDocument({
             Scope of Work
           </h2>
           <p style={{ fontSize: "10px", color: t.subtitleText, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", margin: "3px 0 0" }}>
-            Itemized Scope · Pricing · Milestones
+            {hidePricing ? "Itemized Scope · Milestones" : "Itemized Scope · Pricing · Milestones"}
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
@@ -352,7 +353,7 @@ export default function DynamicProposalDocument({
           <SectionHeading
             number="01"
             title="Itemized Scope Schedule"
-            subtitle={`${items.length} products configured across property zones with specifications, pricing & warranty`}
+            subtitle={`${items.length} products configured across property zones with specifications${hidePricing ? "" : ", pricing"} & warranty`}
             isLight={isLight}
           />
 
@@ -398,8 +399,12 @@ export default function DynamicProposalDocument({
                           <TH width={hasFinish ? "12%" : "13%"} isLight={isLight}>Area / Room</TH>
                           <TH width={hasFinish ? "22%" : "25%"} isLight={isLight}>Product / System Specification</TH>
                           <TH align="center" width="6%" isLight={isLight}>Qty</TH>
-                          <TH align="right" width={hasFinish ? "10%" : "11%"} isLight={isLight}>Unit Price</TH>
-                          <TH align="right" width={hasFinish ? "10%" : "11%"} isLight={isLight}>Total Price</TH>
+                          {!hidePricing && (
+                            <>
+                              <TH align="right" width={hasFinish ? "10%" : "11%"} isLight={isLight}>Unit Price</TH>
+                              <TH align="right" width={hasFinish ? "10%" : "11%"} isLight={isLight}>Total Price</TH>
+                            </>
+                          )}
                           {/* Finish column — shows category finish data directly as text */}
                           {hasFinish && (
                             <TH align="center" width="10%" isLight={isLight}>Finish</TH>
@@ -415,7 +420,10 @@ export default function DynamicProposalDocument({
                             {/* FLOOR subheader — rendered once per floor */}
                             {floor.name !== "" && (
                               <tr style={{ background: "#d7e9f7" }} className="break-inside-avoid">
-                                <FloorSectionHeader floorName={floor.name} colSpan={hasFinish ? 9 : 8} />
+                                <FloorSectionHeader
+                                  floorName={floor.name}
+                                  colSpan={(hasFinish ? 9 : 8) - (hidePricing ? 2 : 0)}
+                                />
                               </tr>
                             )}
                             {floor.areas.map((area, ai) => (
@@ -452,12 +460,16 @@ export default function DynamicProposalDocument({
                                     <TD isLight={isLight} align="center" style={{ fontWeight: 800, color: t.qtyText, fontSize: "11.5px" }}>
                                       {item.quantity}
                                     </TD>
-                                    <TD isLight={isLight} align="right" style={{ color: t.unitPriceText, fontSize: "11px", fontWeight: 500 }}>
-                                      {formatMoney(item.price)}
-                                    </TD>
-                                    <TD isLight={isLight} align="right" style={{ fontWeight: 800, color: t.totalAmountText, fontSize: "11.5px" }}>
-                                      {formatMoney(item.totalPrice)}
-                                    </TD>
+                                    {!hidePricing && (
+                                      <>
+                                        <TD isLight={isLight} align="right" style={{ color: t.unitPriceText, fontSize: "11px", fontWeight: 500 }}>
+                                          {formatMoney(item.price)}
+                                        </TD>
+                                        <TD isLight={isLight} align="right" style={{ fontWeight: 800, color: t.totalAmountText, fontSize: "11.5px" }}>
+                                          {formatMoney(item.totalPrice)}
+                                        </TD>
+                                      </>
+                                    )}
                                     {/* Finish cell — category finish as text (set via Categories selection) */}
                                     {hasFinish && (
                                       <TD isLight={isLight} align="center" style={{ fontWeight: 600, color: t.brandText, fontSize: "10.5px" }}>
@@ -482,29 +494,32 @@ export default function DynamicProposalDocument({
                       </tbody>
                     </table>
                   </div>
-                  {/* Per-service total — shown for every application */}
-                  <div
-                    className="break-inside-avoid"
-                    style={{
-                      display: "flex", justifyContent: "space-between", alignItems: "center",
-                      padding: "8px 18px",
-                      background: "#f1f5f9",
-                      borderTop: "1px solid #e2e8f0",
-                    }}
-                  >
-                    <span style={{ fontSize: "11px", fontWeight: 800, color: "#1e4a7a", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-                      Total {group.title}
-                    </span>
-                    <span style={{ fontSize: "13px", fontWeight: 900, color: "#0284c7" }}>
-                      {formatMoney(appTotal)}
-                    </span>
-                  </div>
+                  {/* Per-service total — shown for every application (hidden in no-price PDF) */}
+                  {!hidePricing && (
+                    <div
+                      className="break-inside-avoid"
+                      style={{
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                        padding: "8px 18px",
+                        background: "#f1f5f9",
+                        borderTop: "1px solid #e2e8f0",
+                      }}
+                    >
+                      <span style={{ fontSize: "11px", fontWeight: 800, color: "#1e4a7a", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                        Total {group.title}
+                      </span>
+                      <span style={{ fontSize: "13px", fontWeight: 900, color: "#0284c7" }}>
+                        {formatMoney(appTotal)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
 
-          {/* Totals Summary Card (full width) */}
+          {/* Totals Summary Card (full width) — omitted entirely in no-price PDF */}
+          {!hidePricing && (
           <div style={{ marginTop: "14px" }}>
             <div
               className="break-inside-avoid"
@@ -584,6 +599,7 @@ export default function DynamicProposalDocument({
               </p>
             </div>
           </div>
+          )}
         </div>
 
         {/* ── SECTION 2: Payment Milestones ── */}
@@ -605,7 +621,9 @@ export default function DynamicProposalDocument({
               >
                 <div style={{ fontSize: "22px", fontWeight: 900, color: t.milestonePctText, lineHeight: 1 }}>{pay.percentage}</div>
                 <div style={{ fontSize: "9.5px", fontWeight: 800, color: t.milestoneLabelText, margin: "5px 0 3px" }}>{pay.label}</div>
-                <div style={{ fontSize: "11.5px", fontWeight: 700, color: t.milestoneAmtText }}>{formatMoney(pay.amount)}</div>
+                {!hidePricing && (
+                  <div style={{ fontSize: "11.5px", fontWeight: 700, color: t.milestoneAmtText }}>{formatMoney(pay.amount)}</div>
+                )}
               </div>
             ))}
           </div>
