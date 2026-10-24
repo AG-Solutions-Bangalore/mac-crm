@@ -1136,15 +1136,36 @@ const QuotationFormPage = () => {
       (p) => p.id?.toString() === pid?.toString(),
     );
 
-  // Product label with category prefix so same-name products under different
-  // categories (e.g. "2M - 4 Control" under Frameless vs Brass) look distinct.
+  // Product label with category + brand so same-name products under different
+  // frame types (No Frame / Frameless / Brass) look distinct.
   const getProductLabel = (p) => {
     const brandName =
       p?.brand_name ||
       brands.find((b) => b.id?.toString() === p?.brand_id?.toString())
         ?.brand_name ||
       "";
-    return brandName ? `${p?.product_name} - (${brandName})` : p?.product_name;
+    const catName =
+      p?.category_name ||
+      categories.find((c) => c.id?.toString() === p?.category_id?.toString())
+        ?.category_name ||
+      "";
+    const base = brandName
+      ? `${p?.product_name} - (${brandName})`
+      : p?.product_name;
+    return catName ? `${catName} - ${base}` : base;
+  };
+
+  // API can return the same product row more than once (multiple category /
+  // service matches). Keep one option per product id.
+  const dedupeProducts = (list = []) => {
+    const seenIds = new Set();
+    return list.filter((p) => {
+      const id = p?.id?.toString();
+      if (!id) return true;
+      if (seenIds.has(id)) return false;
+      seenIds.add(id);
+      return true;
+    });
   };
 
   // Row product options: STRICT — only products of this row's Service.
@@ -1177,7 +1198,7 @@ const QuotationFormPage = () => {
         seen.add(e.id?.toString());
       }
     });
-    return merged;
+    return dedupeProducts(merged);
   };
 
   // Product select: NO auto-set. Row Service kabhi khud nahi badlega.
