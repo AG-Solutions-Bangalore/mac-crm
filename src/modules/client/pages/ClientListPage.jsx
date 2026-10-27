@@ -34,15 +34,14 @@ const ClientListPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: responseData, isLoading, isFetching, isError, refetch } = useClientsQuery(page, searchTerm);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useClientsQuery(
+    page,
+    searchTerm,
+    statusFilter
+  );
 
   const paginationData = responseData?.data;
   const clientList = paginationData?.data || [];
-
-  const filteredData = clientList.filter((item) => {
-    if (statusFilter === "all") return true;
-    return item.status?.toLowerCase() === statusFilter.toLowerCase();
-  });
 
 
   const columns = [
@@ -153,7 +152,13 @@ const ClientListPage = () => {
       <DataTable
         isLoading={isLoading || isFetching}
         extraButton={
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={statusFilter}
+            onValueChange={(val) => {
+              setStatusFilter(val);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Select Status" />
             </SelectTrigger>
@@ -164,7 +169,7 @@ const ClientListPage = () => {
             </SelectContent>
           </Select>
         }
-        data={filteredData}
+        data={clientList}
         columns={columns}
         searchPlaceholder="Search Clients..."
         pageSize={50}

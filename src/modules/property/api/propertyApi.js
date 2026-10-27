@@ -1,12 +1,11 @@
 import apiClient from "@/api/apiClient";
 
 export const propertyApi = {
-  getProperties: async (page = 1, search = "") => {
-    const params = [];
-    if (page) params.push(`page=${page}`);
-    if (search) params.push(`search=${encodeURIComponent(search)}`);
-    const qs = params.length ? `?${params.join("&")}` : "";
-    const response = await apiClient.get(`/property${qs}`);
+  getProperties: async (page = 1, search = "", status = "all") => {
+    const params = new URLSearchParams({ page: String(page) });
+    if (search) params.set("search", search);
+    if (status && status !== "all") params.set("filter", status);
+    const response = await apiClient.get(`/property?${params.toString()}`);
     return response.data;
   },
   getPropertyById: async (id) => {

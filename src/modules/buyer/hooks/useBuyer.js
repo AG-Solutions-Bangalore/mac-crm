@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { buyerApi } from "../api/buyerApi";
 
-export function useBuyersQuery(page = 1, search = "") {
+export function useBuyersQuery(page = 1, search = "", status = "all") {
   return useQuery({
-    queryKey: ["buyers", page, search],
-    queryFn: () => buyerApi.getBuyers(page, search),
+    queryKey: ["buyers", page, search, status],
+    queryFn: () => buyerApi.getBuyers(page, search, status),
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,

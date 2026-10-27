@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { categoryApi } from "../api/categoryApi";
 
-export function useCategoriesQuery(page = 1, search = "") {
+export function useCategoriesQuery(page = 1, search = "", status = "all") {
   return useQuery({
-    queryKey: ["categories", page, search],
-    queryFn: () => categoryApi.getCategories(page, search),
+    queryKey: ["categories", page, search, status],
+    queryFn: () => categoryApi.getCategories(page, search, status),
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,

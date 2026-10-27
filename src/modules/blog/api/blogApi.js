@@ -14,9 +14,11 @@ import apiClient from "@/api/apiClient";
  * `blog_categories_ids` multi-select dropdown.
  */
 export const blogApi = {
-  getBlogs: async (page = 1, search = "") => {
-    const url = `/blog?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
-    const response = await apiClient.get(url);
+  getBlogs: async (page = 1, search = "", status = "all") => {
+    const params = new URLSearchParams({ page: String(page) });
+    if (search) params.set("search", search);
+    if (status && status !== "all") params.set("filter", status);
+    const response = await apiClient.get(`/blog?${params.toString()}`);
     return response.data;
   },
 

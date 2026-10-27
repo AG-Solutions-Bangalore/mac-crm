@@ -23,16 +23,16 @@ const PropertyListPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: responseData, isLoading, isFetching, isError, refetch } = usePropertiesQuery(page, searchTerm);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = usePropertiesQuery(
+    page,
+    searchTerm,
+    statusFilter
+  );
 
   const paginationData = responseData?.data;
   const isPaginated = paginationData && typeof paginationData === "object" && "data" in paginationData && Array.isArray(paginationData.data);
   const propertyList = isPaginated ? paginationData.data : (Array.isArray(paginationData) ? paginationData : []);
 
-  const filteredData = propertyList.filter((item) => {
-    if (statusFilter === "all") return true;
-    return item.property_status?.toLowerCase() === statusFilter.toLowerCase();
-  });
   const columns = [
     {
       header: "Sl No",
@@ -92,7 +92,13 @@ const PropertyListPage = () => {
       <DataTable
         isLoading={isLoading || isFetching}
         extraButton={
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={statusFilter}
+            onValueChange={(val) => {
+              setStatusFilter(val);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Select Status" />
             </SelectTrigger>
@@ -103,7 +109,7 @@ const PropertyListPage = () => {
             </SelectContent>
           </Select>
         }
-        data={filteredData}
+        data={propertyList}
         columns={columns}
         searchPlaceholder="Search Properties..."
         pageSize={50}

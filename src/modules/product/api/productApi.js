@@ -1,9 +1,12 @@
 import apiClient from "@/api/apiClient";
 
 export const productApi = {
-  getProducts: async (page = 1, search = "") => {
-    const url = `/product?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
-    const response = await apiClient.get(url);
+  getProducts: async (page = 1, search = "", status = "all", serviceId = "all") => {
+    const params = new URLSearchParams({ page: String(page) });
+    if (search) params.set("search", search);
+    if (status && status !== "all") params.set("filter", status);
+    if (serviceId && serviceId !== "all") params.set("service_id", serviceId);
+    const response = await apiClient.get(`/product?${params.toString()}`);
     return response.data;
   },
   getProductById: async (id) => {

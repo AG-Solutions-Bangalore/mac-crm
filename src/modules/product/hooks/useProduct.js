@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { productApi } from "../api/productApi";
 
-export function useProductsQuery(page = 1, search = "") {
+export function useProductsQuery(page = 1, search = "", status = "all", serviceId = "all") {
   return useQuery({
-    queryKey: ["products", page, search],
-    queryFn: () => productApi.getProducts(page, search),
+    queryKey: ["products", page, search, status, serviceId],
+    queryFn: () => productApi.getProducts(page, search, status, serviceId),
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,

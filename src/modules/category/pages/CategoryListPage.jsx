@@ -23,15 +23,14 @@ const CategoryListPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: responseData, isLoading, isFetching, isError, refetch } = useCategoriesQuery(page, searchTerm);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useCategoriesQuery(
+    page,
+    searchTerm,
+    statusFilter
+  );
 
   const paginationData = responseData?.data;
   const categoryList = paginationData?.data || [];
-
-  const filteredData = categoryList.filter((item) => {
-    if (statusFilter === "all") return true;
-    return item.category_status?.toLowerCase() === statusFilter.toLowerCase();
-  });
 
 
   const columns = [
@@ -90,7 +89,13 @@ const CategoryListPage = () => {
       <DataTable
         isLoading={isLoading || isFetching}
         extraButton={
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={statusFilter}
+            onValueChange={(val) => {
+              setStatusFilter(val);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Select Status" />
             </SelectTrigger>
@@ -101,7 +106,7 @@ const CategoryListPage = () => {
             </SelectContent>
           </Select>
         }
-        data={filteredData}
+        data={categoryList}
         columns={columns}
         searchPlaceholder="Search Category..."
         pageSize={50}

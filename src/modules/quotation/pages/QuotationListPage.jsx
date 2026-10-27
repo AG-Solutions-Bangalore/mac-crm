@@ -167,20 +167,12 @@ const QuotationListPage = () => {
   const paginationData = responseData?.data;
   const rawQuotationList = paginationData?.data || [];
 
-  const filteredData = rawQuotationList.filter((item) => {
-    const itemStatus = item.quotation_status?.toLowerCase();
-    // Estimates-only: "All Status" me converted (Project) rows chhupao jab toggle on ho.
-    // Koi specific status select ho to wahi jeetega (Project select = converted dikhenge).
-    if (statusFilter === "all") {
-      if (hideConverted && itemStatus === "project") return false;
-      return true;
-    }
-    const filter = statusFilter.toLowerCase();
-    if (filter === "cancel") {
-      return itemStatus === "cancel" || itemStatus === "cancelled";
-    }
-    return itemStatus === filter;
-  });
+  const quotationList =
+    statusFilter === "all" && hideConverted
+      ? rawQuotationList.filter(
+          (item) => item.quotation_status?.toLowerCase() !== "project"
+        )
+      : rawQuotationList;
 
   const columns = [
     {
@@ -402,7 +394,7 @@ const QuotationListPage = () => {
             </Select>
           </div>
         }
-        data={filteredData}
+        data={quotationList}
         columns={columns}
         searchPlaceholder="Search Quotations..."
         pageSize={50}

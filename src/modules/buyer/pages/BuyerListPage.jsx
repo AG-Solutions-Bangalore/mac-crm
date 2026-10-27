@@ -23,15 +23,14 @@ const BuyerListPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: responseData, isLoading, isFetching, isError, refetch } = useBuyersQuery(page, searchTerm);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useBuyersQuery(
+    page,
+    searchTerm,
+    statusFilter
+  );
 
   const paginationData = responseData?.data;
   const buyerList = paginationData?.data || [];
-
-  const filteredData = buyerList.filter((item) => {
-    if (statusFilter === "all") return true;
-    return item.buyer_status?.toLowerCase() === statusFilter.toLowerCase();
-  });
 
 
   const columns = [
@@ -100,7 +99,13 @@ const BuyerListPage = () => {
       <DataTable
         isLoading={isLoading || isFetching}
         extraButton={
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={statusFilter}
+            onValueChange={(val) => {
+              setStatusFilter(val);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Select Status" />
             </SelectTrigger>
@@ -111,7 +116,7 @@ const BuyerListPage = () => {
             </SelectContent>
           </Select>
         }
-        data={filteredData}
+        data={buyerList}
         columns={columns}
         searchPlaceholder="Search Leads..."
         pageSize={50}
