@@ -36,6 +36,7 @@ import ImportQuotationDialog from "../components/ImportQuotationDialog";
 import { QuickNameDialog, ProductQuickAddDialog, ServiceQuickAddDialog } from "../components/MasterQuickAddDialogs";
 import { useCreateBuyerMutation } from "../../buyer/hooks/useBuyer";
 import { calculateMilestoneAmounts } from "@/utils/milestoneUtils";
+import { buildProductOption, filterProductOption } from "@/utils/productSelectUtils";
 import {
   Dialog,
   DialogContent,
@@ -1192,23 +1193,14 @@ const QuotationFormPage = () => {
       (p) => p.id?.toString() === pid?.toString(),
     );
 
-  // Product label with category + brand so same-name products under different
-  // frame types (No Frame / Frameless / Brass) look distinct.
-  const getProductLabel = (p) => {
+  const getProductOption = (p) => {
     const brandName =
-      p?.brand_name ||
       brands.find((b) => b.id?.toString() === p?.brand_id?.toString())
-        ?.brand_name ||
-      "";
+        ?.brand_name || "";
     const catName =
-      p?.category_name ||
       categories.find((c) => c.id?.toString() === p?.category_id?.toString())
-        ?.category_name ||
-      "";
-    const base = brandName
-      ? `${p?.product_name} - (${brandName})`
-      : p?.product_name;
-    return catName ? `${catName} - ${base}` : base;
+        ?.category_name || "";
+    return buildProductOption(p, brandName, catName);
   };
 
   // API can return the same product row more than once (multiple category /
@@ -2271,10 +2263,8 @@ const QuotationFormPage = () => {
                                           <SelectWithAdd
                                             options={getRowProductOptions(
                                               srv.serviceId,
-                                            ).map((p) => ({
-                                              value: p.id?.toString(),
-                                              label: getProductLabel(p),
-                                            }))}
+                                            ).map(getProductOption)}
+                                            filterOption={filterProductOption}
                                             value={prod.productId}
                                             onChange={(option) =>
                                               handleProductSelect(
