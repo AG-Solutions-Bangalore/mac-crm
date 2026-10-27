@@ -2,7 +2,7 @@ import React from "react";
 import { Building2, MapPin, Phone, Mail } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 
-export default function TermsPage({ clientName }) {
+export default function TermsPage({ clientName, contactPhone, contactEmail }) {
   return (
     <div className="makc-page makc-page-dynamic text-white p-8 md:p-12 flex flex-col justify-between">
       {/* Header */}
@@ -88,8 +88,12 @@ export default function TermsPage({ clientName }) {
       <div className="pt-4 border-t border-slate-900 flex justify-between items-center text-[10px] text-slate-400 mt-auto">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-sky-400" /> BEML Layout, Brookfield, Bangalore – 560066</span>
-          <span className="flex items-center gap-1"><Phone className="w-3 h-3 text-sky-400" /> +91-7338504441</span>
-          <span className="flex items-center gap-1"><Mail className="w-3 h-3 text-sky-400" /> vinod@makcautomations.com</span>
+          {contactPhone && (
+            <span className="flex items-center gap-1"><Phone className="w-3 h-3 text-sky-400" /> {contactPhone}</span>
+          )}
+          {contactEmail && (
+            <span className="flex items-center gap-1"><Mail className="w-3 h-3 text-sky-400" /> {contactEmail}</span>
+          )}
         </div>
         <span>Terms & Approval</span>
       </div>
