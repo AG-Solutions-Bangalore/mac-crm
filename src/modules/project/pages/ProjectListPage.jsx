@@ -105,7 +105,7 @@ const ProjectListPage = () => {
       },
     },
     {
-      header: "Buyer",
+      header: "Lead",
       accessorKey: "buyer_name",
     },
     {

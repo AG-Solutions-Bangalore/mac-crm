@@ -1090,12 +1090,12 @@ const RevQuotationFormPage = () => {
   const validateForm = () => {
     let newErrors = {};
     if (!formData.quotation_buyer_id)
-      newErrors.quotation_buyer_id = "Buyer is required";
+      newErrors.quotation_buyer_id = "Lead is required";
     if (!formData.quotation_property_id)
       newErrors.quotation_property_id = "Property is required";
 
     if (newErrors.quotation_buyer_id || newErrors.quotation_property_id) {
-      toast.error("Please select a Buyer and Property at the top of the form.");
+      toast.error("Please select a Lead and Property at the top of the form.");
       setErrors(newErrors);
       focusErrorField(
         newErrors.quotation_buyer_id ? "buyer" : "property"
@@ -1472,14 +1472,14 @@ const RevQuotationFormPage = () => {
 
               {/* Buyer (Read-only reference) */}
               <div className="space-y-2" data-error-field="buyer">
-                <Label>Buyer</Label>
+                <Label>Lead</Label>
                 <select
                   name="quotation_buyer_id"
                   value={formData.quotation_buyer_id}
                   disabled
                   className="w-full border rounded-md h-10 px-3 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-500 text-sm"
                 >
-                  <option value="">Select Buyer</option>
+                  <option value="">Select Lead</option>
                   {buyers.map((buyer) => (
                     <option key={buyer.id} value={buyer.id}>
                       {buyer.buyer_name}

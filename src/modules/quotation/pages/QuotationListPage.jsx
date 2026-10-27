@@ -245,7 +245,7 @@ const QuotationListPage = () => {
       ),
     },
     {
-      header: "Buyer",
+      header: "Lead",
       accessorKey: "buyer_name",
     },
     {
@@ -467,7 +467,7 @@ const QuotationListPage = () => {
               <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border dark:border-slate-800 space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
               
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Buyer:</span>
+                  <span className="text-slate-500">Lead:</span>
                   <span className="font-medium">{convertingQuotation.buyer_name || "-"}</span>
                 </div>
                 <div className="flex justify-between">

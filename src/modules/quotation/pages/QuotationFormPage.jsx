@@ -808,12 +808,12 @@ const QuotationFormPage = () => {
   const validateForm = () => {
     let newErrors = {};
     if (!formData.quotation_buyer_id)
-      newErrors.quotation_buyer_id = "Buyer is required";
+      newErrors.quotation_buyer_id = "Lead is required";
     if (!formData.quotation_property_id)
       newErrors.quotation_property_id = "Property is required";
 
     if (newErrors.quotation_buyer_id || newErrors.quotation_property_id) {
-      toast.error("Please select a Buyer and Property at the top of the form.");
+      toast.error("Please select a Lead and Property at the top of the form.");
       setErrors(newErrors);
       focusErrorField(
         newErrors.quotation_buyer_id ? "buyer" : "property"
@@ -1049,7 +1049,7 @@ const QuotationFormPage = () => {
   const handleCreateBuyer = async (e) => {
     e?.preventDefault?.();
     const errs = {};
-    if (!newBuyer.buyer_name.trim()) errs.buyer_name = "Buyer Name is required";
+    if (!newBuyer.buyer_name.trim()) errs.buyer_name = "Lead Name is required";
     if (!newBuyer.buyer_mobile) {
       errs.buyer_mobile = "Mobile number is required";
     } else if (newBuyer.buyer_mobile.length !== 10) {
@@ -1083,7 +1083,7 @@ const QuotationFormPage = () => {
         setFormData((prev) => ({ ...prev, quotation_buyer_id: newId }));
         setErrors((prev) => ({ ...prev, quotation_buyer_id: "" }));
       }
-      toast.success("Buyer added successfully");
+      toast.success("Lead added successfully");
       setBuyerDialogOpen(false);
       setNewBuyer({
         buyer_name: "",
@@ -1596,7 +1596,7 @@ const QuotationFormPage = () => {
               {/* Buyer Select */}
               <div className="space-y-2" data-error-field="buyer">
                 <Label className="flex">
-                  Buyer <RedStar />
+                  Lead <RedStar />
                 </Label>
                 <SelectWithAdd
                   value={formData.quotation_buyer_id}
@@ -1608,7 +1608,7 @@ const QuotationFormPage = () => {
                     setErrors((prev) => ({ ...prev, quotation_buyer_id: "" }));
                   }}
                   options={buyerOptions}
-                  placeholder="Search or Select Buyer"
+                  placeholder="Search or Select Lead"
                   isLoading={buyersLoading}
                   hasError={Boolean(errors.quotation_buyer_id)}
                   filterOption={filterBuyer}
@@ -1623,11 +1623,11 @@ const QuotationFormPage = () => {
                   // Bahar chahiye to: menuPosition="fixed" menuPortalTarget={document.body}
                   placement="bottom-left"
                   menuPosition="absolute"
-                  addLabel="Add New Buyer"
+                  addLabel="Add New Lead"
                   renderAddLabel={(typed) =>
                     typed?.trim()
-                      ? `Add "${typed.trim()}" as New Buyer`
-                      : "Add New Buyer"
+                      ? `Add "${typed.trim()}" as New Lead`
+                      : "Add New Lead"
                   }
                   onAdd={handleBuyerAdd}
                   menuIsOpen={buyerDialogOpen ? false : buyerMenuOpen}
@@ -2378,10 +2378,10 @@ const QuotationFormPage = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UserPlus className="h-5 w-5 text-blue-600" />
-              Add New Buyer
+              Add New Lead
             </DialogTitle>
             <DialogDescription>
-              Quickly register a buyer without leaving the quotation form. It
+              Quickly register a lead without leaving the quotation form. It
               will be auto-selected after saving.
             </DialogDescription>
           </DialogHeader>
@@ -2389,14 +2389,14 @@ const QuotationFormPage = () => {
           <form onSubmit={handleCreateBuyer} className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label>
-                Buyer Name <span className="text-red-500">*</span>
+                Lead Name <span className="text-red-500">*</span>
               </Label>
               <Input
                 value={newBuyer.buyer_name}
                 onChange={(e) =>
                   setNewBuyer((p) => ({ ...p, buyer_name: e.target.value }))
                 }
-                placeholder="Enter buyer name"
+                placeholder="Enter lead name"
                 autoFocus
               />
               {buyerFormErrors.buyer_name && (
@@ -2476,7 +2476,7 @@ const QuotationFormPage = () => {
                   </>
                 ) : (
                   <>
-                    <Plus className="w-4 h-4 mr-2" /> Add Buyer
+                    <Plus className="w-4 h-4 mr-2" /> Add Lead
                   </>
                 )}
               </Button>

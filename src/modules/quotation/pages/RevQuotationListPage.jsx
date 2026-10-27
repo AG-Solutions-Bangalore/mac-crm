@@ -94,7 +94,7 @@ const RevQuotationListPage = () => {
           : "-",
     },
     {
-      header: "Buyer",
+      header: "Lead",
       accessorKey: "buyer_name",
     },
     {
