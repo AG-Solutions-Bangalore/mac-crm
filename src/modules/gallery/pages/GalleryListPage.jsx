@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { Edit, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +21,7 @@ import { useGalleriesQuery } from "../hooks/useGallery";
 
 const GalleryListPage = () => {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 

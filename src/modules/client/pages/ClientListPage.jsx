@@ -1,6 +1,7 @@
 import PageHeader from "@/components/common/page-header";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { Edit , Users } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
@@ -29,7 +30,7 @@ const getServiceBadgeClass = (serviceName) => {
 
 const ClientListPage = () => {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 

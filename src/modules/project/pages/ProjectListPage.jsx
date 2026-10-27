@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { Edit, FileText, MoreHorizontal, FolderKanban, CheckCircle, XCircle, RotateCcw } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
@@ -27,7 +28,7 @@ import moment from "moment";
 
 const ProjectListPage = () => {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 

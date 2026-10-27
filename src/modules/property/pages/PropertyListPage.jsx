@@ -1,6 +1,7 @@
 import PageHeader from "@/components/common/page-header";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { Edit, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +19,7 @@ import { usePropertiesQuery } from "../hooks/useProperty";
 
 const PropertyListPage = () => {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
