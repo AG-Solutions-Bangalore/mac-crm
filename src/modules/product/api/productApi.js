@@ -19,6 +19,7 @@ export const productApi = {
     formData.append("product_name", data.product_name);
     formData.append("product_warranty", data.product_warranty);
     formData.append("product_price", data.product_price);
+    formData.append("product_status", data.product_status || "Active");
 
     const response = await apiClient.post("/product", formData, {
       headers: {
