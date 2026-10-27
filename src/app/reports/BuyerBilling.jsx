@@ -149,7 +149,7 @@ function BuyerBilling() {
     if (buyerRows.length === 0) return;
 
     const exportData = buyerRows.map((item) => ({
-      Buyer: item.buyer_name || "-",
+      Lead: item.buyer_name || "-",
       Mobile: buyerMobileMap[item.buyer_id] || "-",
       Sheets: item.count,
       "Pending (₹)": Math.round(item.pending),
@@ -160,7 +160,7 @@ function BuyerBilling() {
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Buyer Billing");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Lead Billing");
 
     worksheet["!cols"] = [
       { wch: 25 },
@@ -172,14 +172,14 @@ function BuyerBilling() {
       { wch: 18 },
     ];
 
-    XLSX.writeFile(workbook, "Buyer_Billing_Report.xlsx");
+    XLSX.writeFile(workbook, "Lead_Billing_Report.xlsx");
   };
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between space-y-2">
         <h2 className="text-3xl font-bold tracking-tight">
-          Buyer Billing Report
+          Lead Billing Report
         </h2>
 
         <Button
@@ -263,7 +263,7 @@ function BuyerBilling() {
 
               <div className="flex flex-col gap-2 w-full sm:w-auto">
                 <label className="text-sm font-medium leading-none">
-                  Buyer
+                  Lead
                 </label>
 
                 <Select
@@ -274,11 +274,11 @@ function BuyerBilling() {
                   }}
                 >
                   <SelectTrigger className="w-full sm:w-[220px]">
-                    <SelectValue placeholder="Select Buyer" />
+                    <SelectValue placeholder="Select Lead" />
                   </SelectTrigger>
 
                   <SelectContent>
-                    <SelectItem value="all">All Buyers</SelectItem>
+                    <SelectItem value="all">All Leads</SelectItem>
                     {activeBuyers.map((b) => (
                       <SelectItem key={b.id} value={b.id?.toString()}>
                         {b.buyer_name}
@@ -308,7 +308,7 @@ function BuyerBilling() {
             <span>Billing Data</span>
             {!loading && buyerRows.length > 0 && (
               <span className="text-sm font-normal text-muted-foreground">
-                {buyerRows.length} buyers • {grandSheets} sheets • Total{" "}
+                {buyerRows.length} leads • {grandSheets} sheets • Total{" "}
                 <span className="font-bold text-foreground">{inr(grandTotal)}</span>
               </span>
             )}
@@ -332,7 +332,7 @@ function BuyerBilling() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Buyer</TableHead>
+                      <TableHead>Lead</TableHead>
                       <TableHead>Mobile</TableHead>
                       <TableHead className="text-right">Sheets</TableHead>
                       <TableHead className="text-right">Pending (₹)</TableHead>

@@ -1,9 +1,11 @@
 import apiClient from "@/api/apiClient";
 
 export const serviceApi = {
-  getServices: async (page = 1, search = "") => {
-    const url = `/service?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
-    const response = await apiClient.get(url);
+  getServices: async (page = 1, search = "", status = "all") => {
+    const params = new URLSearchParams({ page: String(page) });
+    if (search) params.set("search", search);
+    if (status && status !== "all") params.set("filter", status);
+    const response = await apiClient.get(`/service?${params.toString()}`);
     return response.data;
   },
   getServiceById: async (id) => {

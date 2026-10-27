@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { Edit, FileText, MoreHorizontal, FolderKanban, CheckCircle, XCircle, RotateCcw } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
@@ -27,7 +28,7 @@ import moment from "moment";
 
 const ProjectListPage = () => {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -39,17 +40,7 @@ const ProjectListPage = () => {
   const updateStatusMutation = useUpdateProjectStatusMutation();
 
   const paginationData = responseData?.data;
-  const rawProjectList = paginationData?.data || [];
-
-  const filteredData = rawProjectList.filter((item) => {
-    if (statusFilter === "all") return true;
-    const itemStatus = (item.project_status || item.status || item.quotation_status || "")?.toLowerCase();
-    const filter = statusFilter.toLowerCase();
-    if (filter === "cancel") {
-      return itemStatus === "cancel" || itemStatus === "cancelled";
-    }
-    return itemStatus === filter;
-  });
+  const projectList = paginationData?.data || [];
 
   const columns = [
     {
@@ -105,7 +96,7 @@ const ProjectListPage = () => {
       },
     },
     {
-      header: "Buyer",
+      header: "Lead",
       accessorKey: "buyer_name",
     },
     {
@@ -293,7 +284,7 @@ const ProjectListPage = () => {
             </SelectContent>
           </Select>
         }
-        data={filteredData}
+        data={projectList}
         columns={columns}
         searchPlaceholder="Search Projects..."
         pageSize={50}

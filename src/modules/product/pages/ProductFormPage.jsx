@@ -28,6 +28,7 @@ const ProductFormPage = () => {
     product_name: "",
     product_warranty: "",
     product_price: "",
+    product_status: "Active",
   });
 
   const [errors, setErrors] = useState({});
@@ -55,6 +56,7 @@ const ProductFormPage = () => {
         product_name: data.product_name || "",
         product_warranty: data.product_warranty || "",
         product_price: data.product_price?.toString() || "",
+        product_status: data.product_status || "Active",
       });
     }
   }, [isEdit, fetchedData]);

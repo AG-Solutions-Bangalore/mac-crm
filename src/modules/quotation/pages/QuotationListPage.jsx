@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { Edit, FileText, CalendarDays, FolderKanban } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
@@ -35,7 +36,7 @@ import moment from "moment";
 
 const QuotationListPage = () => {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   // Estimates-only view: converted (Project) quotes hidden by default (client-side,
@@ -166,20 +167,12 @@ const QuotationListPage = () => {
   const paginationData = responseData?.data;
   const rawQuotationList = paginationData?.data || [];
 
-  const filteredData = rawQuotationList.filter((item) => {
-    const itemStatus = item.quotation_status?.toLowerCase();
-    // Estimates-only: "All Status" me converted (Project) rows chhupao jab toggle on ho.
-    // Koi specific status select ho to wahi jeetega (Project select = converted dikhenge).
-    if (statusFilter === "all") {
-      if (hideConverted && itemStatus === "project") return false;
-      return true;
-    }
-    const filter = statusFilter.toLowerCase();
-    if (filter === "cancel") {
-      return itemStatus === "cancel" || itemStatus === "cancelled";
-    }
-    return itemStatus === filter;
-  });
+  const quotationList =
+    statusFilter === "all" && hideConverted
+      ? rawQuotationList.filter(
+          (item) => item.quotation_status?.toLowerCase() !== "project"
+        )
+      : rawQuotationList;
 
   const columns = [
     {
@@ -245,7 +238,7 @@ const QuotationListPage = () => {
       ),
     },
     {
-      header: "Buyer",
+      header: "Lead",
       accessorKey: "buyer_name",
     },
     {
@@ -401,7 +394,7 @@ const QuotationListPage = () => {
             </Select>
           </div>
         }
-        data={filteredData}
+        data={quotationList}
         columns={columns}
         searchPlaceholder="Search Quotations..."
         pageSize={50}
@@ -467,7 +460,7 @@ const QuotationListPage = () => {
               <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border dark:border-slate-800 space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
               
                 <div className="flex justify-between">
-                  <span className="text-slate-500">Buyer:</span>
+                  <span className="text-slate-500">Lead:</span>
                   <span className="font-medium">{convertingQuotation.buyer_name || "-"}</span>
                 </div>
                 <div className="flex justify-between">

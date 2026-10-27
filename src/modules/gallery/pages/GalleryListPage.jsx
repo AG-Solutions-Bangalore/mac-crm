@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { Edit, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,11 +21,15 @@ import { useGalleriesQuery } from "../hooks/useGallery";
 
 const GalleryListPage = () => {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: responseData, isLoading, isFetching, isError, refetch } = useGalleriesQuery(page, searchTerm);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useGalleriesQuery(
+    page,
+    searchTerm,
+    statusFilter
+  );
 
   const paginationData = responseData?.data;
   const isPaginated =
@@ -45,11 +50,6 @@ const GalleryListPage = () => {
   const IMAGE_FOR = "Gallery";
   const galleryBaseUrl = getImageBaseUrl(responseData?.image_url, IMAGE_FOR);
   const noImageUrl = getNoImageUrl(responseData?.image_url);
-
-  const filteredData = galleryList.filter((item) => {
-    if (statusFilter === "all") return true;
-    return item.gallery_status?.toLowerCase() === statusFilter.toLowerCase();
-  });
 
   const columns = [
     {
@@ -128,7 +128,13 @@ const GalleryListPage = () => {
       <DataTable
         isLoading={isLoading || isFetching}
         extraButton={
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={statusFilter}
+            onValueChange={(val) => {
+              setStatusFilter(val);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Select Status" />
             </SelectTrigger>
@@ -139,7 +145,7 @@ const GalleryListPage = () => {
             </SelectContent>
           </Select>
         }
-        data={filteredData}
+        data={galleryList}
         columns={columns}
         searchPlaceholder="Search gallery..."
         pageSize={50}

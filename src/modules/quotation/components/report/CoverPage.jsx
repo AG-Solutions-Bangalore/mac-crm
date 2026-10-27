@@ -152,7 +152,7 @@ export default function CoverPage({
         <div
           className="makc-iso-plate"
           style={{
-            width: "58px", height: "58px", borderRadius: "50%", flexShrink: 0,
+            width: "82px", height: "82px", borderRadius: "50%", flexShrink: 0,
             background: "#ffffff", overflow: "hidden",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}
@@ -190,8 +190,8 @@ export default function CoverPage({
               background: "#fef3c7",
               border: "1px solid #fde047",
               borderRadius: "4px",
-              padding: "3px 10px",
-              fontSize: "7.5px", fontWeight: 800, letterSpacing: "0.18em",
+              padding: "4px 12px",
+              fontSize: "9px", fontWeight: 800, letterSpacing: "0.18em",
               color: "#b45309", textTransform: "uppercase",
             }}
           >
@@ -203,8 +203,8 @@ export default function CoverPage({
               background: "#ffffff",
               border: "1px solid #f59e0b",
               borderRadius: "999px",
-              padding: "3px 10px",
-              fontSize: "7.5px", fontWeight: 800, letterSpacing: "0.14em",
+              padding: "4px 12px",
+              fontSize: "9px", fontWeight: 800, letterSpacing: "0.14em",
               color: "#b45309", textTransform: "uppercase",
             }}
           >
@@ -229,8 +229,8 @@ export default function CoverPage({
 
         <p
           style={{
-            fontSize: "10.5px", color: "#334155", fontWeight: 500,
-            maxWidth: "480px", lineHeight: 1.6, margin: "0 0 12px",
+            fontSize: "12px", color: "#334155", fontWeight: 500,
+            maxWidth: "520px", lineHeight: 1.62, margin: "0 0 12px",
           }}
         >
           Smart homes are not about gadgets — they are about how you live. With almost a decade of
@@ -271,9 +271,9 @@ export default function CoverPage({
             boxSizing: "border-box",
             display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center",
             columnGap: "16px", rowGap: "10px",
-            background: "rgba(255,255,255,0.5)",
-            backdropFilter: "blur(8px)",
-            WebkitBackdropFilter: "blur(8px)",
+            background: "rgba(255,255,255,0.32)",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
             
             borderRadius: "14px",
             padding: "13px 18px",

@@ -53,7 +53,7 @@ export const quotationApi = {
   getQuotations: async (page = 1, search = "", status = "") => {
     let url = `/quotation?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
     if (status && status !== "all") {
-      url += `&status=${encodeURIComponent(status)}`;
+      url += `&filter=${encodeURIComponent(status)}`;
     }
     const response = await apiClient.get(url);
     return response.data;

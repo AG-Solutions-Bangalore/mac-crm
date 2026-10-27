@@ -1,6 +1,7 @@
 import PageHeader from "@/components/common/page-header";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { Edit, Image , Wrench } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import ImageCell from "@/components/common/ImageCell";
@@ -20,11 +21,15 @@ import { useServicesQuery } from "../hooks/useService";
 
 const ServiceListPage = () => {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: responseData, isLoading, isFetching, isError, refetch } = useServicesQuery(page, searchTerm);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useServicesQuery(
+    page,
+    searchTerm,
+    statusFilter
+  );
 
   const paginationData = responseData?.data;
   const rawData = paginationData?.data || responseData?.data || [];
@@ -32,11 +37,6 @@ const ServiceListPage = () => {
   const IMAGE_FOR = "Service";
   const companyBaseUrl = getImageBaseUrl(responseData?.image_url, IMAGE_FOR);
   const noImageUrl = getNoImageUrl(responseData?.image_url);
-
-  const filteredData = rawData.filter((item) => {
-    if (statusFilter === "all") return true;
-    return item.service_status?.toLowerCase() === statusFilter.toLowerCase();
-  });
 
   const columns = [
     {
@@ -97,7 +97,7 @@ const ServiceListPage = () => {
       />
       <DataTable
         isLoading={isLoading || isFetching}
-        data={filteredData}
+        data={rawData}
         columns={columns}
         backendPagination={true}
         page={paginationData?.current_page || 1}
@@ -113,7 +113,10 @@ const ServiceListPage = () => {
         extraButton={
           <Select
             value={statusFilter}
-            onValueChange={setStatusFilter}
+            onValueChange={(val) => {
+              setStatusFilter(val);
+              setPage(1);
+            }}
           >
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Select Status" />

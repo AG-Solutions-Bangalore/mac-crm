@@ -1,6 +1,7 @@
 import PageHeader from "@/components/common/page-header";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { Edit , Package } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
@@ -15,22 +16,31 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useProductsQuery } from "../hooks/useProduct";
+import { useActiveServicesQuery } from "../../service/hooks/useService";
 
 const ProductListPage = () => {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [serviceFilter, setServiceFilter] = useState("all");
 
-  const { data: responseData, isLoading, isFetching, isError, refetch } = useProductsQuery(page, searchTerm);
+  const { data: servicesData } = useActiveServicesQuery();
+  const services = servicesData?.data || [];
+  const selectedService = services.find(
+    (service) => service.id?.toString() === serviceFilter
+  );
+  const effectiveSearch =
+    serviceFilter === "all" ? searchTerm : selectedService?.service_name || "";
+
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useProductsQuery(
+    page,
+    effectiveSearch,
+    statusFilter
+  );
 
   const paginationData = responseData?.data;
   const productList = paginationData?.data || [];
-
-  const filteredData = productList.filter((item) => {
-    if (statusFilter === "all") return true;
-    return item.product_status?.toLowerCase() === statusFilter.toLowerCase();
-  });
 
 
   const columns = [
@@ -120,24 +130,56 @@ const ProductListPage = () => {
       <DataTable
         isLoading={isLoading || isFetching}
         extraButton={
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[120px]">
-              <SelectValue placeholder="Select Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="Active">Active</SelectItem>
-              <SelectItem value="Inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Select
+              value={serviceFilter}
+              onValueChange={(val) => {
+                setServiceFilter(val);
+                setSearchTerm("");
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="All Services" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Services</SelectItem>
+                {services.map((service) => (
+                  <SelectItem
+                    key={service.id}
+                    value={service.id?.toString()}
+                  >
+                    {service.service_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={statusFilter}
+              onValueChange={(val) => {
+                setStatusFilter(val);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Select Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="Active">Active</SelectItem>
+                <SelectItem value="Inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         }
-        data={filteredData}
+        data={productList}
         columns={columns}
         searchPlaceholder="Search Product..."
         pageSize={50}
         searchValue={searchTerm}
         onSearchChange={(val) => {
           setSearchTerm(val);
+          if (serviceFilter !== "all") setServiceFilter("all");
           setPage(1);
         }}
         addButton={{

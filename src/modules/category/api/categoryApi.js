@@ -1,9 +1,11 @@
 import apiClient from "@/api/apiClient";
 
 export const categoryApi = {
-  getCategories: async (page = 1, search = "") => {
-    const url = `/category?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
-    const response = await apiClient.get(url);
+  getCategories: async (page = 1, search = "", status = "all") => {
+    const params = new URLSearchParams({ page: String(page) });
+    if (search) params.set("search", search);
+    if (status && status !== "all") params.set("filter", status);
+    const response = await apiClient.get(`/category?${params.toString()}`);
     return response.data;
   },
   getCategoryById: async (id) => {

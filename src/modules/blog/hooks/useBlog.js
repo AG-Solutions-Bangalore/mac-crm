@@ -15,10 +15,10 @@ const LIST_KEY = ["blogs"];
 const ITEM_KEY = (id) => ["blog", id];
 const ACTIVE_SERVICES_KEY = ["activeServices"];
 
-export function useBlogsQuery(page = 1, search = "") {
+export function useBlogsQuery(page = 1, search = "", status = "all") {
   return useQuery({
-    queryKey: [...LIST_KEY, page, search],
-    queryFn: () => blogApi.getBlogs(page, search),
+    queryKey: [...LIST_KEY, page, search, status],
+    queryFn: () => blogApi.getBlogs(page, search, status),
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,

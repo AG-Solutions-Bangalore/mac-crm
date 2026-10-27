@@ -23,7 +23,7 @@ const SERVICES = [
   "Architectural Lighting", "Room Audio", "High-Speed Networking", "CCTV & Security",
 ];
 
-export default function AboutWhyPage({ heroImage, clientName }) {
+export default function AboutWhyPage({ heroImage, clientName, contactPhone, contactEmail }) {
   const isLight = true; // Light-only theme (theme switcher removed)
   // Shared font — ui-sans-serif on every text in this page
   const FONT = "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
@@ -230,14 +230,18 @@ export default function AboutWhyPage({ heroImage, clientName }) {
             <MapPin style={{ width: 9, height: 9, color: isLight ? "#0284c7" : "#38bdf8" }} />
             BEML Layout, Brookfield, Bangalore – 560066
           </span>
-          <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <Phone style={{ width: 9, height: 9, color: isLight ? "#0284c7" : "#38bdf8" }} />
-            +91-7338504441
-          </span>
-          <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <Mail style={{ width: 9, height: 9, color: isLight ? "#0284c7" : "#38bdf8" }} />
-            vinod@makcautomations.com
-          </span>
+          {contactPhone && (
+            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <Phone style={{ width: 9, height: 9, color: isLight ? "#0284c7" : "#38bdf8" }} />
+              {contactPhone}
+            </span>
+          )}
+          {contactEmail && (
+            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <Mail style={{ width: 9, height: 9, color: isLight ? "#0284c7" : "#38bdf8" }} />
+              {contactEmail}
+            </span>
+          )}
         </div>
         <span style={{ fontSize: "8.5px", color: isLight ? "#b45309" : "#fbbf24", fontWeight: 700, letterSpacing: "0.05em" }}>
           Commercial Proposal — Confidential

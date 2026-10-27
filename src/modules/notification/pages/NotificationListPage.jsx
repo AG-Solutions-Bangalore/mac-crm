@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { usePersistedPage } from "@/hooks/usePersistedPage";
 import moment from "moment";
 import { Edit, Bell } from "lucide-react";
 import DataTable from "@/components/common/data-table";
@@ -13,7 +14,7 @@ import { useNotificationsQuery } from "../hooks/useNotification";
 import NotificationDialog from "../components/NotificationDialog";
 
 const NotificationListPage = () => {
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = useState("");
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);

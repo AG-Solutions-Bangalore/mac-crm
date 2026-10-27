@@ -1,6 +1,7 @@
 import PageHeader from "@/components/common/page-header";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { Edit, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,20 +19,20 @@ import { useFloorsQuery } from "../hooks/useFloor";
 
 const FloorListPage = () => {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: responseData, isLoading, isFetching, isError, refetch } = useFloorsQuery(page, searchTerm);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useFloorsQuery(
+    page,
+    searchTerm,
+    statusFilter
+  );
 
   const paginationData = responseData?.data;
   const isPaginated = paginationData && typeof paginationData === "object" && "data" in paginationData && Array.isArray(paginationData.data);
   const floorList = isPaginated ? paginationData.data : (Array.isArray(paginationData) ? paginationData : []);
 
-  const filteredData = floorList.filter((item) => {
-    if (statusFilter === "all") return true;
-    return item.property_floor_status?.toLowerCase() === statusFilter.toLowerCase();
-  });
   const columns = [
     {
       header: "Sl No",
@@ -91,7 +92,13 @@ const FloorListPage = () => {
       <DataTable
         isLoading={isLoading || isFetching}
         extraButton={
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={statusFilter}
+            onValueChange={(val) => {
+              setStatusFilter(val);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Select Status" />
             </SelectTrigger>
@@ -102,7 +109,7 @@ const FloorListPage = () => {
             </SelectContent>
           </Select>
         }
-        data={filteredData}
+        data={floorList}
         columns={columns}
         searchPlaceholder="Search Floors..."
         pageSize={50}

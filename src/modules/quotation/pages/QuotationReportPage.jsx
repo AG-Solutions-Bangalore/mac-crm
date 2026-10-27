@@ -18,7 +18,10 @@ import { useActiveBrandsQuery } from "../../brand/hooks/useBrand";
 import { useBuyerQuery } from "../../buyer/hooks/useBuyer";
 import { useActivePropertiesQuery } from "../../property/hooks/useProperty";
 import { useActiveCategoriesQuery } from "../../category/hooks/useCategory";
-import { useActiveSalesTeamQuery } from "../../sales-team/hooks/useSalesTeam";
+import {
+  useActiveSalesTeamQuery,
+  useSalesTeamMemberQuery,
+} from "../../sales-team/hooks/useSalesTeam";
 import { getSalesTeamMemberId } from "../../sales-team/api/salesTeamApi";
 
 import ReportHeaderActions from "../components/report/ReportHeaderActions";
@@ -27,6 +30,7 @@ import AboutWhyPage from "../components/report/AboutWhyPage";
 import DynamicProposalDocument from "../components/report/DynamicProposalDocument";
 import CompactTableView from "../components/report/CompactTableView";
 import { createStyledQuotationWorkbook, downloadBlob } from "@/app/reports/quotation-xlsx";
+import { calculateMilestoneAmounts } from "@/utils/milestoneUtils";
 
 
 const headers = [
@@ -82,8 +86,10 @@ export default function QuotationReportPage() {
   // each applied on the grand total. No % is shown in the printed proposal.
   const [consultancyPct, setConsultancyPct] = useState(5);
   const [installPct, setInstallPct] = useState(5);
-  // Prepared-by selection (defaults to first active sales team member, overridable from header)
-  const [preparedById, setPreparedById] = useState("vinod");
+  // Prepared-by selection (defaults to the logged-in member, else first active member)
+  const [preparedById, setPreparedById] = useState("");
+  // Logged-in user (fallback for "Prepared By")
+  const authUser = useSelector((state) => state.auth?.user);
 
   // Sales team members for the Prepared By dropdown — GET /panel-fetch-sales-team
   // (endpoint already returns active members, so no extra status filter).
@@ -111,17 +117,39 @@ export default function QuotationReportPage() {
       isApiMember: Boolean(apiId),
     };
   });
+  const selectedPreparer = preparedByOptions.find(
+    (p) => String(p.id) === String(preparedById)
+  );
+  const selectedPreparerApiId = selectedPreparer?.isApiMember
+    ? selectedPreparer.id
+    : "";
 
-  // Keep the dropdown valid once members load (fallback: newest first member)
+  // Keep the dropdown valid once members load. Default to the logged-in member
+  // when they exist in the sales team, else the first active member.
   useEffect(() => {
     if (!preparedByOptions.length) return;
-    setPreparedById((prev) =>
-      preparedByOptions.some((p) => String(p.id) === String(prev))
-        ? prev
-        : preparedByOptions[0].id
-    );
+    setPreparedById((prev) => {
+      if (preparedByOptions.some((p) => String(p.id) === String(prev))) {
+        return prev;
+      }
+      const authEmail = (authUser?.email || "").toLowerCase();
+      const authPhone = String(
+        authUser?.mobile || authUser?.phone || ""
+      ).replace(/\D/g, "");
+      const loggedInMember = preparedByOptions.find((p) => {
+        const memberEmail = (p.email || "").toLowerCase();
+        const memberPhone = (p.phone || "").replace(/\D/g, "");
+        return (
+          (authEmail && memberEmail === authEmail) ||
+          (authPhone &&
+            memberPhone &&
+            memberPhone.slice(-10) === authPhone.slice(-10))
+        );
+      });
+      return loggedInMember?.id || preparedByOptions[0].id;
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [salesTeamData]);
+  }, [salesTeamData, authUser]);
 
   // Queries
   const { data: parentData, isLoading: parentLoading } = useQuotationQuery(
@@ -145,15 +173,16 @@ export default function QuotationReportPage() {
     useActivePropertiesQuery();
   const { data: categoriesData, isLoading: categoriesLoading } =
     useActiveCategoriesQuery();
+  const { data: selectedPreparerData } = useSalesTeamMemberQuery(
+    selectedPreparerApiId,
+    Boolean(selectedPreparerApiId)
+  );
 
   const quotationDetail = isProject
     ? projectData?.data
     : isRevised
       ? revData?.data
       : parentData?.data;
-
-  // Logged-in user (fallback for "Prepared By")
-  const authUser = useSelector((state) => state.auth?.user);
 
   // Buyer lookup — fetch the buyer record so name / mobile / address are available
   const buyerId = quotationDetail?.quotation_buyer_id;
@@ -200,7 +229,34 @@ export default function QuotationReportPage() {
     );
   }
 
-  const subs = quotationDetail.subs || [];
+  const rawSubs = quotationDetail.subs || [];
+  const subs = [...rawSubs].sort((a, b) => {
+    const sA =
+      a.quotation_sub_sort !== null &&
+      a.quotation_sub_sort !== undefined &&
+      a.quotation_sub_sort !== ""
+        ? Number(a.quotation_sub_sort)
+        : a.project_sub_sort !== null &&
+          a.project_sub_sort !== undefined &&
+          a.project_sub_sort !== ""
+        ? Number(a.project_sub_sort)
+        : null;
+    const sB =
+      b.quotation_sub_sort !== null &&
+      b.quotation_sub_sort !== undefined &&
+      b.quotation_sub_sort !== ""
+        ? Number(b.quotation_sub_sort)
+        : b.project_sub_sort !== null &&
+          b.project_sub_sort !== undefined &&
+          b.project_sub_sort !== ""
+        ? Number(b.project_sub_sort)
+        : null;
+
+    if (sA !== null && sB !== null) return sA - sB;
+    if (sA !== null) return -1;
+    if (sB !== null) return 1;
+    return (Number(a.id) || 0) - (Number(b.id) || 0);
+  });
   const floors = floorsData?.data || [];
   const areas = areasData?.data || [];
   const services = servicesData?.data || [];
@@ -360,11 +416,10 @@ export default function QuotationReportPage() {
       year: "numeric",
     })
     : "August 7, 2026";
-  // Prepared-by — selectable from header (defaults to Vinod Kumar),
-  // falling back to quotation / logged-in user when no match.
-  const selectedPreparer = preparedByOptions.find(
-    (p) => String(p.id) === String(preparedById)
-  );
+  // Prepared-by — follows the header selection, falling back to quotation /
+  // logged-in user when no sales-team member matches.
+  const selectedPreparerDetail =
+    selectedPreparerData?.data?.data || selectedPreparerData?.data || {};
   const contactPerson =
     selectedPreparer?.name ||
     quotationDetail.sales_person ||
@@ -373,21 +428,63 @@ export default function QuotationReportPage() {
     quotationDetail.user_name ||
     quotationDetail.employee_name ||
     authUser?.name ||
-    "Mr. Vinod Kumar";
-  const contactPhone =
-    selectedPreparer?.phone ||
+    "MAKc Automation and Solutions LLP";
+  const fallbackPhone =
     quotationDetail.contact_no ||
     quotationDetail.mobile ||
     quotationDetail.phone ||
     authUser?.mobile ||
     authUser?.phone ||
-    "7338504441";
+    "";
+  const fallbackEmail =
+    quotationDetail.contact_email ||
+    quotationDetail.email ||
+    quotationDetail.created_by_email ||
+    quotationDetail.user_email ||
+    authUser?.email ||
+    "";
+  const contactPhone =
+    selectedPreparerDetail?.mobile ||
+    selectedPreparerDetail?.phone ||
+    selectedPreparer?.phone ||
+    (!selectedPreparer ? fallbackPhone : "");
+  const contactEmail =
+    selectedPreparerDetail?.email ||
+    selectedPreparer?.email ||
+    (!selectedPreparer ? fallbackEmail : "");
 
   // Milestones sum to the Net Project Value (inclusive of installation).
+  const bookingPct =
+    Number(
+      quotationDetail.quotation_booing_confirmation ??
+      quotationDetail.quotation_booking_confirmation ??
+      quotationDetail.project_booing_confirmation ??
+      quotationDetail.project_booking_confirmation ??
+      30
+    ) || 30;
+  const hardwarePct =
+    Number(
+      quotationDetail.quotation_hardware ??
+      quotationDetail.project_hardware ??
+      60
+    ) || 60;
+  const installationPct =
+    Number(
+      quotationDetail.quotation_installation ??
+      quotationDetail.project_installation ??
+      10
+    ) || 10;
+
+  const milestoneAmounts = calculateMilestoneAmounts(netTotal, [
+    bookingPct,
+    hardwarePct,
+    installationPct,
+  ]);
+
   const paymentRows = [
-    { section: "Payment Cycle", label: "Booking Confirmation", amount: netTotal * 0.3, percentage: "30%" },
-    { section: "Payment Cycle", label: "Hardware Ordering & Dispatch", amount: netTotal * 0.6, percentage: "60%" },
-    { section: "Payment Cycle", label: "Installation & Pre-Commissioning", amount: netTotal * 0.1, percentage: "10%" },
+    { section: "Payment Cycle", label: "Booking Confirmation", amount: milestoneAmounts[0], percentage: `${bookingPct}%` },
+    { section: "Payment Cycle", label: "Hardware Ordering & Dispatch", amount: milestoneAmounts[1], percentage: `${hardwarePct}%` },
+    { section: "Payment Cycle", label: "Installation & Pre-Commissioning", amount: milestoneAmounts[2], percentage: `${installationPct}%` },
   ];
 
   // Hero PNG bada hai — print/PDF se pehle ensure karo ki cover image load/decode ho chuki hai
@@ -700,6 +797,8 @@ export default function QuotationReportPage() {
             <AboutWhyPage
               heroImage={MOCK_IMAGES.page2Hero}
               clientName={clientName}
+              contactPhone={contactPhone}
+              contactEmail={contactEmail}
             />
           </div>
         )}

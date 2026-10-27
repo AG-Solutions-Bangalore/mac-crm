@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   FolderKanban,
@@ -10,6 +10,10 @@ import {
   FileSpreadsheet,
   UserPlus,
   RefreshCw,
+  CreditCard,
+  CheckCircle2,
+  AlertCircle,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -55,6 +59,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { calculateMilestoneAmounts } from "@/utils/milestoneUtils";
 
 // Helper: Group flat subs to nested Services structure (Service -> Floor -> Area -> Product)
 const groupSubsToServices = (subsList) => {
@@ -91,11 +96,36 @@ const groupSubsToServices = (subsList) => {
 
   // NOTE: Map() used (not {}) — plain objects auto-sort integer-like keys,
   // which broke API order. Map keeps insertion order.
+  // Sort ascending by quotation_sub_sort / project_sub_sort if present, fallback to id
+  const orderedSubs = [...subsList].sort((a, b) => {
+    const sortA =
+      a.quotation_sub_sort !== null &&
+      a.quotation_sub_sort !== undefined &&
+      a.quotation_sub_sort !== ""
+        ? Number(a.quotation_sub_sort)
+        : a.project_sub_sort !== null &&
+          a.project_sub_sort !== undefined &&
+          a.project_sub_sort !== ""
+        ? Number(a.project_sub_sort)
+        : null;
+    const sortB =
+      b.quotation_sub_sort !== null &&
+      b.quotation_sub_sort !== undefined &&
+      b.quotation_sub_sort !== ""
+        ? Number(b.quotation_sub_sort)
+        : b.project_sub_sort !== null &&
+          b.project_sub_sort !== undefined &&
+          b.project_sub_sort !== ""
+        ? Number(b.project_sub_sort)
+        : null;
+
+    if (sortA !== null && sortB !== null && !isNaN(sortA) && !isNaN(sortB)) {
+      return sortA - sortB;
+    }
+    return (Number(a.id) || 0) - (Number(b.id) || 0);
+  });
+
   const serviceMap = new Map();
-  // Oldest first: backend may return DESC, we always render 1,2,3... (old top, new bottom)
-  const orderedSubs = [...subsList].sort(
-    (a, b) => (Number(a.id) || 0) - (Number(b.id) || 0)
-  );
   orderedSubs.forEach((item) => {
     const serviceId = (
       item.project_sub_service_id ??
@@ -177,9 +207,10 @@ const groupSubsToServices = (subsList) => {
   }));
 };
 
-// Helper: Flatten nested Services structure to subs array with dual mapping
+// Helper: Flatten nested Services structure to subs array with dual mapping and sequential sorting
 const flattenServicesToSubs = (servicesList) => {
   const flattened = [];
+  let sortIndex = 1;
   servicesList.forEach((srv) => {
     srv.floors.forEach((floor) => {
       floor.areas.forEach((area) => {
@@ -189,8 +220,13 @@ const flattenServicesToSubs = (servicesList) => {
             const quantity = Number(product.quantity);
             const amount = price * quantity;
             const status = product.status || "Pending";
+            const currentSort = sortIndex++;
             flattened.push({
               id: product.id || undefined,
+              quotation_sub_sort: currentSort,
+              project_sub_sort: currentSort,
+              sub_sort: currentSort,
+              sort: currentSort,
               // Project specific keys
               project_sub_service_id: Number(srv.serviceId),
               project_sub_floor_id: Number(floor.floorId),
@@ -234,6 +270,9 @@ const ProjectFormPage = () => {
     project_service_id: "",
     project_remarks: "",
     project_status: "Project",
+    quotation_booing_confirmation: 30,
+    quotation_hardware: 60,
+    quotation_installation: 10,
   });
 
   const [servicesState, setServicesState] = useState([
@@ -266,6 +305,12 @@ const ProjectFormPage = () => {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [initialSnapshot, setInitialSnapshot] = useState(null);
+  // Create mode: Services + Categories sab default selected rahenge
+  const [defaultSelection, setDefaultSelection] = useState({
+    categories: "",
+    services: "",
+  });
+  const defaultsAppliedRef = useRef(false);
 
   // Buyer quick-add
   const [buyerDialogOpen, setBuyerDialogOpen] = useState(false);
@@ -383,6 +428,20 @@ const ProjectFormPage = () => {
           data.project_remarks || data.quotation_remarks || data.remarks || "",
         project_status:
           data.project_status || data.status || data.quotation_status || "Project",
+        quotation_booing_confirmation:
+          data.quotation_booing_confirmation ??
+          data.quotation_booking_confirmation ??
+          data.project_booing_confirmation ??
+          data.project_booking_confirmation ??
+          30,
+        quotation_hardware:
+          data.quotation_hardware ??
+          data.project_hardware ??
+          60,
+        quotation_installation:
+          data.quotation_installation ??
+          data.project_installation ??
+          10,
       };
       setFormData(nextForm);
 
@@ -427,6 +486,9 @@ const ProjectFormPage = () => {
           project_service_id: "",
           project_remarks: "",
           project_status: "Project",
+          quotation_booing_confirmation: 30,
+          quotation_hardware: 60,
+          quotation_installation: 10,
         })
       );
     }
@@ -444,8 +506,8 @@ const ProjectFormPage = () => {
     const hasBasic = Boolean(
       formData.project_buyer_id ||
         formData.project_property_id ||
-        formData.project_category_id ||
-        formData.project_service_id ||
+        (formData.project_category_id || "") !== defaultSelection.categories ||
+        (formData.project_service_id || "") !== defaultSelection.services ||
         formData.project_remarks ||
         formData.price_validity_date ||
         (formData.project_date && formData.project_date !== todayStr)
@@ -460,7 +522,7 @@ const ProjectFormPage = () => {
         )
     );
     return hasBasic || hasItems;
-  }, [initialSnapshot, snapshotKey, isEdit, formData, servicesState]);
+  }, [initialSnapshot, snapshotKey, isEdit, formData, servicesState, defaultSelection]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -765,24 +827,83 @@ const ProjectFormPage = () => {
     });
   };
 
+  // Error wale field par scroll + focus, taaki user ko dhoondhna na pade
+  const focusErrorField = (field) => {
+    if (!field) return;
+    const target = document.querySelector(`[data-error-field="${field}"]`);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    const isDirectControl = target.matches("button, select, textarea, input");
+    const innerInput = isDirectControl
+      ? target
+      : target.querySelector(
+          'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+
+    // react-select ka asli control dhoondo (jispar 1px border hai)
+    let control = null;
+    if (isDirectControl) {
+      control = target;
+    } else if (innerInput && innerInput.type !== "checkbox") {
+      let el = innerInput;
+      while (el && el !== target) {
+        if (parseFloat(window.getComputedStyle(el).borderTopWidth) > 0) {
+          control = el;
+          break;
+        }
+        el = el.parentElement;
+      }
+      if (!control) control = innerInput;
+    } else {
+      control = target;
+    }
+
+    if (control) {
+      const prevBorder = control.style.borderColor;
+      const prevShadow = control.style.boxShadow;
+      control.style.borderColor = "rgb(239, 68, 68)";
+      control.style.boxShadow = "0 0 0 2px rgba(239, 68, 68, 0.25)";
+      const clearError = () => {
+        control.style.borderColor = prevBorder;
+        control.style.boxShadow = prevShadow;
+        target.removeEventListener("focusout", clearError);
+      };
+      target.addEventListener("focusout", clearError, { once: true });
+      setTimeout(clearError, 3000);
+    }
+
+    if (innerInput) {
+      window.setTimeout(() => {
+        try {
+          innerInput.focus({ preventScroll: true });
+        } catch {
+          innerInput.focus();
+        }
+      }, 350);
+    }
+  };
+
   const validateForm = () => {
     let newErrors = {};
-    if (!formData.project_buyer_id) newErrors.project_buyer_id = "Buyer is required";
+    if (!formData.project_buyer_id) newErrors.project_buyer_id = "Lead is required";
     if (!formData.project_property_id) newErrors.project_property_id = "Property is required";
 
     if (newErrors.project_buyer_id || newErrors.project_property_id) {
-      toast.error("Please select a Buyer and Property at the top of the form.");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      toast.error("Please select a Lead and Property at the top of the form.");
       setErrors(newErrors);
+      focusErrorField(newErrors.project_buyer_id ? "buyer" : "property");
       return false;
     }
 
     if (!formData.project_category_id) {
       toast.error("Please select at least one Category");
+      focusErrorField("categories");
       return false;
     }
     if (!formData.project_service_id) {
       toast.error("Please select at least one Service");
+      focusErrorField("services");
       return false;
     }
 
@@ -791,6 +912,7 @@ const ProjectFormPage = () => {
       const srv = servicesState[s];
       if (!srv.serviceId) {
         toast.error(`Please select a Service in Service block #${s + 1}`);
+        focusErrorField(`service-${s}`);
         return false;
       }
       for (let f = 0; f < srv.floors.length; f++) {
@@ -799,6 +921,7 @@ const ProjectFormPage = () => {
           toast.error(
             `Please select a Floor under Service block #${s + 1}, floor block #${f + 1}`
           );
+          focusErrorField(`floor-${s}-${f}`);
           return false;
         }
         for (let a = 0; a < floor.areas.length; a++) {
@@ -807,6 +930,7 @@ const ProjectFormPage = () => {
             toast.error(
               `Please select an Area under Service block #${s + 1}, Floor block #${f + 1}, area block #${a + 1}`
             );
+            focusErrorField(`area-${s}-${f}-${a}`);
             return false;
           }
           for (let p = 0; p < area.products.length; p++) {
@@ -815,6 +939,7 @@ const ProjectFormPage = () => {
               toast.error(
                 `Please complete Product selection under Service #${s + 1} ➔ Floor #${f + 1} ➔ Area #${a + 1}, product #${p + 1}`
               );
+              focusErrorField(`product-${s}-${f}-${a}-${p}`);
               return false;
             }
             hasLineItems = true;
@@ -825,6 +950,20 @@ const ProjectFormPage = () => {
 
     if (!hasLineItems) {
       toast.error("Please add at least one project line item");
+      focusErrorField("line-items");
+      return false;
+    }
+
+    const totalMilestones =
+      (Number(formData.quotation_booing_confirmation) || 0) +
+      (Number(formData.quotation_hardware) || 0) +
+      (Number(formData.quotation_installation) || 0);
+
+    if (totalMilestones !== 100) {
+      toast.error(`Payment milestones must total 100% (Current: ${totalMilestones}%)`);
+      newErrors.quotation_booing_confirmation = `Total must be 100% (Current: ${totalMilestones}%)`;
+      setErrors(newErrors);
+      focusErrorField("quotation_booing_confirmation");
       return false;
     }
 
@@ -842,6 +981,9 @@ const ProjectFormPage = () => {
     const serviceId = formData.project_service_id;
     const remarks = formData.project_remarks;
     const status = formData.project_status || "Project";
+    const bookingPct = Number(formData.quotation_booing_confirmation) || 30;
+    const hardwarePct = Number(formData.quotation_hardware) || 60;
+    const installationPct = Number(formData.quotation_installation) || 10;
 
     return {
       // Primary Project keys
@@ -853,6 +995,15 @@ const ProjectFormPage = () => {
       project_service_id: serviceId,
       project_remarks: remarks,
       project_status: status,
+      // Payment Milestones (dual keys for quotation & project compatibility)
+      quotation_booing_confirmation: bookingPct,
+      quotation_booking_confirmation: bookingPct,
+      quotation_hardware: hardwarePct,
+      quotation_installation: installationPct,
+      project_booing_confirmation: bookingPct,
+      project_booking_confirmation: bookingPct,
+      project_hardware: hardwarePct,
+      project_installation: installationPct,
       // Dual mappings with Quotation keys for API compatibility
       quotation_date: date,
       quotation_validity_date: validityDate,
@@ -913,12 +1064,26 @@ const ProjectFormPage = () => {
     handleSaveAndLeave,
   } = useUnsavedChangesGuard({ isDirty, onSave: saveWithoutNavigate });
 
+  // Save ke baad previous screen (project list) par wapas jao (create aur edit dono me)
   const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await saveWithoutNavigate();
     if (!result) return;
-    if (!isEdit && typeof result === "string") {
-      navigate(`/project-list/edit/${result}`, { replace: true });
+    navigate("/project-list", { replace: true });
+  };
+
+  // Option to Save and stay/continue in edit mode
+  const [isSavingContinue, setIsSavingContinue] = useState(false);
+  const handleSaveAndContinue = async () => {
+    setIsSavingContinue(true);
+    try {
+      const result = await saveWithoutNavigate();
+      if (!result) return;
+      if (!isEdit && typeof result === "string") {
+        navigate(`/project-list/edit/${result}`, { replace: true });
+      }
+    } finally {
+      setIsSavingContinue(false);
     }
   };
 
@@ -929,6 +1094,27 @@ const ProjectFormPage = () => {
   const floors = floorsData?.data || [];
   const areas = areasData?.data || [];
   const brands = brandsData?.data || [];
+
+  // Create mode: masters load hone par Services + Categories sab tick ho jaye
+  useEffect(() => {
+    if (isEdit || defaultsAppliedRef.current) return;
+    if (!categories.length || !services.length) return;
+    defaultsAppliedRef.current = true;
+    const categoryIds = categories
+      .map((c) => c.id?.toString())
+      .filter(Boolean)
+      .join(",");
+    const serviceIds = services
+      .map((s) => s.id?.toString())
+      .filter(Boolean)
+      .join(",");
+    setDefaultSelection({ categories: categoryIds, services: serviceIds });
+    setFormData((prev) => ({
+      ...prev,
+      project_category_id: prev.project_category_id || categoryIds,
+      project_service_id: prev.project_service_id || serviceIds,
+    }));
+  }, [isEdit, categories, services]);
 
   const buyerOptions = [
     ...(buyers || []).map((b) => ({
@@ -967,7 +1153,7 @@ const ProjectFormPage = () => {
   const handleCreateBuyer = async (e) => {
     e?.preventDefault?.();
     const errs = {};
-    if (!newBuyer.buyer_name.trim()) errs.buyer_name = "Buyer Name is required";
+    if (!newBuyer.buyer_name.trim()) errs.buyer_name = "Lead Name is required";
     if (!newBuyer.buyer_mobile) {
       errs.buyer_mobile = "Mobile number is required";
     } else if (newBuyer.buyer_mobile.length !== 10) {
@@ -1000,7 +1186,7 @@ const ProjectFormPage = () => {
         setFormData((prev) => ({ ...prev, project_buyer_id: newId }));
         setErrors((prev) => ({ ...prev, project_buyer_id: "" }));
       }
-      toast.success("Buyer added successfully");
+      toast.success("Lead added successfully");
       setBuyerDialogOpen(false);
       setNewBuyer({
         buyer_name: "",
@@ -1473,6 +1659,17 @@ const ProjectFormPage = () => {
     );
   }, 0);
 
+  const milestoneTotal =
+    (Number(formData.quotation_booing_confirmation) || 0) +
+    (Number(formData.quotation_hardware) || 0) +
+    (Number(formData.quotation_installation) || 0);
+
+  const milestoneAmounts = calculateMilestoneAmounts(grandTotal, [
+    formData.quotation_booing_confirmation ?? 30,
+    formData.quotation_hardware ?? 60,
+    formData.quotation_installation ?? 10,
+  ]);
+
   const activeServicesForRows = services.filter((srv) =>
     checkedServices.includes(srv.id?.toString())
   );
@@ -1529,9 +1726,9 @@ const ProjectFormPage = () => {
               </div>
 
               {/* Buyer Select */}
-              <div className="space-y-2">
+              <div className="space-y-2" data-error-field="buyer">
                 <Label className="flex">
-                  Buyer <RedStar />
+                  Lead <RedStar />
                 </Label>
                 <SelectWithAdd
                   value={formData.project_buyer_id}
@@ -1543,7 +1740,7 @@ const ProjectFormPage = () => {
                     setErrors((prev) => ({ ...prev, project_buyer_id: "" }));
                   }}
                   options={buyerOptions}
-                  placeholder="Search or Select Buyer"
+                  placeholder="Search or Select Lead"
                   isLoading={buyersLoading}
                   hasError={Boolean(errors.project_buyer_id)}
                   filterOption={filterBuyer}
@@ -1556,9 +1753,9 @@ const ProjectFormPage = () => {
                   }
                   placement="bottom-left"
                   menuPosition="absolute"
-                  addLabel="Add New Buyer"
+                  addLabel="Add New Lead"
                   renderAddLabel={(typed) =>
-                    typed?.trim() ? `Add "${typed.trim()}" as New Buyer` : "Add New Buyer"
+                    typed?.trim() ? `Add "${typed.trim()}" as New Lead` : "Add New Lead"
                   }
                   onAdd={handleBuyerAdd}
                   menuIsOpen={buyerDialogOpen ? false : buyerMenuOpen}
@@ -1572,7 +1769,7 @@ const ProjectFormPage = () => {
               </div>
 
               {/* Property Select */}
-              <div className="space-y-2">
+              <div className="space-y-2" data-error-field="property">
                 <Label className="flex">
                   Property <RedStar />
                 </Label>
@@ -1602,7 +1799,10 @@ const ProjectFormPage = () => {
                 <Label className="block text-sm font-semibold mb-3 text-slate-700 dark:text-slate-300">
                   Categories <RedStar />
                 </Label>
-                <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg max-h-[160px] overflow-y-auto border dark:border-slate-800">
+                <div
+                  className="grid grid-cols-2 gap-2 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg max-h-[160px] overflow-y-auto border dark:border-slate-800"
+                  data-error-field="categories"
+                >
                   {categories.map((cat) => (
                     <label
                       key={cat.id}
@@ -1627,7 +1827,10 @@ const ProjectFormPage = () => {
                 <Label className="block text-sm font-semibold mb-3 text-slate-700 dark:text-slate-300">
                   Services <RedStar />
                 </Label>
-                <div className="grid grid-cols-2 gap-2 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg max-h-[160px] overflow-y-auto border dark:border-slate-800">
+                <div
+                  className="grid grid-cols-2 gap-2 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg max-h-[160px] overflow-y-auto border dark:border-slate-800"
+                  data-error-field="services"
+                >
                   {services.map((srv) => (
                     <label
                       key={srv.id}
@@ -1679,6 +1882,191 @@ const ProjectFormPage = () => {
           </CardContent>
         </Card>
 
+        {/* Payment Milestones Section */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b dark:border-slate-800 pb-3 mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                  Payment Milestones (%)
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Set milestone percentage distribution as per requirement (must total 100%)
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+                    milestoneTotal === 100
+                      ? "bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400 border border-green-200 dark:border-green-800"
+                      : "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
+                  }`}
+                >
+                  {milestoneTotal === 100 ? (
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  ) : (
+                    <AlertCircle className="w-3.5 h-3.5" />
+                  )}
+                  Total: {milestoneTotal}%
+                </span>
+                {(Number(formData.quotation_booing_confirmation) !== 30 ||
+                  Number(formData.quotation_hardware) !== 60 ||
+                  Number(formData.quotation_installation) !== 10) && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                    onClick={() => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        quotation_booing_confirmation: 30,
+                        quotation_hardware: 60,
+                        quotation_installation: 10,
+                      }));
+                    }}
+                  >
+                    <RotateCcw className="w-3 h-3 mr-1" />
+                    Reset (30 / 60 / 10)
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Milestone 1 */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    1. Booking Confirmation
+                  </Label>
+                  <span className="text-xs font-bold text-primary">
+                    {formData.quotation_booing_confirmation ?? 30}%
+                  </span>
+                </div>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    name="quotation_booing_confirmation"
+                    data-error-field="quotation_booing_confirmation"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={formData.quotation_booing_confirmation ?? ""}
+                    onChange={handleInputChange}
+                    className={`pr-8 bg-white dark:bg-slate-900 ${
+                      errors.quotation_booing_confirmation
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : "border-slate-200 dark:border-slate-800"
+                    }`}
+                    placeholder="30"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">
+                    %
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                  Upon booking confirmation
+                </p>
+                {grandTotal > 0 && (
+                  <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
+                    ≈ ₹{milestoneAmounts[0].toLocaleString()}
+                  </div>
+                )}
+              </div>
+
+              {/* Milestone 2 */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    2. Hardware Dispatch
+                  </Label>
+                  <span className="text-xs font-bold text-primary">
+                    {formData.quotation_hardware ?? 60}%
+                  </span>
+                </div>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    name="quotation_hardware"
+                    data-error-field="quotation_hardware"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={formData.quotation_hardware ?? ""}
+                    onChange={handleInputChange}
+                    className={`pr-8 bg-white dark:bg-slate-900 ${
+                      errors.quotation_booing_confirmation
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : "border-slate-200 dark:border-slate-800"
+                    }`}
+                    placeholder="60"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">
+                    %
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                  Upon hardware ordering & dispatch
+                </p>
+                {grandTotal > 0 && (
+                  <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
+                    ≈ ₹{milestoneAmounts[1].toLocaleString()}
+                  </div>
+                )}
+              </div>
+
+              {/* Milestone 3 */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    3. Installation & Handover
+                  </Label>
+                  <span className="text-xs font-bold text-primary">
+                    {formData.quotation_installation ?? 10}%
+                  </span>
+                </div>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    name="quotation_installation"
+                    data-error-field="quotation_installation"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={formData.quotation_installation ?? ""}
+                    onChange={handleInputChange}
+                    className={`pr-8 bg-white dark:bg-slate-900 ${
+                      errors.quotation_booing_confirmation
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : "border-slate-200 dark:border-slate-800"
+                    }`}
+                    placeholder="10"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">
+                    %
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                  Upon installation & pre-commissioning
+                </p>
+                {grandTotal > 0 && (
+                  <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
+                    ≈ ₹{milestoneAmounts[2].toLocaleString()}
+                  </div>
+                )}
+              </div>
+            </div>
+            {errors.quotation_booing_confirmation && (
+              <p className="text-xs text-red-500 font-medium mt-3 flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5" />
+                {errors.quotation_booing_confirmation}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Project Items (Nested Line Items) */}
         <Card>
           <CardContent className="p-6">
@@ -1719,14 +2107,17 @@ const ProjectFormPage = () => {
               </div>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-6" data-error-field="line-items">
               {servicesState.map((srv, srvIdx) => (
                 <div
                   key={srvIdx}
                   className="border rounded-xl p-4 bg-slate-50/50 dark:bg-slate-900/30 dark:border-slate-800 relative"
                 >
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b dark:border-slate-800">
-                    <div className="flex items-center gap-3 w-full md:w-1/2">
+                    <div
+                      className="flex items-center gap-3 w-full md:w-1/2"
+                      data-error-field={`service-${srvIdx}`}
+                    >
                       <span className="font-semibold text-sm bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 px-2.5 py-1 rounded-md shrink-0">
                         Service #{srvIdx + 1}
                       </span>
@@ -1787,7 +2178,10 @@ const ProjectFormPage = () => {
                         className="border rounded-lg p-3 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                       >
                         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pb-3 border-b dark:border-slate-800">
-                          <div className="flex items-center gap-3 w-full md:w-1/3">
+                          <div
+                            className="flex items-center gap-3 w-full md:w-1/3"
+                            data-error-field={`floor-${srvIdx}-${flrIdx}`}
+                          >
                             <span className="text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 rounded shrink-0">
                               Floor #{flrIdx + 1}
                             </span>
@@ -1855,7 +2249,10 @@ const ProjectFormPage = () => {
                               className="border rounded-md p-3 bg-slate-50/70 dark:bg-slate-900/60 dark:border-slate-800/80"
                             >
                               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pb-2 border-b dark:border-slate-800">
-                                <div className="flex items-center gap-3 w-full md:w-1/3">
+                                <div
+                                  className="flex items-center gap-3 w-full md:w-1/3"
+                                  data-error-field={`area-${srvIdx}-${flrIdx}-${areaIdx}`}
+                                >
                                   <span className="text-[11px] font-semibold bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300 px-1.5 py-0.5 rounded shrink-0">
                                     Area #{areaIdx + 1}
                                   </span>
@@ -1931,7 +2328,10 @@ const ProjectFormPage = () => {
                                       className="p-2 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800 space-y-2"
                                     >
                                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                      <div className="flex-1 min-w-[200px]">
+                                      <div
+                                        className="flex-1 min-w-[200px]"
+                                        data-error-field={`product-${srvIdx}-${flrIdx}-${areaIdx}-${prodIdx}`}
+                                      >
                                         <SelectWithAdd
                                           value={prod.productId}
                                           onChange={(opt) =>
@@ -2086,12 +2486,27 @@ const ProjectFormPage = () => {
             type="button"
             variant="outline"
             onClick={() => requestNavigate("/project-list")}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isSavingContinue}
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleSaveAndContinue}
+            disabled={isSubmitting || isSavingContinue}
+            title={isEdit ? "Save changes and stay on this page" : "Save project and continue in edit mode"}
+          >
+            {isSavingContinue ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
+              </>
+            ) : (
+              isEdit ? "Save & Stay" : "Save & Edit"
+            )}
+          </Button>
+          <Button type="submit" disabled={isSubmitting || isSavingContinue}>
+            {isSubmitting && !isSavingContinue ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
               </>
@@ -2186,10 +2601,10 @@ const ProjectFormPage = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UserPlus className="h-5 w-5 text-blue-600" />
-              Add New Buyer
+              Add New Lead
             </DialogTitle>
             <DialogDescription>
-              Quickly register a buyer without leaving the project form. It will be auto-selected
+              Quickly register a lead without leaving the project form. It will be auto-selected
               after saving.
             </DialogDescription>
           </DialogHeader>
@@ -2197,14 +2612,14 @@ const ProjectFormPage = () => {
           <form onSubmit={handleCreateBuyer} className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label>
-                Buyer Name <span className="text-red-500">*</span>
+                Lead Name <span className="text-red-500">*</span>
               </Label>
               <Input
                 value={newBuyer.buyer_name}
                 onChange={(e) =>
                   setNewBuyer((p) => ({ ...p, buyer_name: e.target.value }))
                 }
-                placeholder="Enter buyer name"
+                placeholder="Enter lead name"
                 autoFocus
               />
               {buyerFormErrors.buyer_name && (
@@ -2278,7 +2693,7 @@ const ProjectFormPage = () => {
                   </>
                 ) : (
                   <>
-                    <Plus className="w-4 h-4 mr-2" /> Add Buyer
+                    <Plus className="w-4 h-4 mr-2" /> Add Lead
                   </>
                 )}
               </Button>

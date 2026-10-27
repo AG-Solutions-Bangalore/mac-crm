@@ -15,10 +15,10 @@ const LIST_KEY = ["galleries"];
 const ITEM_KEY = (id) => ["gallery", id];
 const ACTIVE_GALLERIES_KEY = ["activeGalleries"];
 
-export function useGalleriesQuery(page = 1, search = "") {
+export function useGalleriesQuery(page = 1, search = "", status = "all") {
   return useQuery({
-    queryKey: [...LIST_KEY, page, search],
-    queryFn: () => galleryApi.getGalleries(page, search),
+    queryKey: [...LIST_KEY, page, search, status],
+    queryFn: () => galleryApi.getGalleries(page, search, status),
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,

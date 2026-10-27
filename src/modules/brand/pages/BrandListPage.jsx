@@ -1,6 +1,7 @@
 import PageHeader from "@/components/common/page-header";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { Edit , Award } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
@@ -18,19 +19,18 @@ import { useBrandsQuery } from "../hooks/useBrand";
 
 const BrandListPage = () => {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: responseData, isLoading, isFetching, isError, refetch } = useBrandsQuery(page, searchTerm);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useBrandsQuery(
+    page,
+    searchTerm,
+    statusFilter
+  );
 
   const paginationData = responseData?.data;
   const brandList = paginationData?.data || [];
-
-  const filteredData = brandList.filter((item) => {
-    if (statusFilter === "all") return true;
-    return item.brand_status?.toLowerCase() === statusFilter.toLowerCase();
-  });
 
 
   const columns = [
@@ -89,7 +89,13 @@ const BrandListPage = () => {
       <DataTable
         isLoading={isLoading || isFetching}
         extraButton={
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={statusFilter}
+            onValueChange={(val) => {
+              setStatusFilter(val);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Select Status" />
             </SelectTrigger>
@@ -100,7 +106,7 @@ const BrandListPage = () => {
             </SelectContent>
           </Select>
         }
-        data={filteredData}
+        data={brandList}
         columns={columns}
         searchPlaceholder="Search Brand..."
         pageSize={50}

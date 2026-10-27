@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { BookOpen, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,11 +44,15 @@ const YesNoBadge = ({ value }) => {
 
 const BlogListPage = () => {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: responseData, isLoading, isFetching, isError, refetch } = useBlogsQuery(page, searchTerm);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useBlogsQuery(
+    page,
+    searchTerm,
+    statusFilter
+  );
 
   const paginationData = responseData?.data;
   const isPaginated =
@@ -68,11 +73,6 @@ const BlogListPage = () => {
   const IMAGE_FOR = "Blog";
   const blogBaseUrl = getImageBaseUrl(responseData?.image_url, IMAGE_FOR);
   const noImageUrl = getNoImageUrl(responseData?.image_url);
-
-  const filteredData = blogList.filter((item) => {
-    if (statusFilter === "all") return true;
-    return item.blog_status?.toLowerCase() === statusFilter.toLowerCase();
-  });
 
   const columns = [
     {
@@ -166,7 +166,13 @@ const BlogListPage = () => {
       <DataTable
         isLoading={isLoading || isFetching}
         extraButton={
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={statusFilter}
+            onValueChange={(val) => {
+              setStatusFilter(val);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Select Status" />
             </SelectTrigger>
@@ -177,7 +183,7 @@ const BlogListPage = () => {
             </SelectContent>
           </Select>
         }
-        data={filteredData}
+        data={blogList}
         columns={columns}
         searchPlaceholder="Search blogs..."
         pageSize={50}

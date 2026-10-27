@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { propertyApi } from "../api/propertyApi";
 
-export function usePropertiesQuery(page = 1, search = "") {
+export function usePropertiesQuery(page = 1, search = "", status = "all") {
   return useQuery({
-    queryKey: ["properties", page, search],
-    queryFn: () => propertyApi.getProperties(page, search),
+    queryKey: ["properties", page, search, status],
+    queryFn: () => propertyApi.getProperties(page, search, status),
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,

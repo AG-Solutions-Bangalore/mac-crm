@@ -1,6 +1,7 @@
 import PageHeader from "@/components/common/page-header";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { Edit , UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,19 +19,18 @@ import { useBuyersQuery } from "../hooks/useBuyer";
 
 const BuyerListPage = () => {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
+  const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const { data: responseData, isLoading, isFetching, isError, refetch } = useBuyersQuery(page, searchTerm);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useBuyersQuery(
+    page,
+    searchTerm,
+    statusFilter
+  );
 
   const paginationData = responseData?.data;
   const buyerList = paginationData?.data || [];
-
-  const filteredData = buyerList.filter((item) => {
-    if (statusFilter === "all") return true;
-    return item.buyer_status?.toLowerCase() === statusFilter.toLowerCase();
-  });
 
 
   const columns = [
@@ -40,7 +40,7 @@ const BuyerListPage = () => {
       cell: ({ row }) => (page - 1) * 50 + row.index + 1,
     },
     {
-      header: "Buyer Name",
+      header: "Lead Name",
       accessorKey: "buyer_name",
       enableSorting: false,
     },
@@ -73,7 +73,7 @@ const BuyerListPage = () => {
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex gap-2">
-          <abbr title="Edit Buyer">
+          <abbr title="Edit Lead">
             <Button
               size="icon"
               variant="outline"
@@ -93,13 +93,19 @@ const BuyerListPage = () => {
     <div className="px-5">
       <PageHeader
         icon={UserCheck}
-        title="Buyers"
-        description="Manage buyer profiles and contact details"
+        title="Leads"
+        description="Manage lead profiles and contact details"
       />
       <DataTable
         isLoading={isLoading || isFetching}
         extraButton={
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select
+            value={statusFilter}
+            onValueChange={(val) => {
+              setStatusFilter(val);
+              setPage(1);
+            }}
+          >
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Select Status" />
             </SelectTrigger>
@@ -110,9 +116,9 @@ const BuyerListPage = () => {
             </SelectContent>
           </Select>
         }
-        data={filteredData}
+        data={buyerList}
         columns={columns}
-        searchPlaceholder="Search Buyers..."
+        searchPlaceholder="Search Leads..."
         pageSize={50}
         searchValue={searchTerm}
         onSearchChange={(val) => {
@@ -121,7 +127,7 @@ const BuyerListPage = () => {
         }}
         addButton={{
           onClick: () => navigate("/buyer-list/create"),
-          label: "Add Buyer",
+          label: "Add Lead",
         }}
         backendPagination={true}
         page={paginationData?.current_page || 1}
