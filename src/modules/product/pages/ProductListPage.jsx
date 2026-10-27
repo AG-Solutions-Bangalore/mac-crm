@@ -25,14 +25,19 @@ const ProductListPage = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [serviceFilter, setServiceFilter] = useState("all");
 
-  const { data: responseData, isLoading, isFetching, isError, refetch } = useProductsQuery(
-    page,
-    searchTerm,
-    statusFilter,
-    serviceFilter
-  );
   const { data: servicesData } = useActiveServicesQuery();
   const services = servicesData?.data || [];
+  const selectedService = services.find(
+    (service) => service.id?.toString() === serviceFilter
+  );
+  const effectiveSearch =
+    serviceFilter === "all" ? searchTerm : selectedService?.service_name || "";
+
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useProductsQuery(
+    page,
+    effectiveSearch,
+    statusFilter
+  );
 
   const paginationData = responseData?.data;
   const productList = paginationData?.data || [];
@@ -130,6 +135,7 @@ const ProductListPage = () => {
               value={serviceFilter}
               onValueChange={(val) => {
                 setServiceFilter(val);
+                setSearchTerm("");
                 setPage(1);
               }}
             >
@@ -173,6 +179,7 @@ const ProductListPage = () => {
         searchValue={searchTerm}
         onSearchChange={(val) => {
           setSearchTerm(val);
+          if (serviceFilter !== "all") setServiceFilter("all");
           setPage(1);
         }}
         addButton={{
