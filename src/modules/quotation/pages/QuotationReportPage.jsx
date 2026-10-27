@@ -411,10 +411,21 @@ export default function QuotationReportPage() {
     "7338504441";
 
   // Milestones sum to the Net Project Value (inclusive of installation).
+  const bookingPct =
+    Number(
+      quotationDetail.quotation_booing_confirmation ??
+      quotationDetail.quotation_booking_confirmation ??
+      30
+    ) || 30;
+  const hardwarePct =
+    Number(quotationDetail.quotation_hardware ?? 60) || 60;
+  const installationPct =
+    Number(quotationDetail.quotation_installation ?? 10) || 10;
+
   const paymentRows = [
-    { section: "Payment Cycle", label: "Booking Confirmation", amount: netTotal * 0.3, percentage: "30%" },
-    { section: "Payment Cycle", label: "Hardware Ordering & Dispatch", amount: netTotal * 0.6, percentage: "60%" },
-    { section: "Payment Cycle", label: "Installation & Pre-Commissioning", amount: netTotal * 0.1, percentage: "10%" },
+    { section: "Payment Cycle", label: "Booking Confirmation", amount: netTotal * (bookingPct / 100), percentage: `${bookingPct}%` },
+    { section: "Payment Cycle", label: "Hardware Ordering & Dispatch", amount: netTotal * (hardwarePct / 100), percentage: `${hardwarePct}%` },
+    { section: "Payment Cycle", label: "Installation & Pre-Commissioning", amount: netTotal * (installationPct / 100), percentage: `${installationPct}%` },
   ];
 
   // Hero PNG bada hai — print/PDF se pehle ensure karo ki cover image load/decode ho chuki hai
