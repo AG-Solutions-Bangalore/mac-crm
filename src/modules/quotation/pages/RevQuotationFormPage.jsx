@@ -20,16 +20,19 @@ import {
 } from "../hooks/useQuotation";
 import { useActiveBuyersQuery } from "../../buyer/hooks/useBuyer";
 import { useActivePropertiesQuery } from "../../property/hooks/useProperty";
-import { useActiveServicesQuery } from "../../service/hooks/useService";
+import { useActiveServicesQuery, useCreateServiceMutation } from "../../service/hooks/useService";
 import { useActiveCategoriesQuery } from "../../category/hooks/useCategory";
-import { useActiveFloorsQuery } from "../../floor/hooks/useFloor";
-import { useActiveAreasQuery } from "../../area/hooks/useArea";
-import { useActiveBrandsQuery } from "../../brand/hooks/useBrand";
+import { useActiveFloorsQuery, useCreateFloorMutation } from "../../floor/hooks/useFloor";
+import { useActiveAreasQuery, useCreateAreaMutation } from "../../area/hooks/useArea";
+import { useActiveBrandsQuery, useCreateBrandMutation } from "../../brand/hooks/useBrand";
+import { useCreateProductMutation } from "../../product/hooks/useProduct";
 import MemoizedSelect from "@/components/common/memoized-select";
+import SelectWithAdd from "@/components/common/select-with-add";
 import ConfirmDialog from "@/components/common/confirm-dialog";
 import UnsavedChangesDialog from "@/components/common/unsaved-changes-dialog";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import ImportQuotationDialog from "../components/ImportQuotationDialog";
+import { QuickNameDialog, ProductQuickAddDialog, ServiceQuickAddDialog } from "../components/MasterQuickAddDialogs";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Helper: Group flat subs to nested Services structure (Service -> Floor -> Area -> Product)
@@ -233,11 +236,11 @@ const RevQuotationFormPage = () => {
   // Active Masters Queries
   const { data: buyersData, isLoading: buyersLoading } = useActiveBuyersQuery();
   const { data: propertiesData, isLoading: propertiesLoading } = useActivePropertiesQuery();
-  const { data: servicesData, isLoading: servicesLoading } = useActiveServicesQuery();
+  const { data: servicesData, isLoading: servicesLoading, refetch: refetchServices } = useActiveServicesQuery();
   const { data: categoriesData, isLoading: categoriesLoading } = useActiveCategoriesQuery();
-  const { data: floorsData, isLoading: floorsLoading } = useActiveFloorsQuery();
-  const { data: areasData, isLoading: areasLoading } = useActiveAreasQuery();
-  const { data: brandsData, isLoading: brandsLoading } = useActiveBrandsQuery();
+  const { data: floorsData, isLoading: floorsLoading, refetch: refetchFloors } = useActiveFloorsQuery();
+  const { data: areasData, isLoading: areasLoading, refetch: refetchAreas } = useActiveAreasQuery();
+  const { data: brandsData, isLoading: brandsLoading, refetch: refetchBrands } = useActiveBrandsQuery();
 
   // Fetch parent quotation for prefilling revised quote details on CREATE mode, and checking finish work date
   const { data: parentQuotationData, isLoading: parentLoading } = useQuotationQuery(parentId);
@@ -264,8 +267,211 @@ const RevQuotationFormPage = () => {
   const createRevQuotationMutation = useCreateRevQuotationMutation();
   const updateRevQuotationMutation = useUpdateRevQuotationMutation();
   const deleteRevSubMutation = useDeleteRevQuotationSubMutation();
+  // Master quick-add mutations (Floor / Area / Brand / Product / Service — inline)
+  const createFloorMutation = useCreateFloorMutation();
+  const createAreaMutation = useCreateAreaMutation();
+  const createBrandMutation = useCreateBrandMutation();
+  const createProductMutation = useCreateProductMutation();
+  const createServiceMutation = useCreateServiceMutation();
 
   const isSubmitting = createRevQuotationMutation.isPending || updateRevQuotationMutation.isPending;
+
+  // Master quick-add state (Floor / Area / Product / Service)
+  const [quickName, setQuickName] = useState({
+    open: false,
+    type: "floor",
+    target: null,
+    name: "",
+    saving: false,
+  });
+  const [productQA, setProductQA] = useState({
+    open: false,
+    target: null,
+    serviceId: "",
+    categoryId: "",
+    name: "",
+    saving: false,
+  });
+  const [brandSaving, setBrandSaving] = useState(false);
+  const [serviceQA, setServiceQA] = useState({
+    open: false,
+    target: null,
+    name: "",
+    saving: false,
+  });
+  const [extraProducts, setExtraProducts] = useState([]);
+
+  const openQuickName = (type, target, typed) =>
+    setQuickName({ open: true, type, target, name: (typed || "").trim(), saving: false });
+
+  const matchByName = (list, name, key) =>
+    (list || []).find(
+      (x) => (x[key] || "").toLowerCase() === (name || "").toLowerCase(),
+    );
+
+  const saveQuickName = async (name) => {
+    const { type, target } = quickName;
+    if (!target) return;
+    setQuickName((p) => ({ ...p, saving: true }));
+    try {
+      if (type === "floor") {
+        await createFloorMutation.mutateAsync({ property_floor: name });
+        const r = await refetchFloors();
+        const found = matchByName(r.data?.data, name, "property_floor");
+        if (found)
+          handleNestedFieldChange(target.serviceIndex, target.floorIndex, null, null, "floorId", found.id.toString());
+      } else {
+        await createAreaMutation.mutateAsync({ property_area: name });
+        const r = await refetchAreas();
+        const found = matchByName(r.data?.data, name, "property_area");
+        if (found)
+          handleNestedFieldChange(target.serviceIndex, target.floorIndex, target.areaIndex, null, "areaId", found.id.toString());
+      }
+      toast.success(`${type === "floor" ? "Floor" : "Area"} added successfully`);
+      setQuickName({ open: false, type: "floor", target: null, name: "", saving: false });
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || "Failed to add");
+      setQuickName((p) => ({ ...p, saving: false }));
+    }
+  };
+
+  const openServiceQA = (target, typed) =>
+    setServiceQA({ open: true, target, name: (typed || "").trim(), saving: false });
+
+  const saveServiceQA = async (formDataObj) => {
+    const { target } = serviceQA;
+    if (!target) return;
+    setServiceQA((p) => ({ ...p, saving: true }));
+    try {
+      await createServiceMutation.mutateAsync(formDataObj);
+      const r = await refetchServices();
+      const sentName = formDataObj.get("service_name");
+      const found = matchByName(r.data?.data, sentName, "service_name");
+      if (found) {
+        const sid = found.id.toString();
+        setFormData((prev) => {
+          const cur = prev.quotation_service_id ? prev.quotation_service_id.split(",") : [];
+          if (cur.includes(sid)) return prev;
+          return { ...prev, quotation_service_id: [...cur, sid].join(",") };
+        });
+        handleNestedFieldChange(target.serviceIndex, null, null, null, "serviceId", sid);
+      }
+      toast.success("Service added successfully");
+      setServiceQA({ open: false, target: null, name: "", saving: false });
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || "Failed to add service");
+      setServiceQA((p) => ({ ...p, saving: false }));
+    }
+  };
+
+  const handleAddBrand = async (name) => {
+    setBrandSaving(true);
+    try {
+      await createBrandMutation.mutateAsync(name);
+      const r = await refetchBrands();
+      const found = matchByName(r.data?.data, name, "brand_name");
+      if (found) toast.success("Brand added successfully");
+      return found ? found.id.toString() : null;
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || "Failed to add brand");
+      return null;
+    } finally {
+      setBrandSaving(false);
+    }
+  };
+
+  const openProductQA = (target, typed, rowServiceId) =>
+    setProductQA({
+      open: true,
+      target,
+      name: (typed || "").trim(),
+      serviceId: rowServiceId || "",
+      categoryId: checkedCategories[0] || "",
+      saving: false,
+    });
+
+  const saveProductQA = async (payload) => {
+    const { target } = productQA;
+    if (!target) return;
+    setProductQA((p) => ({ ...p, saving: true }));
+    try {
+      const res = await createProductMutation.mutateAsync(payload);
+      await queryClient.invalidateQueries({ queryKey: ["products-for-quotation"] });
+      const r = await refetchQuotationProducts();
+      const created = res?.data?.data || res?.data || res;
+      let found =
+        (r.data?.data || []).find(
+          (p) => (p.product_name || "").toLowerCase() === payload.product_name.toLowerCase(),
+        ) ||
+        (created?.id
+          ? {
+              id: created.id,
+              product_name: created.product_name || payload.product_name,
+              product_price:
+                created.product_price ?? payload.product_price ?? 0,
+              service_id: created.service_id ?? payload.service_id ?? "",
+              service_name: created.service_name || "",
+              category_id: created.category_id ?? payload.category_id ?? "",
+            }
+          : null);
+      if (found?.id) {
+        setExtraProducts((prev) =>
+          prev.some((e) => e.id?.toString() === found.id?.toString())
+            ? prev
+            : [...prev, found],
+        );
+        const newCatId =
+          found.category_id?.toString() || payload.category_id?.toString() || "";
+        if (newCatId) {
+          setFormData((prev) => {
+            const cur = prev.quotation_category_id
+              ? prev.quotation_category_id.split(",")
+              : [];
+            if (cur.includes(newCatId)) return prev;
+            return { ...prev, quotation_category_id: [...cur, newCatId].join(",") };
+          });
+        }
+        const srv = servicesState[target.serviceIndex];
+        const newSvc = found.service_id?.toString() || "";
+        if (newSvc && srv?.serviceId && newSvc !== srv.serviceId?.toString()) {
+          const svcName =
+            services.find((s) => s.id?.toString() === newSvc)?.service_name ||
+            found.service_name ||
+            newSvc;
+          handleNestedFieldChange(
+            target.serviceIndex,
+            null,
+            null,
+            null,
+            "serviceId",
+            newSvc
+          );
+          setFormData((prev) => {
+            const cur = prev.quotation_service_id
+              ? prev.quotation_service_id.split(",")
+              : [];
+            if (cur.includes(newSvc)) return prev;
+            return { ...prev, quotation_service_id: [...cur, newSvc].join(",") };
+          });
+          toast.info(`New product is under '${svcName}' — row switched to it`);
+        }
+        handleProductSelect(
+          target.serviceIndex,
+          target.floorIndex,
+          target.areaIndex,
+          target.prodIndex,
+          { value: found.id.toString() },
+          { serviceId: srv?.serviceId },
+          found,
+        );
+      }
+      toast.success("Product added successfully");
+      setProductQA({ open: false, target: null, serviceId: "", categoryId: "", name: "", saving: false });
+    } catch (error) {
+      toast.error(error.response?.data?.message || error.message || "Failed to add product");
+      setProductQA((p) => ({ ...p, saving: false }));
+    }
+  };
 
   // 1. Prefill from parent quotation on CREATE mode
   useEffect(() => {
@@ -615,7 +821,20 @@ const RevQuotationFormPage = () => {
     }
   };
 
-  const handleNestedFieldChange = (serviceIndex, floorIndex, areaIndex, productIndex, field, value) => {
+  const findProductById = (pid) =>
+    [...productsList, ...catProductsList, ...(extraProducts || [])].find(
+      (p) => p.id?.toString() === pid?.toString(),
+    );
+
+  const handleNestedFieldChange = (
+    serviceIndex,
+    floorIndex,
+    areaIndex,
+    productIndex,
+    field,
+    value,
+    matchedProduct = null,
+  ) => {
     setServicesState((prev) => {
       const updated = [...prev];
       if (productIndex !== null) {
@@ -624,9 +843,9 @@ const RevQuotationFormPage = () => {
         product[field] = value;
 
         if (field === "productId") {
-          const matchedProd = [...productsList, ...catProductsList].find(
-            (p) => p.id?.toString() === value?.toString()
-          );
+          const matchedProd =
+            matchedProduct ||
+            findProductById(value);
           if (matchedProd) {
             product.price = matchedProd.product_price || 0;
           }
@@ -945,9 +1164,53 @@ const RevQuotationFormPage = () => {
     const matched = dedupeProducts(
       productsList.filter((p) => p.service_id?.toString() === sid)
     );
-    if (matched.length > 0) return matched;
-    return dedupeProducts(
+    const pool = matched.length > 0 ? matched : dedupeProducts(
       catProductsList.filter((p) => p.service_id?.toString() === sid)
+    );
+    const merged = [...pool];
+    const seen = new Set(pool.map((p) => p.id?.toString()));
+    (extraProducts || []).forEach((e) => {
+      if (
+        e?.service_id?.toString() === sid &&
+        !seen.has(e.id?.toString())
+      ) {
+        merged.push(e);
+        seen.add(e.id?.toString());
+      }
+    });
+    return dedupeProducts(merged);
+  };
+
+  const handleProductSelect = (
+    serviceIndex,
+    floorIndex,
+    areaIndex,
+    prodIndex,
+    option,
+    srv,
+    knownProduct = null,
+  ) => {
+    const val = option ? option.value : "";
+    if (!option) {
+      handleNestedFieldChange(
+        serviceIndex,
+        floorIndex,
+        areaIndex,
+        prodIndex,
+        "productId",
+        "",
+      );
+      return;
+    }
+    const matched = knownProduct || findProductById(val);
+    handleNestedFieldChange(
+      serviceIndex,
+      floorIndex,
+      areaIndex,
+      prodIndex,
+      "productId",
+      val,
+      matched,
     );
   };
 
@@ -1211,7 +1474,7 @@ const RevQuotationFormPage = () => {
                       <Label className="text-sm font-bold text-slate-900 dark:text-slate-100 shrink-0">
                         Service
                       </Label>
-                      <MemoizedSelect
+                      <SelectWithAdd
                         options={activeServicesForRows.map((s) => ({
                           value: s.id?.toString(),
                           label: s.service_name,
@@ -1228,6 +1491,16 @@ const RevQuotationFormPage = () => {
                           )
                         }
                         placeholder="Select Service"
+                        isLoading={servicesLoading}
+                        addLabel="Add New Service"
+                        renderAddLabel={(typed) =>
+                          typed?.trim()
+                            ? `Add "${typed.trim()}" as New Service`
+                            : "Add New Service"
+                        }
+                        onAdd={(typed) =>
+                          openServiceQA({ serviceIndex }, typed)
+                        }
                       />
                     </div>
 
@@ -1260,7 +1533,7 @@ const RevQuotationFormPage = () => {
                             <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">
                               Floor
                             </Label>
-                            <MemoizedSelect
+                            <SelectWithAdd
                               options={floors.map((flr) => ({
                                 value: flr.id?.toString(),
                                 label: flr.property_floor,
@@ -1277,6 +1550,20 @@ const RevQuotationFormPage = () => {
                                 )
                               }
                               placeholder="Select Floor"
+                              isLoading={floorsLoading}
+                              addLabel="Add New Floor"
+                              renderAddLabel={(typed) =>
+                                typed?.trim()
+                                  ? `Add "${typed.trim()}" as New Floor`
+                                  : "Add New Floor"
+                              }
+                              onAdd={(typed) =>
+                                openQuickName(
+                                  "floor",
+                                  { serviceIndex, floorIndex },
+                                  typed,
+                                )
+                              }
                             />
                           </div>
 
@@ -1311,7 +1598,7 @@ const RevQuotationFormPage = () => {
                                   <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">
                                     Area
                                   </Label>
-                                  <MemoizedSelect
+                                  <SelectWithAdd
                                     options={areas.map((ar) => ({
                                       value: ar.id?.toString(),
                                       label: ar.property_area,
@@ -1328,6 +1615,24 @@ const RevQuotationFormPage = () => {
                                       )
                                     }
                                     placeholder="Select Area"
+                                    isLoading={areasLoading}
+                                    addLabel="Add New Area"
+                                    renderAddLabel={(typed) =>
+                                      typed?.trim()
+                                        ? `Add "${typed.trim()}" as New Area`
+                                        : "Add New Area"
+                                    }
+                                    onAdd={(typed) =>
+                                      openQuickName(
+                                        "area",
+                                        {
+                                          serviceIndex,
+                                          floorIndex,
+                                          areaIndex,
+                                        },
+                                        typed,
+                                      )
+                                    }
                                   />
                                 </div>
 
@@ -1377,22 +1682,22 @@ const RevQuotationFormPage = () => {
                                         className="col-span-3"
                                         data-error-field={`product-${serviceIndex}-${floorIndex}-${areaIndex}-${prodIndex}`}
                                       >
-                                        <MemoizedSelect
+                                        <SelectWithAdd
                                           options={getRevRowProductOptions(
-                                            srv.serviceId
+                                            srv.serviceId,
                                           ).map((p) => ({
                                             value: p.id?.toString(),
                                             label: getProductLabel(p),
                                           }))}
                                           value={prod.productId}
                                           onChange={(option) =>
-                                            handleNestedFieldChange(
+                                            handleProductSelect(
                                               serviceIndex,
                                               floorIndex,
                                               areaIndex,
                                               prodIndex,
-                                              "productId",
-                                              option ? option.value : "",
+                                              option,
+                                              srv,
                                             )
                                           }
                                           placeholder={
@@ -1406,6 +1711,24 @@ const RevQuotationFormPage = () => {
                                           isLoading={productsLoading}
                                           isDisabled={
                                             !srv.serviceId || productsLoading
+                                          }
+                                          addLabel="Add New Product"
+                                          renderAddLabel={(typed) =>
+                                            typed?.trim()
+                                              ? `Add "${typed.trim()}" as New Product`
+                                              : "Add New Product"
+                                          }
+                                          onAdd={(typed) =>
+                                            openProductQA(
+                                              {
+                                                serviceIndex,
+                                                floorIndex,
+                                                areaIndex,
+                                                prodIndex,
+                                              },
+                                              typed,
+                                              srv.serviceId,
+                                            )
                                           }
                                         />
                                       </div>
@@ -1618,6 +1941,51 @@ const RevQuotationFormPage = () => {
         areas={areas}
         products={productsList}
         categories={categories}
+      />
+      {/* Floor / Area quick-add (dropdown footer "+ Add" ise kholta hai) */}
+      <QuickNameDialog
+        open={quickName.open}
+        onClose={() =>
+          !quickName.saving &&
+          setQuickName({ open: false, type: "floor", target: null, name: "", saving: false })
+        }
+        onSave={saveQuickName}
+        saving={quickName.saving}
+        title={quickName.type === "floor" ? "Add New Floor" : "Add New Area"}
+        label={quickName.type === "floor" ? "Floor Name" : "Area Name"}
+        placeholder={
+          quickName.type === "floor" ? "e.g. Second Floor" : "e.g. Living Room"
+        }
+        initialName={quickName.name}
+      />
+      {/* Product quick-add (product dropdown footer "+ Add Product" ise kholta hai) */}
+      <ProductQuickAddDialog
+        open={productQA.open}
+        onClose={() =>
+          !productQA.saving &&
+          setProductQA({ open: false, target: null, serviceId: "", categoryId: "", name: "", saving: false })
+        }
+        onSave={saveProductQA}
+        saving={productQA.saving}
+        services={services}
+        categories={categories}
+        brands={brands}
+        initialName={productQA.name}
+        initialServiceId={productQA.serviceId}
+        initialCategoryId={productQA.categoryId}
+        brandSaving={brandSaving}
+        onAddBrand={handleAddBrand}
+      />
+      {/* Service quick-add (service dropdown footer "+ Add Service" ise kholta hai) */}
+      <ServiceQuickAddDialog
+        open={serviceQA.open}
+        onClose={() =>
+          !serviceQA.saving &&
+          setServiceQA({ open: false, target: null, name: "", saving: false })
+        }
+        onSave={saveServiceQA}
+        saving={serviceQA.saving}
+        initialName={serviceQA.name}
       />
     </div>
   );
