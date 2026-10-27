@@ -76,10 +76,26 @@ const groupSubsToServices = (subsList) => {
   // NOTE: Map() used (not {}) — plain objects auto-sort integer-like keys
   // ("1","12","13" → "1" first), which broke API order. Map keeps insertion order.
   const serviceMap = new Map();
-  // Oldest first: backend may return DESC, we always render 1,2,3... (old top, new bottom)
-  const orderedSubs = [...subsList].sort(
-    (a, b) => (Number(a.id) || 0) - (Number(b.id) || 0)
-  );
+  // Sort ascending by quotation_sub_sort if present, fallback to id
+  const orderedSubs = [...subsList].sort((a, b) => {
+    const sA =
+      a.quotation_sub_sort !== null &&
+      a.quotation_sub_sort !== undefined &&
+      a.quotation_sub_sort !== ""
+        ? Number(a.quotation_sub_sort)
+        : null;
+    const sB =
+      b.quotation_sub_sort !== null &&
+      b.quotation_sub_sort !== undefined &&
+      b.quotation_sub_sort !== ""
+        ? Number(b.quotation_sub_sort)
+        : null;
+
+    if (sA !== null && sB !== null) return sA - sB;
+    if (sA !== null) return -1;
+    if (sB !== null) return 1;
+    return (Number(a.id) || 0) - (Number(b.id) || 0);
+  });
   orderedSubs.forEach((item) => {
     const serviceId = item.quotation_sub_service_id?.toString() || "";
     const floorId = item.quotation_sub_floor_id?.toString() || "";
@@ -133,6 +149,7 @@ const groupSubsToServices = (subsList) => {
 // Helper: Flatten nested Services structure to subs array
 const flattenServicesToSubs = (servicesList) => {
   const flattened = [];
+  let sortIndex = 1;
   servicesList.forEach((srv) => {
     srv.floors.forEach((floor) => {
       floor.areas.forEach((area) => {
@@ -150,6 +167,7 @@ const flattenServicesToSubs = (servicesList) => {
                 Number(product.price) * Number(product.quantity),
               quotation_sub_status: product.status || "Pending",
               quotation_sub_notes: product.notes || "",
+              quotation_sub_sort: sortIndex++,
             });
           }
         });

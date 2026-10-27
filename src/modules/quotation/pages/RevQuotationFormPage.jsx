@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet, RefreshCw } from "lucide-react";
+import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet, RefreshCw, GripVertical } from "lucide-react";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,42 +36,69 @@ import ImportQuotationDialog from "../components/ImportQuotationDialog";
 import { QuickNameDialog, ProductQuickAddDialog, ServiceQuickAddDialog } from "../components/MasterQuickAddDialogs";
 import { useQueryClient } from "@tanstack/react-query";
 
-// Helper: Group flat subs to nested Services structure (Service -> Floor -> Area -> Product)
-const groupSubsToServices = (subsList) => {
-  if (!subsList || subsList.length === 0) {
-    return [
+let uidSeed = 0;
+const createUid = (prefix = "item") =>
+  `${prefix}_${Date.now()}_${++uidSeed}_${Math.random().toString(36).substring(2, 7)}`;
+
+const createDefaultServices = () => [
+  {
+    _uid: createUid("srv"),
+    serviceId: "",
+    floors: [
       {
-        serviceId: "",
-        floors: [
+        _uid: createUid("flr"),
+        floorId: "",
+        areas: [
           {
-            floorId: "",
-            areas: [
+            _uid: createUid("area"),
+            areaId: "",
+            products: [
               {
-                areaId: "",
-                products: [
-                  {
-                    id: null,
-                    productId: "",
-                    price: 0,
-                    quantity: 1,
-                    status: "Pending",
-                  },
-                ],
+                _uid: createUid("prod"),
+                id: null,
+                productId: "",
+                price: 0,
+                quantity: 1,
+                status: "Pending",
               },
             ],
           },
         ],
       },
-    ];
+    ],
+  },
+];
+
+// Helper: Group flat subs to nested Services structure (Service -> Floor -> Area -> Product)
+const groupSubsToServices = (subsList) => {
+  if (!subsList || subsList.length === 0) {
+    return createDefaultServices();
   }
 
   // NOTE: Map() used (not {}) — plain objects auto-sort integer-like keys,
   // which broke API order. Map keeps insertion order.
   const serviceMap = new Map();
-  // Oldest first: backend may return DESC, we always render 1,2,3... (old top, new bottom)
-  const orderedSubs = [...subsList].sort(
-    (a, b) => (Number(a.id) || 0) - (Number(b.id) || 0)
-  );
+  // Backend returns quotation_sub_sort. Sort ascending by quotation_sub_sort, fallback to id
+  const orderedSubs = [...subsList].sort((a, b) => {
+    const sA =
+      a.quotation_sub_sort !== null &&
+      a.quotation_sub_sort !== undefined &&
+      a.quotation_sub_sort !== ""
+        ? Number(a.quotation_sub_sort)
+        : null;
+    const sB =
+      b.quotation_sub_sort !== null &&
+      b.quotation_sub_sort !== undefined &&
+      b.quotation_sub_sort !== ""
+        ? Number(b.quotation_sub_sort)
+        : null;
+
+    if (sA !== null && sB !== null) return sA - sB;
+    if (sA !== null) return -1;
+    if (sB !== null) return 1;
+    return (Number(a.id) || 0) - (Number(b.id) || 0);
+  });
+
   orderedSubs.forEach((item) => {
     const serviceId = item.quotation_sub_service_id?.toString() || "";
     const floorId = item.quotation_sub_floor_id?.toString() || "";
@@ -78,6 +106,7 @@ const groupSubsToServices = (subsList) => {
 
     if (!serviceMap.has(serviceId)) {
       serviceMap.set(serviceId, {
+        _uid: createUid("srv"),
         serviceId,
         floors: new Map(),
       });
@@ -86,6 +115,7 @@ const groupSubsToServices = (subsList) => {
 
     if (!svc.floors.has(floorId)) {
       svc.floors.set(floorId, {
+        _uid: createUid("flr"),
         floorId,
         areas: new Map(),
       });
@@ -94,13 +124,16 @@ const groupSubsToServices = (subsList) => {
 
     if (!flr.areas.has(areaId)) {
       flr.areas.set(areaId, {
+        _uid: createUid("area"),
         areaId,
         products: [],
       });
     }
 
     flr.areas.get(areaId).products.push({
+      _uid: createUid("prod"),
       id: item.id || null,
+      quotation_sub_sort: item.quotation_sub_sort,
       productId: item.quotation_sub_product_id?.toString() || "",
       price: Number(item.quotation_sub_price) || 0,
       quantity: Number(item.quotation_sub_quantity) || 1,
@@ -110,10 +143,13 @@ const groupSubsToServices = (subsList) => {
   });
 
   return [...serviceMap.values()].map((srv) => ({
+    _uid: srv._uid,
     serviceId: srv.serviceId,
     floors: [...srv.floors.values()].map((f) => ({
+      _uid: f._uid,
       floorId: f.floorId,
       areas: [...f.areas.values()].map((a) => ({
+        _uid: a._uid,
         areaId: a.areaId,
         products: a.products,
       })),
@@ -121,9 +157,10 @@ const groupSubsToServices = (subsList) => {
   }));
 };
 
-// Helper: Flatten nested Services structure to subs array
+// Helper: Flatten nested Services structure to subs array with sequential quotation_sub_sort
 const flattenServicesToSubs = (servicesList) => {
   const flattened = [];
+  let sortIndex = 1;
   servicesList.forEach((srv) => {
     srv.floors.forEach((floor) => {
       floor.areas.forEach((area) => {
@@ -131,6 +168,7 @@ const flattenServicesToSubs = (servicesList) => {
           if (product.productId) {
             flattened.push({
               id: product.id || undefined,
+              quotation_sub_sort: sortIndex++,
               quotation_sub_service_id: Number(srv.serviceId),
               quotation_sub_floor_id: Number(floor.floorId),
               quotation_sub_area_id: Number(area.areaId),
@@ -613,15 +651,19 @@ const RevQuotationFormPage = () => {
     setServicesState((prev) => [
       ...prev,
       {
+        _uid: createUid("srv"),
         serviceId: "",
         floors: [
           {
+            _uid: createUid("flr"),
             floorId: "",
             areas: [
               {
+                _uid: createUid("area"),
                 areaId: "",
                 products: [
                   {
+                    _uid: createUid("prod"),
                     id: null,
                     productId: "",
                     price: 0,
@@ -640,9 +682,9 @@ const RevQuotationFormPage = () => {
   const removeService = (serviceIndex) => {
     const srv = servicesState[serviceIndex];
     const ids = [];
-    srv.floors.forEach(floor => {
-      floor.areas.forEach(area => {
-        area.products.forEach(p => {
+    srv.floors.forEach((floor) => {
+      floor.areas.forEach((area) => {
+        area.products.forEach((p) => {
           if (p.id) ids.push(p.id);
         });
       });
@@ -652,7 +694,7 @@ const RevQuotationFormPage = () => {
       setPendingDelete({
         type: "service",
         ids,
-        indices: { serviceIndex }
+        indices: { serviceIndex },
       });
       setConfirmOpen(true);
     } else {
@@ -664,12 +706,15 @@ const RevQuotationFormPage = () => {
     setServicesState((prev) => {
       const updated = [...prev];
       updated[serviceIndex].floors.push({
+        _uid: createUid("flr"),
         floorId: "",
         areas: [
           {
+            _uid: createUid("area"),
             areaId: "",
             products: [
               {
+                _uid: createUid("prod"),
                 id: null,
                 productId: "",
                 price: 0,
@@ -687,8 +732,8 @@ const RevQuotationFormPage = () => {
   const removeFloor = (serviceIndex, floorIndex) => {
     const floor = servicesState[serviceIndex].floors[floorIndex];
     const ids = [];
-    floor.areas.forEach(area => {
-      area.products.forEach(p => {
+    floor.areas.forEach((area) => {
+      area.products.forEach((p) => {
         if (p.id) ids.push(p.id);
       });
     });
@@ -697,14 +742,15 @@ const RevQuotationFormPage = () => {
       setPendingDelete({
         type: "floor",
         ids,
-        indices: { serviceIndex, floorIndex }
+        indices: { serviceIndex, floorIndex },
       });
       setConfirmOpen(true);
     } else {
       setServicesState((prev) => {
         const updated = [...prev];
-        updated[serviceIndex].floors =
-          updated[serviceIndex].floors.filter((_, i) => i !== floorIndex);
+        updated[serviceIndex].floors = updated[serviceIndex].floors.filter(
+          (_, i) => i !== floorIndex,
+        );
         return updated;
       });
     }
@@ -714,9 +760,11 @@ const RevQuotationFormPage = () => {
     setServicesState((prev) => {
       const updated = [...prev];
       updated[serviceIndex].floors[floorIndex].areas.push({
+        _uid: createUid("area"),
         areaId: "",
         products: [
           {
+            _uid: createUid("prod"),
             id: null,
             productId: "",
             price: 0,
@@ -730,21 +778,23 @@ const RevQuotationFormPage = () => {
   };
 
   const removeArea = (serviceIndex, floorIndex, areaIndex) => {
-    const area = servicesState[serviceIndex].floors[floorIndex].areas[areaIndex];
-    const ids = area.products.map(p => p.id).filter(Boolean);
+    const area =
+      servicesState[serviceIndex].floors[floorIndex].areas[areaIndex];
+    const ids = area.products.map((p) => p.id).filter(Boolean);
 
     if (ids.length > 0) {
       setPendingDelete({
         type: "area",
         ids,
-        indices: { serviceIndex, floorIndex, areaIndex }
+        indices: { serviceIndex, floorIndex, areaIndex },
       });
       setConfirmOpen(true);
     } else {
       setServicesState((prev) => {
         const updated = [...prev];
-        updated[serviceIndex].floors[floorIndex].areas =
-          updated[serviceIndex].floors[floorIndex].areas.filter((_, i) => i !== areaIndex);
+        updated[serviceIndex].floors[floorIndex].areas = updated[
+          serviceIndex
+        ].floors[floorIndex].areas.filter((_, i) => i !== areaIndex);
         return updated;
       });
     }
@@ -754,6 +804,7 @@ const RevQuotationFormPage = () => {
     setServicesState((prev) => {
       const updated = [...prev];
       updated[serviceIndex].floors[floorIndex].areas[areaIndex].products.push({
+        _uid: createUid("prod"),
         id: null,
         productId: "",
         price: 0,
@@ -764,20 +815,28 @@ const RevQuotationFormPage = () => {
     });
   };
 
-  const removeProduct = (serviceIndex, floorIndex, areaIndex, productIndex, subId) => {
+  const removeProduct = (
+    serviceIndex,
+    floorIndex,
+    areaIndex,
+    productIndex,
+    subId,
+  ) => {
     if (subId) {
       setPendingDelete({
         type: "product",
         ids: [subId],
-        indices: { serviceIndex, floorIndex, areaIndex, productIndex }
+        indices: { serviceIndex, floorIndex, areaIndex, productIndex },
       });
       setConfirmOpen(true);
     } else {
       setServicesState((prev) => {
         const updated = [...prev];
-        updated[serviceIndex].floors[floorIndex].areas[areaIndex].products = updated[serviceIndex].floors[floorIndex].areas[areaIndex].products.filter(
-          (_, i) => i !== productIndex
-        );
+        updated[serviceIndex].floors[floorIndex].areas[
+          areaIndex
+        ].products = updated[serviceIndex].floors[floorIndex].areas[
+          areaIndex
+        ].products.filter((_, i) => i !== productIndex);
         return updated;
       });
     }
@@ -788,25 +847,29 @@ const RevQuotationFormPage = () => {
     const { type, ids, indices } = pendingDelete;
     try {
       if (ids && ids.length > 0) {
-        await Promise.all(ids.map(id => deleteRevSubMutation.mutateAsync(id)));
+        await Promise.all(ids.map((id) => deleteRevSubMutation.mutateAsync(id)));
         toast.success("Revised items deleted successfully");
       }
-      
+
       setServicesState((prev) => {
         const updated = [...prev];
         if (type === "product") {
           const { serviceIndex, floorIndex, areaIndex, productIndex } = indices;
-          updated[serviceIndex].floors[floorIndex].areas[areaIndex].products = updated[serviceIndex].floors[floorIndex].areas[areaIndex].products.filter(
-            (_, i) => i !== productIndex
-          );
+          updated[serviceIndex].floors[floorIndex].areas[
+            areaIndex
+          ].products = updated[serviceIndex].floors[floorIndex].areas[
+            areaIndex
+          ].products.filter((_, i) => i !== productIndex);
         } else if (type === "area") {
           const { serviceIndex, floorIndex, areaIndex } = indices;
-          updated[serviceIndex].floors[floorIndex].areas =
-            updated[serviceIndex].floors[floorIndex].areas.filter((_, i) => i !== areaIndex);
+          updated[serviceIndex].floors[floorIndex].areas = updated[
+            serviceIndex
+          ].floors[floorIndex].areas.filter((_, i) => i !== areaIndex);
         } else if (type === "floor") {
           const { serviceIndex, floorIndex } = indices;
-          updated[serviceIndex].floors =
-            updated[serviceIndex].floors.filter((_, i) => i !== floorIndex);
+          updated[serviceIndex].floors = updated[
+            serviceIndex
+          ].floors.filter((_, i) => i !== floorIndex);
         } else if (type === "service") {
           const { serviceIndex } = indices;
           return updated.filter((_, i) => i !== serviceIndex);
@@ -819,6 +882,102 @@ const RevQuotationFormPage = () => {
     } finally {
       setPendingDelete(null);
     }
+  };
+
+  const handleDragEnd = (result) => {
+    const { source, destination, type } = result;
+    if (!destination) return;
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return;
+    }
+
+    setServicesState((prev) => {
+      const updated = [...prev];
+
+      if (type === "service") {
+        const [moved] = updated.splice(source.index, 1);
+        updated.splice(destination.index, 0, moved);
+        return updated;
+      }
+
+      if (type === "floor") {
+        const sIdx = Number(source.droppableId.replace("floors-", ""));
+        const destSIdx = Number(destination.droppableId.replace("floors-", ""));
+        if (sIdx !== destSIdx) return prev;
+        const floors = [...updated[sIdx].floors];
+        const [moved] = floors.splice(source.index, 1);
+        floors.splice(destination.index, 0, moved);
+        updated[sIdx] = { ...updated[sIdx], floors };
+        return updated;
+      }
+
+      if (type === "area") {
+        const [, sIdxStr, fIdxStr] = source.droppableId.split("-");
+        const [, destSIdxStr, destFIdxStr] = destination.droppableId.split("-");
+        const sIdx = Number(sIdxStr);
+        const fIdx = Number(fIdxStr);
+        const destSIdx = Number(destSIdxStr);
+        const destFIdx = Number(destFIdxStr);
+        if (sIdx !== destSIdx || fIdx !== destFIdx) return prev;
+        const areas = [...updated[sIdx].floors[fIdx].areas];
+        const [moved] = areas.splice(source.index, 1);
+        areas.splice(destination.index, 0, moved);
+        const floors = [...updated[sIdx].floors];
+        floors[fIdx] = { ...floors[fIdx], areas };
+        updated[sIdx] = { ...updated[sIdx], floors };
+        return updated;
+      }
+
+      if (type === "product") {
+        const [, sIdxStr, fIdxStr, aIdxStr] = source.droppableId.split("-");
+        const [, destSIdxStr, destFIdxStr, destAIdxStr] = destination.droppableId.split("-");
+        const sIdx = Number(sIdxStr);
+        const fIdx = Number(fIdxStr);
+        const aIdx = Number(aIdxStr);
+        const destSIdx = Number(destSIdxStr);
+        const destFIdx = Number(destFIdxStr);
+        const destAIdx = Number(destAIdxStr);
+
+        // Within same area
+        if (sIdx === destSIdx && fIdx === destFIdx && aIdx === destAIdx) {
+          const prods = [...updated[sIdx].floors[fIdx].areas[aIdx].products];
+          const [moved] = prods.splice(source.index, 1);
+          prods.splice(destination.index, 0, moved);
+
+          const areas = [...updated[sIdx].floors[fIdx].areas];
+          areas[aIdx] = { ...areas[aIdx], products: prods };
+          const floors = [...updated[sIdx].floors];
+          floors[fIdx] = { ...floors[fIdx], areas };
+          updated[sIdx] = { ...updated[sIdx], floors };
+          return updated;
+        }
+
+        // Cross-area product move
+        const sourceProds = [...updated[sIdx].floors[fIdx].areas[aIdx].products];
+        const destProds = [...updated[destSIdx].floors[destFIdx].areas[destAIdx].products];
+        const [moved] = sourceProds.splice(source.index, 1);
+        destProds.splice(destination.index, 0, moved);
+
+        const srcAreas = [...updated[sIdx].floors[fIdx].areas];
+        srcAreas[aIdx] = { ...srcAreas[aIdx], products: sourceProds };
+        const srcFloors = [...updated[sIdx].floors];
+        srcFloors[fIdx] = { ...srcFloors[fIdx], areas: srcAreas };
+        updated[sIdx] = { ...updated[sIdx], floors: srcFloors };
+
+        const dstAreas = [...updated[destSIdx].floors[destFIdx].areas];
+        dstAreas[destAIdx] = { ...dstAreas[destAIdx], products: destProds };
+        const dstFloors = [...updated[destSIdx].floors];
+        dstFloors[destFIdx] = { ...dstFloors[destFIdx], areas: dstAreas };
+        updated[destSIdx] = { ...updated[destSIdx], floors: dstFloors };
+
+        return updated;
+      }
+
+      return prev;
+    });
   };
 
   const findProductById = (pid) =>
@@ -1459,419 +1618,567 @@ const RevQuotationFormPage = () => {
               </Button> */}
             </div>
 
-            <div className="space-y-8">
-              {servicesState.map((srv, serviceIndex) => (
-                <div
-                  key={serviceIndex}
-                  className="p-5 border dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/20 shadow-sm space-y-4"
-                >
-                  {/* Service Header */}
-                  <div className="flex items-center justify-between gap-4 border-b dark:border-slate-800 pb-3">
-                    <div
-                      className="flex items-center gap-3 w-full md:w-1/3"
-                      data-error-field={`service-${serviceIndex}`}
-                    >
-                      <Label className="text-sm font-bold text-slate-900 dark:text-slate-100 shrink-0">
-                        Service
-                      </Label>
-                      <SelectWithAdd
-                        options={activeServicesForRows.map((s) => ({
-                          value: s.id?.toString(),
-                          label: s.service_name,
-                        }))}
-                        value={srv.serviceId}
-                        onChange={(option) =>
-                          handleNestedFieldChange(
-                            serviceIndex,
-                            null,
-                            null,
-                            null,
-                            "serviceId",
-                            option ? option.value : "",
-                          )
-                        }
-                        placeholder="Select Service"
-                        isLoading={servicesLoading}
-                        addLabel="Add New Service"
-                        renderAddLabel={(typed) =>
-                          typed?.trim()
-                            ? `Add "${typed.trim()}" as New Service`
-                            : "Add New Service"
-                        }
-                        onAdd={(typed) =>
-                          openServiceQA({ serviceIndex }, typed)
-                        }
-                      />
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeService(serviceIndex)}
-                      className="text-red-500 hover:text-red-700 h-8 w-8 hover:bg-red-50 dark:hover:bg-red-950/20"
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  </div>
-
-                  {/* Timeline Floors List */}
-                  <div className="relative pl-6 border-l-2 border-slate-200 dark:border-slate-800 ml-4 space-y-6">
-                    {srv.floors.map((floor, floorIndex) => (
-                      <div key={floorIndex} className="relative space-y-4">
-                        {/* Bullet for Floor */}
-                        <div className="absolute -left-[31px] top-1.5 w-4.5 h-4.5 rounded-full border-4 border-white dark:border-slate-900 bg-blue-600 flex items-center justify-center">
-                          <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
-                        </div>
-
-                        {/* Floor Header */}
-                        <div className="flex items-center justify-between gap-4 border-b dark:border-slate-800 pb-2">
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="services-root" type="service">
+                {(provided) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className="space-y-8"
+                  >
+                    {servicesState.map((srv, serviceIndex) => (
+                      <Draggable
+                        key={srv._uid || `srv-${serviceIndex}`}
+                        draggableId={srv._uid || `srv-${serviceIndex}`}
+                        index={serviceIndex}
+                      >
+                        {(dragProvided, dragSnapshot) => (
                           <div
-                            className="flex items-center gap-3 w-full md:w-1/3"
-                            data-error-field={`floor-${serviceIndex}-${floorIndex}`}
+                            ref={dragProvided.innerRef}
+                            {...dragProvided.draggableProps}
+                            style={dragProvided.draggableProps.style}
+                            className={`p-5 border dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/20 shadow-sm space-y-4 transition-all duration-150 ${
+                              dragSnapshot.isDragging
+                                ? "shadow-2xl ring-2 ring-primary/50 bg-white dark:bg-slate-900 z-50 opacity-95"
+                                : ""
+                            }`}
                           >
-                            <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">
-                              Floor
-                            </Label>
-                            <SelectWithAdd
-                              options={floors.map((flr) => ({
-                                value: flr.id?.toString(),
-                                label: flr.property_floor,
-                              }))}
-                              value={floor.floorId}
-                              onChange={(option) =>
-                                handleNestedFieldChange(
-                                  serviceIndex,
-                                  floorIndex,
-                                  null,
-                                  null,
-                                  "floorId",
-                                  option ? option.value : "",
-                                )
-                              }
-                              placeholder="Select Floor"
-                              isLoading={floorsLoading}
-                              addLabel="Add New Floor"
-                              renderAddLabel={(typed) =>
-                                typed?.trim()
-                                  ? `Add "${typed.trim()}" as New Floor`
-                                  : "Add New Floor"
-                              }
-                              onAdd={(typed) =>
-                                openQuickName(
-                                  "floor",
-                                  { serviceIndex, floorIndex },
-                                  typed,
-                                )
-                              }
-                            />
-                          </div>
-
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() =>
-                              removeFloor(serviceIndex, floorIndex)
-                            }
-                            className="text-red-500 hover:text-red-700 h-7 w-7 hover:bg-red-50 dark:hover:bg-red-950/20"
-                          >
-                            <Trash2 size={14} />
-                          </Button>
-                        </div>
-
-                        {/* Timeline Areas List */}
-                        <div className="relative pl-6 border-l-2 border-dashed border-slate-200 dark:border-slate-800 ml-4 space-y-6">
-                          {floor.areas.map((area, areaIndex) => (
-                            <div key={areaIndex} className="relative space-y-3 pt-1">
-                              {/* Bullet for Area */}
-                              <div className="absolute -left-[31px] top-3.5 w-4.5 h-4.5 rounded-full border-4 border-white dark:border-slate-900 bg-amber-600 flex items-center justify-center">
-                                <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+                            {/* Service Header */}
+                            <div className="flex items-center justify-between gap-4 border-b dark:border-slate-800 pb-3">
+                              <div
+                                className="flex items-center gap-3 w-full md:w-1/3"
+                                data-error-field={`service-${serviceIndex}`}
+                              >
+                                <Label className="text-sm font-bold text-slate-900 dark:text-slate-100 shrink-0">
+                                  Service
+                                </Label>
+                                <SelectWithAdd
+                                  options={activeServicesForRows.map((s) => ({
+                                    value: s.id?.toString(),
+                                    label: s.service_name,
+                                  }))}
+                                  value={srv.serviceId}
+                                  onChange={(option) =>
+                                    handleNestedFieldChange(
+                                      serviceIndex,
+                                      null,
+                                      null,
+                                      null,
+                                      "serviceId",
+                                      option ? option.value : "",
+                                    )
+                                  }
+                                  placeholder="Select Service"
+                                  isLoading={servicesLoading}
+                                  addLabel="Add New Service"
+                                  renderAddLabel={(typed) =>
+                                    typed?.trim()
+                                      ? `Add "${typed.trim()}" as New Service`
+                                      : "Add New Service"
+                                  }
+                                  onAdd={(typed) =>
+                                    openServiceQA({ serviceIndex }, typed)
+                                  }
+                                />
                               </div>
 
-                              {/* Area Header */}
-                              <div className="flex items-center justify-between gap-4">
+                              <div className="flex items-center gap-1">
                                 <div
-                                  className="flex items-center gap-3 w-full md:w-1/3"
-                                  data-error-field={`area-${serviceIndex}-${floorIndex}-${areaIndex}`}
+                                  {...dragProvided.dragHandleProps}
+                                  className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-grab active:cursor-grabbing rounded hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
+                                  title="Drag to reorder Service"
                                 >
-                                  <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">
-                                    Area
-                                  </Label>
-                                  <SelectWithAdd
-                                    options={areas.map((ar) => ({
-                                      value: ar.id?.toString(),
-                                      label: ar.property_area,
-                                    }))}
-                                    value={area.areaId}
-                                    onChange={(option) =>
-                                      handleNestedFieldChange(
-                                        serviceIndex,
-                                        floorIndex,
-                                        areaIndex,
-                                        null,
-                                        "areaId",
-                                        option ? option.value : "",
-                                      )
-                                    }
-                                    placeholder="Select Area"
-                                    isLoading={areasLoading}
-                                    addLabel="Add New Area"
-                                    renderAddLabel={(typed) =>
-                                      typed?.trim()
-                                        ? `Add "${typed.trim()}" as New Area`
-                                        : "Add New Area"
-                                    }
-                                    onAdd={(typed) =>
-                                      openQuickName(
-                                        "area",
-                                        {
-                                          serviceIndex,
-                                          floorIndex,
-                                          areaIndex,
-                                        },
-                                        typed,
-                                      )
-                                    }
-                                  />
+                                  <GripVertical size={18} />
                                 </div>
-
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="icon"
-                                  onClick={() =>
-                                    removeArea(
-                                      serviceIndex,
-                                      floorIndex,
-                                      areaIndex,
-                                    )
-                                  }
-                                  className="text-red-500 hover:text-red-700 h-7 w-7 hover:bg-red-50 dark:hover:bg-red-950/20"
+                                  onClick={() => removeService(serviceIndex)}
+                                  className="text-red-500 hover:text-red-700 h-8 w-8 hover:bg-red-50 dark:hover:bg-red-950/20"
                                 >
-                                  <Trash2 size={14} />
+                                  <Trash2 size={16} />
                                 </Button>
                               </div>
-
-                              {/* Products Block */}
-                              <div className="pl-3 bg-white dark:bg-slate-900/40 p-3 rounded-lg border dark:border-slate-800 ml-2 space-y-2">
-                                <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-1">
-                                  Products
-                                </div>
-
-                                {/* Desktop Table Header */}
-                                <div className="hidden md:grid grid-cols-6 gap-3 mb-2 text-xs font-bold text-slate-400 dark:text-slate-500 border-b dark:border-slate-800 pb-1.5">
-                                  <div className="col-span-3">Product Name</div>
-                                  <div className="col-span-1">Rate</div>
-                                  <div className="col-span-1">Quantity</div>
-                                  <div className="col-span-1 pl-2">Amount</div>
-                                </div>
-
-                                {area.products.map((prod, prodIndex) => {
-                                  const rowAmount =
-                                    (Number(prod.price) || 0) *
-                                    (Number(prod.quantity) || 0);
-
-                                  return (
-                                    <div
-                                      key={prodIndex}
-                                      className="grid grid-cols-1 md:grid-cols-6 gap-3 items-center border-b dark:border-slate-800/60 pb-2 mb-2 last:border-0 last:pb-0 last:mb-0"
-                                    >
-                                      {/* Product select */}
-                                      <div
-                                        className="col-span-3"
-                                        data-error-field={`product-${serviceIndex}-${floorIndex}-${areaIndex}-${prodIndex}`}
-                                      >
-                                        <SelectWithAdd
-                                          options={getRevRowProductOptions(
-                                            srv.serviceId,
-                                          ).map((p) => ({
-                                            value: p.id?.toString(),
-                                            label: getProductLabel(p),
-                                          }))}
-                                          value={prod.productId}
-                                          onChange={(option) =>
-                                            handleProductSelect(
-                                              serviceIndex,
-                                              floorIndex,
-                                              areaIndex,
-                                              prodIndex,
-                                              option,
-                                              srv,
-                                            )
-                                          }
-                                          placeholder={
-                                            !srv.serviceId
-                                              ? "Select Service First"
-                                              : "Select Product"
-                                          }
-                                          noOptionsMessage={getProductEmptyHint(
-                                            srv.serviceId,
-                                          )}
-                                          isLoading={productsLoading}
-                                          isDisabled={
-                                            !srv.serviceId || productsLoading
-                                          }
-                                          addLabel="Add New Product"
-                                          renderAddLabel={(typed) =>
-                                            typed?.trim()
-                                              ? `Add "${typed.trim()}" as New Product`
-                                              : "Add New Product"
-                                          }
-                                          onAdd={(typed) =>
-                                            openProductQA(
-                                              {
-                                                serviceIndex,
-                                                floorIndex,
-                                                areaIndex,
-                                                prodIndex,
-                                              },
-                                              typed,
-                                              srv.serviceId,
-                                            )
-                                          }
-                                        />
-                                      </div>
-
-                                      {/* Price input */}
-                                      <div className="col-span-1 flex items-center gap-1">
-                                        <Label className="text-[10px] md:hidden shrink-0">
-                                          Rate:
-                                        </Label>
-                                        <Input
-                                          type="number"
-                                          value={prod.price}
-                                          onChange={(e) =>
-                                            handleNestedFieldChange(
-                                              serviceIndex,
-                                              floorIndex,
-                                              areaIndex,
-                                              prodIndex,
-                                              "price",
-                                              e.target.value,
-                                            )
-                                          }
-                                          className="h-8 text-xs bg-transparent border-slate-200 dark:border-slate-800"
-                                          placeholder="Price"
-                                        />
-                                      </div>
-
-                                      {/* Quantity input */}
-                                      <div className="col-span-1 flex items-center gap-1">
-                                        <Label className="text-[10px] md:hidden shrink-0">
-                                          Quantity:
-                                        </Label>
-                                        <Input
-                                          type="number"
-                                          min="1"
-                                          value={prod.quantity}
-                                          onChange={(e) =>
-                                            handleNestedFieldChange(
-                                              serviceIndex,
-                                              floorIndex,
-                                              areaIndex,
-                                              prodIndex,
-                                              "quantity",
-                                              e.target.value,
-                                            )
-                                          }
-                                          className="h-8 text-xs bg-transparent border-slate-200 dark:border-slate-800"
-                                          placeholder="Qty"
-                                        />
-                                      </div>
-
-                                      {/* Amount & Trash */}
-                                      <div className="col-span-1 flex items-center justify-between pl-2">
-                                        <div className="flex items-center gap-1">
-                                          <span className="text-[10px] md:hidden text-slate-500 font-medium">
-                                            Amount:
-                                          </span>
-                                          <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                                            ₹{rowAmount.toLocaleString()}
-                                          </span>
-                                        </div>
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="icon"
-                                          onClick={() =>
-                                            removeProduct(
-                                              serviceIndex,
-                                              floorIndex,
-                                              areaIndex,
-                                              prodIndex,
-                                              prod.id,
-                                            )
-                                          }
-                                          className="text-red-500 hover:text-red-700 h-7 w-7"
-                                        >
-                                          <Trash2 size={14} />
-                                        </Button>
-                                      </div>
-
-                                      {/* Remark / Notes (per item) */}
-                                      <div className="col-span-full">
-                                        <Input
-                                          value={prod.notes || ""}
-                                          onChange={(e) =>
-                                            handleNestedFieldChange(
-                                              serviceIndex,
-                                              floorIndex,
-                                              areaIndex,
-                                              prodIndex,
-                                              "notes",
-                                              e.target.value,
-                                            )
-                                          }
-                                          className="h-8 text-xs bg-transparent border-slate-200 dark:border-slate-800"
-                                          placeholder="Remark / Notes (optional) — shown in the report"
-                                        />
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-
-                                {/* Add Product Link */}
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    addProduct(
-                                      serviceIndex,
-                                      floorIndex,
-                                      areaIndex,
-                                    )
-                                  }
-                                  className="text-blue-600 hover:text-blue-800 text-xs font-semibold flex items-center gap-1 mt-2.5 hover:underline"
-                                >
-                                  + Add Product
-                                </button>
-                              </div>
                             </div>
-                          ))}
 
-                          {/* Add Area Button */}
-                          <button
-                            type="button"
-                            onClick={() => addArea(serviceIndex, floorIndex)}
-                            className="border border-dashed border-amber-300 hover:border-amber-400 bg-amber-50/50 hover:bg-amber-50 dark:bg-amber-950/10 dark:hover:bg-amber-950/20 text-amber-800 dark:text-amber-300 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 mt-3 transition-all duration-200"
-                          >
-                            <Plus size={12} /> Add Area
-                          </button>
-                        </div>
-                      </div>
+                            {/* Timeline Floors List */}
+                            <Droppable
+                              droppableId={`floors-${serviceIndex}`}
+                              type="floor"
+                            >
+                              {(floorProvided) => (
+                                <div
+                                  ref={floorProvided.innerRef}
+                                  {...floorProvided.droppableProps}
+                                  className="relative pl-6 border-l-2 border-slate-200 dark:border-slate-800 ml-4 space-y-6"
+                                >
+                                  {srv.floors.map((floor, floorIndex) => (
+                                    <Draggable
+                                      key={floor._uid || `flr-${serviceIndex}-${floorIndex}`}
+                                      draggableId={floor._uid || `flr-${serviceIndex}-${floorIndex}`}
+                                      index={floorIndex}
+                                    >
+                                      {(flrDragProvided, flrDragSnapshot) => (
+                                        <div
+                                          ref={flrDragProvided.innerRef}
+                                          {...flrDragProvided.draggableProps}
+                                          style={flrDragProvided.draggableProps.style}
+                                          className={`relative space-y-4 rounded-lg transition-all duration-150 ${
+                                            flrDragSnapshot.isDragging
+                                              ? "p-3 bg-white dark:bg-slate-900 shadow-xl ring-2 ring-blue-500/50 z-40 opacity-95"
+                                              : ""
+                                          }`}
+                                        >
+                                          {/* Bullet for Floor */}
+                                          <div className="absolute -left-[31px] top-1.5 w-4.5 h-4.5 rounded-full border-4 border-white dark:border-slate-900 bg-blue-600 flex items-center justify-center">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+                                          </div>
+
+                                          {/* Floor Header */}
+                                          <div className="flex items-center justify-between gap-4 border-b dark:border-slate-800 pb-2">
+                                            <div
+                                              className="flex items-center gap-3 w-full md:w-1/3"
+                                              data-error-field={`floor-${serviceIndex}-${floorIndex}`}
+                                            >
+                                              <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">
+                                                Floor
+                                              </Label>
+                                              <SelectWithAdd
+                                                options={floors.map((flr) => ({
+                                                  value: flr.id?.toString(),
+                                                  label: flr.property_floor,
+                                                }))}
+                                                value={floor.floorId}
+                                                onChange={(option) =>
+                                                  handleNestedFieldChange(
+                                                    serviceIndex,
+                                                    floorIndex,
+                                                    null,
+                                                    null,
+                                                    "floorId",
+                                                    option ? option.value : "",
+                                                  )
+                                                }
+                                                placeholder="Select Floor"
+                                                isLoading={floorsLoading}
+                                                addLabel="Add New Floor"
+                                                renderAddLabel={(typed) =>
+                                                  typed?.trim()
+                                                    ? `Add "${typed.trim()}" as New Floor`
+                                                    : "Add New Floor"
+                                                }
+                                                onAdd={(typed) =>
+                                                  openQuickName(
+                                                    "floor",
+                                                    { serviceIndex, floorIndex },
+                                                    typed,
+                                                  )
+                                                }
+                                              />
+                                            </div>
+
+                                            <div className="flex items-center gap-1">
+                                              <div
+                                                {...flrDragProvided.dragHandleProps}
+                                                className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-grab active:cursor-grabbing rounded hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
+                                                title="Drag to reorder Floor"
+                                              >
+                                                <GripVertical size={16} />
+                                              </div>
+                                              <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() =>
+                                                  removeFloor(serviceIndex, floorIndex)
+                                                }
+                                                className="text-red-500 hover:text-red-700 h-7 w-7 hover:bg-red-50 dark:hover:bg-red-950/20"
+                                              >
+                                                <Trash2 size={14} />
+                                              </Button>
+                                            </div>
+                                          </div>
+
+                                          {/* Timeline Areas List */}
+                                          <Droppable
+                                            droppableId={`areas-${serviceIndex}-${floorIndex}`}
+                                            type="area"
+                                          >
+                                            {(areaProvided) => (
+                                              <div
+                                                ref={areaProvided.innerRef}
+                                                {...areaProvided.droppableProps}
+                                                className="relative pl-6 border-l-2 border-dashed border-slate-200 dark:border-slate-800 ml-4 space-y-6"
+                                              >
+                                                {floor.areas.map((area, areaIndex) => (
+                                                  <Draggable
+                                                    key={area._uid || `area-${serviceIndex}-${floorIndex}-${areaIndex}`}
+                                                    draggableId={area._uid || `area-${serviceIndex}-${floorIndex}-${areaIndex}`}
+                                                    index={areaIndex}
+                                                  >
+                                                    {(areaDragProvided, areaDragSnapshot) => (
+                                                      <div
+                                                        ref={areaDragProvided.innerRef}
+                                                        {...areaDragProvided.draggableProps}
+                                                        style={areaDragProvided.draggableProps.style}
+                                                        className={`relative space-y-3 pt-1 rounded-lg transition-all duration-150 ${
+                                                          areaDragSnapshot.isDragging
+                                                            ? "p-2 bg-white dark:bg-slate-900 shadow-xl ring-2 ring-amber-500/50 z-30 opacity-95"
+                                                            : ""
+                                                        }`}
+                                                      >
+                                                        {/* Bullet for Area */}
+                                                        <div className="absolute -left-[31px] top-3.5 w-4.5 h-4.5 rounded-full border-4 border-white dark:border-slate-900 bg-amber-600 flex items-center justify-center">
+                                                          <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+                                                        </div>
+
+                                                        {/* Area Header */}
+                                                        <div className="flex items-center justify-between gap-4">
+                                                          <div
+                                                            className="flex items-center gap-3 w-full md:w-1/3"
+                                                            data-error-field={`area-${serviceIndex}-${floorIndex}-${areaIndex}`}
+                                                          >
+                                                            <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">
+                                                              Area
+                                                            </Label>
+                                                            <SelectWithAdd
+                                                              options={areas.map((ar) => ({
+                                                                value: ar.id?.toString(),
+                                                                label: ar.property_area,
+                                                              }))}
+                                                              value={area.areaId}
+                                                              onChange={(option) =>
+                                                                handleNestedFieldChange(
+                                                                  serviceIndex,
+                                                                  floorIndex,
+                                                                  areaIndex,
+                                                                  null,
+                                                                  "areaId",
+                                                                  option ? option.value : "",
+                                                                )
+                                                              }
+                                                              placeholder="Select Area"
+                                                              isLoading={areasLoading}
+                                                              addLabel="Add New Area"
+                                                              renderAddLabel={(typed) =>
+                                                                typed?.trim()
+                                                                  ? `Add "${typed.trim()}" as New Area`
+                                                                  : "Add New Area"
+                                                              }
+                                                              onAdd={(typed) =>
+                                                                openQuickName(
+                                                                  "area",
+                                                                  {
+                                                                    serviceIndex,
+                                                                    floorIndex,
+                                                                    areaIndex,
+                                                                  },
+                                                                  typed,
+                                                                )
+                                                              }
+                                                            />
+                                                          </div>
+
+                                                          <div className="flex items-center gap-1">
+                                                            <div
+                                                              {...areaDragProvided.dragHandleProps}
+                                                              className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-grab active:cursor-grabbing rounded hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
+                                                              title="Drag to reorder Area"
+                                                            >
+                                                              <GripVertical size={16} />
+                                                            </div>
+                                                            <Button
+                                                              type="button"
+                                                              variant="ghost"
+                                                              size="icon"
+                                                              onClick={() =>
+                                                                removeArea(
+                                                                  serviceIndex,
+                                                                  floorIndex,
+                                                                  areaIndex,
+                                                                )
+                                                              }
+                                                              className="text-red-500 hover:text-red-700 h-7 w-7 hover:bg-red-50 dark:hover:bg-red-950/20"
+                                                            >
+                                                              <Trash2 size={14} />
+                                                            </Button>
+                                                          </div>
+                                                        </div>
+
+                                                        {/* Products Block */}
+                                                        <div className="pl-3 bg-white dark:bg-slate-900/40 p-3 rounded-lg border dark:border-slate-800 ml-2 space-y-2">
+                                                          <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-1">
+                                                            Products
+                                                          </div>
+
+                                                          {/* Desktop Table Header */}
+                                                          <div className="hidden md:grid grid-cols-6 gap-3 mb-2 text-xs font-bold text-slate-400 dark:text-slate-500 border-b dark:border-slate-800 pb-1.5">
+                                                            <div className="col-span-3">Product Name</div>
+                                                            <div className="col-span-1">Rate</div>
+                                                            <div className="col-span-1">Quantity</div>
+                                                            <div className="col-span-1 pl-2">Amount</div>
+                                                          </div>
+
+                                                          <Droppable
+                                                            droppableId={`products-${serviceIndex}-${floorIndex}-${areaIndex}`}
+                                                            type="product"
+                                                          >
+                                                            {(prodDroppableProvided) => (
+                                                              <div
+                                                                ref={prodDroppableProvided.innerRef}
+                                                                {...prodDroppableProvided.droppableProps}
+                                                                className="space-y-2"
+                                                              >
+                                                                {area.products.map((prod, prodIndex) => {
+                                                                  const rowAmount =
+                                                                    (Number(prod.price) || 0) *
+                                                                    (Number(prod.quantity) || 0);
+
+                                                                  return (
+                                                                    <Draggable
+                                                                      key={prod._uid || `prod-${serviceIndex}-${floorIndex}-${areaIndex}-${prodIndex}`}
+                                                                      draggableId={prod._uid || `prod-${serviceIndex}-${floorIndex}-${areaIndex}-${prodIndex}`}
+                                                                      index={prodIndex}
+                                                                    >
+                                                                      {(prodDragProvided, prodDragSnapshot) => (
+                                                                        <div
+                                                                          ref={prodDragProvided.innerRef}
+                                                                          {...prodDragProvided.draggableProps}
+                                                                          style={prodDragProvided.draggableProps.style}
+                                                                          className={`grid grid-cols-1 md:grid-cols-6 gap-3 items-center border-b dark:border-slate-800/60 pb-2 mb-2 last:border-0 last:pb-0 last:mb-0 rounded p-1 transition-all duration-150 ${
+                                                                            prodDragSnapshot.isDragging
+                                                                              ? "bg-white dark:bg-slate-900 shadow-xl ring-2 ring-primary/50 z-20 opacity-95"
+                                                                              : "bg-transparent"
+                                                                          }`}
+                                                                        >
+                                                                          {/* Product select */}
+                                                                          <div
+                                                                            className="col-span-3"
+                                                                            data-error-field={`product-${serviceIndex}-${floorIndex}-${areaIndex}-${prodIndex}`}
+                                                                          >
+                                                                            <SelectWithAdd
+                                                                              options={getRevRowProductOptions(
+                                                                                srv.serviceId,
+                                                                              ).map((p) => ({
+                                                                                value: p.id?.toString(),
+                                                                                label: getProductLabel(p),
+                                                                              }))}
+                                                                              value={prod.productId}
+                                                                              onChange={(option) =>
+                                                                                handleProductSelect(
+                                                                                  serviceIndex,
+                                                                                  floorIndex,
+                                                                                  areaIndex,
+                                                                                  prodIndex,
+                                                                                  option,
+                                                                                  srv,
+                                                                                )
+                                                                              }
+                                                                              placeholder={
+                                                                                !srv.serviceId
+                                                                                  ? "Select Service First"
+                                                                                  : "Select Product"
+                                                                              }
+                                                                              noOptionsMessage={getProductEmptyHint(
+                                                                                srv.serviceId,
+                                                                              )}
+                                                                              isLoading={productsLoading}
+                                                                              isDisabled={
+                                                                                !srv.serviceId || productsLoading
+                                                                              }
+                                                                              addLabel="Add New Product"
+                                                                              renderAddLabel={(typed) =>
+                                                                                typed?.trim()
+                                                                                  ? `Add "${typed.trim()}" as New Product`
+                                                                                  : "Add New Product"
+                                                                              }
+                                                                              onAdd={(typed) =>
+                                                                                openProductQA(
+                                                                                  {
+                                                                                    serviceIndex,
+                                                                                    floorIndex,
+                                                                                    areaIndex,
+                                                                                    prodIndex,
+                                                                                  },
+                                                                                  typed,
+                                                                                  srv.serviceId,
+                                                                                )
+                                                                              }
+                                                                            />
+                                                                          </div>
+
+                                                                          {/* Price input */}
+                                                                          <div className="col-span-1 flex items-center gap-1">
+                                                                            <Label className="text-[10px] md:hidden shrink-0">
+                                                                              Rate:
+                                                                            </Label>
+                                                                            <Input
+                                                                              type="number"
+                                                                              value={prod.price}
+                                                                              onChange={(e) =>
+                                                                                handleNestedFieldChange(
+                                                                                  serviceIndex,
+                                                                                  floorIndex,
+                                                                                  areaIndex,
+                                                                                  prodIndex,
+                                                                                  "price",
+                                                                                  e.target.value,
+                                                                                )
+                                                                              }
+                                                                              className="h-8 text-xs bg-transparent border-slate-200 dark:border-slate-800"
+                                                                              placeholder="Price"
+                                                                            />
+                                                                          </div>
+
+                                                                          {/* Quantity input */}
+                                                                          <div className="col-span-1 flex items-center gap-1">
+                                                                            <Label className="text-[10px] md:hidden shrink-0">
+                                                                              Quantity:
+                                                                            </Label>
+                                                                            <Input
+                                                                              type="number"
+                                                                              min="1"
+                                                                              value={prod.quantity}
+                                                                              onChange={(e) =>
+                                                                                handleNestedFieldChange(
+                                                                                  serviceIndex,
+                                                                                  floorIndex,
+                                                                                  areaIndex,
+                                                                                  prodIndex,
+                                                                                  "quantity",
+                                                                                  e.target.value,
+                                                                                )
+                                                                              }
+                                                                              className="h-8 text-xs bg-transparent border-slate-200 dark:border-slate-800"
+                                                                              placeholder="Qty"
+                                                                            />
+                                                                          </div>
+
+                                                                          {/* Amount & Trash */}
+                                                                          <div className="col-span-1 flex items-center justify-between pl-2">
+                                                                            <div className="flex items-center gap-1">
+                                                                              <span className="text-[10px] md:hidden text-slate-500 font-medium">
+                                                                                Amount:
+                                                                              </span>
+                                                                              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                                                                                ₹{rowAmount.toLocaleString()}
+                                                                              </span>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-0.5">
+                                                                              <div
+                                                                                {...prodDragProvided.dragHandleProps}
+                                                                                className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-grab active:cursor-grabbing rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                                                                title="Drag to reorder Product"
+                                                                              >
+                                                                                <GripVertical size={16} />
+                                                                              </div>
+                                                                              <Button
+                                                                                type="button"
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                onClick={() =>
+                                                                                  removeProduct(
+                                                                                    serviceIndex,
+                                                                                    floorIndex,
+                                                                                    areaIndex,
+                                                                                    prodIndex,
+                                                                                    prod.id,
+                                                                                  )
+                                                                                }
+                                                                                className="text-red-500 hover:text-red-700 h-7 w-7"
+                                                                              >
+                                                                                <Trash2 size={14} />
+                                                                              </Button>
+                                                                            </div>
+                                                                          </div>
+
+                                                                          {/* Remark / Notes (per item) */}
+                                                                          <div className="col-span-full">
+                                                                            <Input
+                                                                              value={prod.notes || ""}
+                                                                              onChange={(e) =>
+                                                                                handleNestedFieldChange(
+                                                                                  serviceIndex,
+                                                                                  floorIndex,
+                                                                                  areaIndex,
+                                                                                  prodIndex,
+                                                                                  "notes",
+                                                                                  e.target.value,
+                                                                                )
+                                                                              }
+                                                                              className="h-8 text-xs bg-transparent border-slate-200 dark:border-slate-800"
+                                                                              placeholder="Remark / Notes (optional) — shown in the report"
+                                                                            />
+                                                                          </div>
+                                                                        </div>
+                                                                      )}
+                                                                    </Draggable>
+                                                                  );
+                                                                })}
+                                                                {prodDroppableProvided.placeholder}
+                                                              </div>
+                                                            )}
+                                                          </Droppable>
+
+                                                          {/* Add Product Link */}
+                                                          <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                              addProduct(
+                                                                serviceIndex,
+                                                                floorIndex,
+                                                                areaIndex,
+                                                              )
+                                                            }
+                                                            className="text-blue-600 hover:text-blue-800 text-xs font-semibold flex items-center gap-1 mt-2.5 hover:underline"
+                                                          >
+                                                            + Add Product
+                                                          </button>
+                                                        </div>
+                                                      </div>
+                                                    )}
+                                                  </Draggable>
+                                                ))}
+                                                {areaProvided.placeholder}
+                                              </div>
+                                            )}
+                                          </Droppable>
+
+                                          {/* Add Area Button */}
+                                          <button
+                                            type="button"
+                                            onClick={() => addArea(serviceIndex, floorIndex)}
+                                            className="border border-dashed border-amber-300 hover:border-amber-400 bg-amber-50/50 hover:bg-amber-50 dark:bg-amber-950/10 dark:hover:bg-amber-950/20 text-amber-800 dark:text-amber-300 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 mt-3 transition-all duration-200"
+                                          >
+                                            <Plus size={12} /> Add Area
+                                          </button>
+                                        </div>
+                                      )}
+                                    </Draggable>
+                                  ))}
+                                  {floorProvided.placeholder}
+                                </div>
+                              )}
+                            </Droppable>
+
+                            {/* Add Floor Button */}
+                            <button
+                              type="button"
+                              onClick={() => addFloor(serviceIndex)}
+                              className="w-full py-2 border border-dashed border-blue-300 hover:border-blue-400 bg-blue-50/50 hover:bg-blue-50 dark:bg-blue-950/10 dark:hover:bg-blue-950/20 text-blue-800 dark:text-blue-300 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all duration-200 mt-4"
+                            >
+                              <Plus size={12} /> Add Floor
+                            </button>
+                          </div>
+                        )}
+                      </Draggable>
                     ))}
-
-                    {/* Add Floor Button */}
-                    <button
-                      type="button"
-                      onClick={() => addFloor(serviceIndex)}
-                      className="w-full py-2 border border-dashed border-blue-300 hover:border-blue-400 bg-blue-50/50 hover:bg-blue-50 dark:bg-blue-950/10 dark:hover:bg-blue-950/20 text-blue-800 dark:text-blue-300 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all duration-200 mt-4"
-                    >
-                      <Plus size={12} /> Add Floor
-                    </button>
+                    {provided.placeholder}
                   </div>
-                </div>
-              ))}
+                )}
+              </Droppable>
+            </DragDropContext>
 
               {/* Add Service Button */}
               <button
@@ -1890,7 +2197,6 @@ const RevQuotationFormPage = () => {
                   Grand Total Amount: <span className="text-green-600 dark:text-green-400">₹{totalAmount.toLocaleString()}</span>
                 </div>
               </div>
-            </div>
           </CardContent>
         </Card>
 

@@ -200,7 +200,34 @@ export default function QuotationReportPage() {
     );
   }
 
-  const subs = quotationDetail.subs || [];
+  const rawSubs = quotationDetail.subs || [];
+  const subs = [...rawSubs].sort((a, b) => {
+    const sA =
+      a.quotation_sub_sort !== null &&
+      a.quotation_sub_sort !== undefined &&
+      a.quotation_sub_sort !== ""
+        ? Number(a.quotation_sub_sort)
+        : a.project_sub_sort !== null &&
+          a.project_sub_sort !== undefined &&
+          a.project_sub_sort !== ""
+        ? Number(a.project_sub_sort)
+        : null;
+    const sB =
+      b.quotation_sub_sort !== null &&
+      b.quotation_sub_sort !== undefined &&
+      b.quotation_sub_sort !== ""
+        ? Number(b.quotation_sub_sort)
+        : b.project_sub_sort !== null &&
+          b.project_sub_sort !== undefined &&
+          b.project_sub_sort !== ""
+        ? Number(b.project_sub_sort)
+        : null;
+
+    if (sA !== null && sB !== null) return sA - sB;
+    if (sA !== null) return -1;
+    if (sB !== null) return 1;
+    return (Number(a.id) || 0) - (Number(b.id) || 0);
+  });
   const floors = floorsData?.data || [];
   const areas = areasData?.data || [];
   const services = servicesData?.data || [];
