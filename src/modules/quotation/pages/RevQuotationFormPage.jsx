@@ -35,6 +35,7 @@ import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import ImportQuotationDialog from "../components/ImportQuotationDialog";
 import { QuickNameDialog, ProductQuickAddDialog, ServiceQuickAddDialog } from "../components/MasterQuickAddDialogs";
 import { useQueryClient } from "@tanstack/react-query";
+import { calculateMilestoneAmounts } from "@/utils/milestoneUtils";
 
 let uidSeed = 0;
 const createUid = (prefix = "item") =>
@@ -168,7 +169,10 @@ const flattenServicesToSubs = (servicesList) => {
           if (product.productId) {
             flattened.push({
               id: product.id || undefined,
-              quotation_sub_sort: sortIndex++,
+              quotation_sub_sort: sortIndex,
+              project_sub_sort: sortIndex,
+              sub_sort: sortIndex,
+              sort: sortIndex++,
               quotation_sub_service_id: Number(srv.serviceId),
               quotation_sub_floor_id: Number(floor.floorId),
               quotation_sub_area_id: Number(area.areaId),
@@ -1457,6 +1461,12 @@ const RevQuotationFormPage = () => {
     (Number(formData.quotation_hardware) || 0) +
     (Number(formData.quotation_installation) || 0);
 
+  const milestoneAmounts = calculateMilestoneAmounts(totalAmount, [
+    formData.quotation_booing_confirmation ?? 30,
+    formData.quotation_hardware ?? 60,
+    formData.quotation_installation ?? 10,
+  ]);
+
   const activeServicesForRows = services.filter((srv) =>
     checkedServices.includes(srv.id?.toString())
   );
@@ -1715,7 +1725,7 @@ const RevQuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{Math.round((totalAmount * (Number(formData.quotation_booing_confirmation || 0) / 100))).toLocaleString()}
+                    ≈ ₹{milestoneAmounts[0].toLocaleString()}
                   </div>
                 )}
               </div>
@@ -1756,7 +1766,7 @@ const RevQuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{Math.round((totalAmount * (Number(formData.quotation_hardware || 0) / 100))).toLocaleString()}
+                    ≈ ₹{milestoneAmounts[1].toLocaleString()}
                   </div>
                 )}
               </div>
@@ -1797,7 +1807,7 @@ const RevQuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{Math.round((totalAmount * (Number(formData.quotation_installation || 0) / 100))).toLocaleString()}
+                    ≈ ₹{milestoneAmounts[2].toLocaleString()}
                   </div>
                 )}
               </div>

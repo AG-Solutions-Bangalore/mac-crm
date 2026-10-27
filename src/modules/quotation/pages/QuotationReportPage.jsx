@@ -27,6 +27,7 @@ import AboutWhyPage from "../components/report/AboutWhyPage";
 import DynamicProposalDocument from "../components/report/DynamicProposalDocument";
 import CompactTableView from "../components/report/CompactTableView";
 import { createStyledQuotationWorkbook, downloadBlob } from "@/app/reports/quotation-xlsx";
+import { calculateMilestoneAmounts } from "@/utils/milestoneUtils";
 
 
 const headers = [
@@ -415,17 +416,33 @@ export default function QuotationReportPage() {
     Number(
       quotationDetail.quotation_booing_confirmation ??
       quotationDetail.quotation_booking_confirmation ??
+      quotationDetail.project_booing_confirmation ??
+      quotationDetail.project_booking_confirmation ??
       30
     ) || 30;
   const hardwarePct =
-    Number(quotationDetail.quotation_hardware ?? 60) || 60;
+    Number(
+      quotationDetail.quotation_hardware ??
+      quotationDetail.project_hardware ??
+      60
+    ) || 60;
   const installationPct =
-    Number(quotationDetail.quotation_installation ?? 10) || 10;
+    Number(
+      quotationDetail.quotation_installation ??
+      quotationDetail.project_installation ??
+      10
+    ) || 10;
+
+  const milestoneAmounts = calculateMilestoneAmounts(netTotal, [
+    bookingPct,
+    hardwarePct,
+    installationPct,
+  ]);
 
   const paymentRows = [
-    { section: "Payment Cycle", label: "Booking Confirmation", amount: netTotal * (bookingPct / 100), percentage: `${bookingPct}%` },
-    { section: "Payment Cycle", label: "Hardware Ordering & Dispatch", amount: netTotal * (hardwarePct / 100), percentage: `${hardwarePct}%` },
-    { section: "Payment Cycle", label: "Installation & Pre-Commissioning", amount: netTotal * (installationPct / 100), percentage: `${installationPct}%` },
+    { section: "Payment Cycle", label: "Booking Confirmation", amount: milestoneAmounts[0], percentage: `${bookingPct}%` },
+    { section: "Payment Cycle", label: "Hardware Ordering & Dispatch", amount: milestoneAmounts[1], percentage: `${hardwarePct}%` },
+    { section: "Payment Cycle", label: "Installation & Pre-Commissioning", amount: milestoneAmounts[2], percentage: `${installationPct}%` },
   ];
 
   // Hero PNG bada hai — print/PDF se pehle ensure karo ki cover image load/decode ho chuki hai

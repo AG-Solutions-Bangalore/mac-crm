@@ -35,6 +35,7 @@ import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import ImportQuotationDialog from "../components/ImportQuotationDialog";
 import { QuickNameDialog, ProductQuickAddDialog, ServiceQuickAddDialog } from "../components/MasterQuickAddDialogs";
 import { useCreateBuyerMutation } from "../../buyer/hooks/useBuyer";
+import { calculateMilestoneAmounts } from "@/utils/milestoneUtils";
 import {
   Dialog,
   DialogContent,
@@ -166,8 +167,10 @@ const flattenServicesToSubs = (servicesList) => {
               quotation_sub_amount:
                 Number(product.price) * Number(product.quantity),
               quotation_sub_status: product.status || "Pending",
-              quotation_sub_notes: product.notes || "",
-              quotation_sub_sort: sortIndex++,
+              quotation_sub_sort: sortIndex,
+              project_sub_sort: sortIndex,
+              sub_sort: sortIndex,
+              sort: sortIndex++,
             });
           }
         });
@@ -1568,6 +1571,12 @@ const QuotationFormPage = () => {
     (Number(formData.quotation_hardware) || 0) +
     (Number(formData.quotation_installation) || 0);
 
+  const milestoneAmounts = calculateMilestoneAmounts(totalAmount, [
+    formData.quotation_booing_confirmation ?? 30,
+    formData.quotation_hardware ?? 60,
+    formData.quotation_installation ?? 10,
+  ]);
+
   const activeServicesForRows = services.filter((srv) =>
     checkedServices.includes(srv.id?.toString()),
   );
@@ -1898,7 +1907,7 @@ const QuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{Math.round((totalAmount * (Number(formData.quotation_booing_confirmation || 0) / 100))).toLocaleString()}
+                    ≈ ₹{milestoneAmounts[0].toLocaleString()}
                   </div>
                 )}
               </div>
@@ -1939,7 +1948,7 @@ const QuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{Math.round((totalAmount * (Number(formData.quotation_hardware || 0) / 100))).toLocaleString()}
+                    ≈ ₹{milestoneAmounts[1].toLocaleString()}
                   </div>
                 )}
               </div>
@@ -1980,7 +1989,7 @@ const QuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{Math.round((totalAmount * (Number(formData.quotation_installation || 0) / 100))).toLocaleString()}
+                    ≈ ₹{milestoneAmounts[2].toLocaleString()}
                   </div>
                 )}
               </div>
