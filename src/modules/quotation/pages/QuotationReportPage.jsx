@@ -18,7 +18,10 @@ import { useActiveBrandsQuery } from "../../brand/hooks/useBrand";
 import { useBuyerQuery } from "../../buyer/hooks/useBuyer";
 import { useActivePropertiesQuery } from "../../property/hooks/useProperty";
 import { useActiveCategoriesQuery } from "../../category/hooks/useCategory";
-import { useActiveSalesTeamQuery } from "../../sales-team/hooks/useSalesTeam";
+import {
+  useActiveSalesTeamQuery,
+  useSalesTeamMemberQuery,
+} from "../../sales-team/hooks/useSalesTeam";
 import { getSalesTeamMemberId } from "../../sales-team/api/salesTeamApi";
 
 import ReportHeaderActions from "../components/report/ReportHeaderActions";
@@ -114,6 +117,12 @@ export default function QuotationReportPage() {
       isApiMember: Boolean(apiId),
     };
   });
+  const selectedPreparer = preparedByOptions.find(
+    (p) => String(p.id) === String(preparedById)
+  );
+  const selectedPreparerApiId = selectedPreparer?.isApiMember
+    ? selectedPreparer.id
+    : "";
 
   // Keep the dropdown valid once members load. Default to the logged-in member
   // when they exist in the sales team, else the first active member.
@@ -164,6 +173,10 @@ export default function QuotationReportPage() {
     useActivePropertiesQuery();
   const { data: categoriesData, isLoading: categoriesLoading } =
     useActiveCategoriesQuery();
+  const { data: selectedPreparerData } = useSalesTeamMemberQuery(
+    selectedPreparerApiId,
+    Boolean(selectedPreparerApiId)
+  );
 
   const quotationDetail = isProject
     ? projectData?.data
@@ -405,9 +418,8 @@ export default function QuotationReportPage() {
     : "August 7, 2026";
   // Prepared-by — follows the header selection, falling back to quotation /
   // logged-in user when no sales-team member matches.
-  const selectedPreparer = preparedByOptions.find(
-    (p) => String(p.id) === String(preparedById)
-  );
+  const selectedPreparerDetail =
+    selectedPreparerData?.data?.data || selectedPreparerData?.data || {};
   const contactPerson =
     selectedPreparer?.name ||
     quotationDetail.sales_person ||
@@ -417,22 +429,29 @@ export default function QuotationReportPage() {
     quotationDetail.employee_name ||
     authUser?.name ||
     "MAKc Automation and Solutions LLP";
-  const contactPhone =
-    selectedPreparer?.phone ||
+  const fallbackPhone =
     quotationDetail.contact_no ||
     quotationDetail.mobile ||
     quotationDetail.phone ||
     authUser?.mobile ||
     authUser?.phone ||
     "";
-  const contactEmail =
-    selectedPreparer?.email ||
+  const fallbackEmail =
     quotationDetail.contact_email ||
     quotationDetail.email ||
     quotationDetail.created_by_email ||
     quotationDetail.user_email ||
     authUser?.email ||
     "";
+  const contactPhone =
+    selectedPreparerDetail?.mobile ||
+    selectedPreparerDetail?.phone ||
+    selectedPreparer?.phone ||
+    (!selectedPreparer ? fallbackPhone : "");
+  const contactEmail =
+    selectedPreparerDetail?.email ||
+    selectedPreparer?.email ||
+    (!selectedPreparer ? fallbackEmail : "");
 
   // Milestones sum to the Net Project Value (inclusive of installation).
   const bookingPct =
