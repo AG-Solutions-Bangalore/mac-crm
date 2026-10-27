@@ -68,7 +68,7 @@ const BuyerFormPage = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.buyer_name.trim()) newErrors.buyer_name = "Buyer Name is required";
+    if (!formData.buyer_name.trim()) newErrors.buyer_name = "Lead Name is required";
     
     if (!formData.buyer_mobile) {
       newErrors.buyer_mobile = "Mobile number is required";
@@ -94,10 +94,10 @@ const BuyerFormPage = () => {
           id,
           data: formData,
         });
-        toast.success("Buyer updated successfully");
+        toast.success("Lead updated successfully");
       } else {
         await createBuyerMutation.mutateAsync(formData);
-        toast.success("Buyer created successfully");
+        toast.success("Lead created successfully");
       }
       navigate("/buyer-list");
     } catch (error) {
@@ -109,7 +109,7 @@ const BuyerFormPage = () => {
   if (isEdit && isError) {
     return (
       <div className="p-5 text-center">
-        <p className="text-red-500 font-semibold">Failed to load buyer details.</p>
+        <p className="text-red-500 font-semibold">Failed to load lead details.</p>
         <Button onClick={() => navigate("/buyer-list")} className="mt-4">
           <ArrowLeft className="w-4 h-4 mr-2" /> Back to List
         </Button>
@@ -121,8 +121,8 @@ const BuyerFormPage = () => {
     <div className="w-full px-5">
       <PageHeader
         icon={User}
-        title={isEdit ? "Edit Buyer" : "Add Buyer"}
-        description={isEdit ? "Update details of an existing buyer" : "Register a new buyer in the system"}
+        title={isEdit ? "Edit Lead" : "Add Lead"}
+        description={isEdit ? "Update details of an existing lead" : "Register a new lead in the system"}
         rightContent={
           <Button variant="outline" onClick={() => navigate("/buyer-list")}>
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
@@ -137,7 +137,7 @@ const BuyerFormPage = () => {
               {/* Name */}
               <div className="space-y-2">
                 <Label htmlFor="buyer_name" className="flex items-center gap-1">
-                  Buyer Name <RedStar />
+                  Lead Name <RedStar />
                 </Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -146,7 +146,7 @@ const BuyerFormPage = () => {
                     name="buyer_name"
                     value={formData.buyer_name}
                     onChange={handleChange}
-                    placeholder="Enter buyer name"
+                    placeholder="Enter lead name"
                     className="pl-10"
                   />
                 </div>

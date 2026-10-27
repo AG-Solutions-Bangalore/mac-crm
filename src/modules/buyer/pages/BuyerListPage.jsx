@@ -40,7 +40,7 @@ const BuyerListPage = () => {
       cell: ({ row }) => (page - 1) * 50 + row.index + 1,
     },
     {
-      header: "Buyer Name",
+      header: "Lead Name",
       accessorKey: "buyer_name",
       enableSorting: false,
     },
@@ -73,7 +73,7 @@ const BuyerListPage = () => {
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex gap-2">
-          <abbr title="Edit Buyer">
+          <abbr title="Edit Lead">
             <Button
               size="icon"
               variant="outline"
@@ -93,8 +93,8 @@ const BuyerListPage = () => {
     <div className="px-5">
       <PageHeader
         icon={UserCheck}
-        title="Buyers"
-        description="Manage buyer profiles and contact details"
+        title="Leads"
+        description="Manage lead profiles and contact details"
       />
       <DataTable
         isLoading={isLoading || isFetching}
@@ -112,7 +112,7 @@ const BuyerListPage = () => {
         }
         data={filteredData}
         columns={columns}
-        searchPlaceholder="Search Buyers..."
+        searchPlaceholder="Search Leads..."
         pageSize={50}
         searchValue={searchTerm}
         onSearchChange={(val) => {
@@ -121,7 +121,7 @@ const BuyerListPage = () => {
         }}
         addButton={{
           onClick: () => navigate("/buyer-list/create"),
-          label: "Add Buyer",
+          label: "Add Lead",
         }}
         backendPagination={true}
         page={paginationData?.current_page || 1}

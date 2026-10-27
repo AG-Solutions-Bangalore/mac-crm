@@ -59,9 +59,9 @@ const NAVIGATION_CONFIG = {
       isActive: false,
     },
     BUYER: {
-      title: "Buyers",
+      title: "Leads",
       url: "/buyer-list",
-      icon: Users,
+      icon: Contact,
       isActive: false,
     },
     PROPERTY: {
@@ -162,7 +162,7 @@ const NAVIGATION_CONFIG = {
             url: "/client-report",
           },
           {
-            title: "Buyer Billing",
+            title: "Lead Billing",
             url: "/buyer-billing-report",
           },
           {
@@ -349,7 +349,7 @@ export function AppSidebar({ ...props }) {
   };
 
   const dashboardItem = initialData.navMain.filter((item) => item.url === "/dashboard");
-  const masterItems = initialData.navMain.filter((item) => ["Service", "Clients", "Buyers", "Properties", "Floors", "Areas", "Brands", "Categories", "Products", "Blogs", "Gallery"].includes(item.title));
+  const masterItems = initialData.navMain.filter((item) => ["Service", "Clients", "Buyers", "Leads", "Properties", "Floors", "Areas", "Brands", "Categories", "Products", "Blogs", "Gallery"].includes(item.title));
   const operationsItems = initialData.navMain.filter((item) => ["Quotations", "Projects", "Service Request", "Notification"].includes(item.title));
   const reportItems = initialData.navMainReport.filter((item) => item.title === "Reports");
   const systemItems = initialData.navMainReport.filter((item) => item.title === "Settings" || item.url === "/settings");
