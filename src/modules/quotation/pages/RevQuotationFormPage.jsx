@@ -36,7 +36,7 @@ import ImportQuotationDialog from "../components/ImportQuotationDialog";
 import { QuickNameDialog, ProductQuickAddDialog, ServiceQuickAddDialog } from "../components/MasterQuickAddDialogs";
 import { useQueryClient } from "@tanstack/react-query";
 import { calculateMilestoneAmounts } from "@/utils/milestoneUtils";
-import { buildProductOption, filterProductOption } from "@/utils/productSelectUtils";
+import { buildProductOptions, filterProductOption } from "@/utils/productSelectUtils";
 
 let uidSeed = 0;
 const createUid = (prefix = "item") =>
@@ -1325,15 +1325,15 @@ const RevQuotationFormPage = () => {
     return `No '${catNames}' products under '${rowSvcName}'. Found ${others.join(", ")} — tick that Service above.`;
   };
 
-  const getProductOption = (p) => {
-    const brandName =
-      brands.find((b) => b.id?.toString() === p?.brand_id?.toString())
-        ?.brand_name || "";
-    const catName =
-      categories.find((c) => c.id?.toString() === p?.category_id?.toString())
-        ?.category_name || "";
-    return buildProductOption(p, brandName, catName);
-  };
+  const getProductOptions = (products) =>
+    buildProductOptions(products, {
+      getBrandName: (p) =>
+        brands.find((b) => b.id?.toString() === p?.brand_id?.toString())
+          ?.brand_name || "",
+      getCategoryName: (p) =>
+        categories.find((c) => c.id?.toString() === p?.category_id?.toString())
+          ?.category_name || "",
+    });
 
   // API can return the same product row more than once (multiple category /
   // service matches). Keep one option per product id.
@@ -2188,10 +2188,13 @@ const RevQuotationFormPage = () => {
                                                                             data-error-field={`product-${serviceIndex}-${floorIndex}-${areaIndex}-${prodIndex}`}
                                                                           >
                                                                             <SelectWithAdd
-                                                                              options={getRevRowProductOptions(
-                                                                                srv.serviceId,
-                                                                              ).map(getProductOption)}
+                                                                              options={getProductOptions(
+                                                                                getRevRowProductOptions(srv.serviceId),
+                                                                              )}
                                                                               filterOption={filterProductOption}
+                                                                              getSubtitle={(option) =>
+                                                                                option.subtitle
+                                                                              }
                                                                               value={prod.productId}
                                                                               onChange={(option) =>
                                                                                 handleProductSelect(
