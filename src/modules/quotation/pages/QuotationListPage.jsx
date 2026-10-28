@@ -94,14 +94,12 @@ const QuotationListPage = () => {
 
       // 2. Prepare subs for project payload
       const subs = (fullQuote.subs || []).map((item, idx) => {
-        const notes = item.quotation_sub_notes || item.project_sub_notes || item.sub_notes || item.notes || "";
-        const sort = item.quotation_sub_sort ?? item.project_sub_sort ?? item.sub_sort ?? item.sort ?? (idx + 1);
+        const notes = item.quotation_sub_notes || item.project_sub_notes || "";
+        const sort = item.quotation_sub_sort ?? item.project_sub_sort ?? (idx + 1);
         return {
           // Sort keys
           quotation_sub_sort: sort,
           project_sub_sort: sort,
-          sub_sort: sort,
-          sort: sort,
           // Project keys
           project_sub_service_id: item.quotation_sub_service_id ?? item.project_sub_service_id,
           project_sub_floor_id: item.quotation_sub_floor_id ?? item.project_sub_floor_id,
@@ -122,9 +120,6 @@ const QuotationListPage = () => {
           quotation_sub_amount: Number(item.quotation_sub_amount ?? item.project_sub_amount) || 0,
           quotation_sub_status: item.quotation_sub_status ?? item.project_sub_status ?? "Pending",
           quotation_sub_notes: notes,
-          // Generic fallback keys
-          sub_notes: notes,
-          notes: notes,
         };
       });
 
