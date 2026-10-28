@@ -78,30 +78,46 @@ const groupSubsToServices = (subsList) => {
   // NOTE: Map() used (not {}) — plain objects auto-sort integer-like keys
   // ("1","12","13" → "1" first), which broke API order. Map keeps insertion order.
   const serviceMap = new Map();
-  // Sort ascending by quotation_sub_sort if present, fallback to id
+  // Sort ascending by quotation_sub_sort / project_sub_sort / sub_sort if present, fallback to id
   const orderedSubs = [...subsList].sort((a, b) => {
     const sA =
       a.quotation_sub_sort !== null &&
       a.quotation_sub_sort !== undefined &&
       a.quotation_sub_sort !== ""
         ? Number(a.quotation_sub_sort)
+        : a.project_sub_sort !== null &&
+          a.project_sub_sort !== undefined &&
+          a.project_sub_sort !== ""
+        ? Number(a.project_sub_sort)
+        : a.sub_sort !== null && a.sub_sort !== undefined && a.sub_sort !== ""
+        ? Number(a.sub_sort)
+        : a.sort !== null && a.sort !== undefined && a.sort !== ""
+        ? Number(a.sort)
         : null;
     const sB =
       b.quotation_sub_sort !== null &&
       b.quotation_sub_sort !== undefined &&
       b.quotation_sub_sort !== ""
         ? Number(b.quotation_sub_sort)
+        : b.project_sub_sort !== null &&
+          b.project_sub_sort !== undefined &&
+          b.project_sub_sort !== ""
+        ? Number(b.project_sub_sort)
+        : b.sub_sort !== null && b.sub_sort !== undefined && b.sub_sort !== ""
+        ? Number(b.sub_sort)
+        : b.sort !== null && b.sort !== undefined && b.sort !== ""
+        ? Number(b.sort)
         : null;
 
-    if (sA !== null && sB !== null) return sA - sB;
-    if (sA !== null) return -1;
-    if (sB !== null) return 1;
+    if (sA !== null && sB !== null && !isNaN(sA) && !isNaN(sB)) return sA - sB;
+    if (sA !== null && !isNaN(sA)) return -1;
+    if (sB !== null && !isNaN(sB)) return 1;
     return (Number(a.id) || 0) - (Number(b.id) || 0);
   });
   orderedSubs.forEach((item) => {
-    const serviceId = item.quotation_sub_service_id?.toString() || "";
-    const floorId = item.quotation_sub_floor_id?.toString() || "";
-    const areaId = item.quotation_sub_area_id?.toString() || "";
+    const serviceId = (item.quotation_sub_service_id ?? item.project_sub_service_id ?? item.sub_service_id ?? item.service_id)?.toString() || "";
+    const floorId = (item.quotation_sub_floor_id ?? item.project_sub_floor_id ?? item.sub_floor_id ?? item.floor_id)?.toString() || "";
+    const areaId = (item.quotation_sub_area_id ?? item.project_sub_area_id ?? item.sub_area_id ?? item.area_id)?.toString() || "";
 
     if (!serviceMap.has(serviceId)) {
       serviceMap.set(serviceId, {
@@ -128,11 +144,11 @@ const groupSubsToServices = (subsList) => {
 
     flr.areas.get(areaId).products.push({
       id: item.id || null,
-      productId: item.quotation_sub_product_id?.toString() || "",
-      price: Number(item.quotation_sub_price) || 0,
-      quantity: Number(item.quotation_sub_quantity) || 1,
-      status: item.quotation_sub_status || "Pending",
-      notes: item.quotation_sub_notes ?? item.project_sub_notes ?? "",
+      productId: (item.quotation_sub_product_id ?? item.project_sub_product_id ?? item.sub_product_id ?? item.product_id)?.toString() || "",
+      price: Number(item.quotation_sub_price ?? item.project_sub_price ?? item.sub_price ?? item.price) || 0,
+      quantity: Number(item.quotation_sub_quantity ?? item.project_sub_quantity ?? item.sub_quantity ?? item.quantity) || 1,
+      status: item.quotation_sub_status || item.project_sub_status || item.sub_status || "Pending",
+      notes: item.quotation_sub_notes ?? item.project_sub_notes ?? item.sub_notes ?? item.notes ?? "",
     });
   });
 
@@ -157,21 +173,43 @@ const flattenServicesToSubs = (servicesList) => {
       floor.areas.forEach((area) => {
         area.products.forEach((product) => {
           if (product.productId) {
+            const price = Number(product.price) || 0;
+            const quantity = Number(product.quantity) || 1;
+            const amount = price * quantity;
+            const status = product.status || "Pending";
+            const notes = product.notes || "";
+            const currentSort = sortIndex++;
+
             flattened.push({
               id: product.id || undefined,
+              // Sort keys (dual fallback for backend)
+              quotation_sub_sort: currentSort,
+              project_sub_sort: currentSort,
+              sub_sort: currentSort,
+              sort: currentSort,
+              // Quotation specific keys
               quotation_sub_service_id: Number(srv.serviceId),
               quotation_sub_floor_id: Number(floor.floorId),
               quotation_sub_area_id: Number(area.areaId),
               quotation_sub_product_id: Number(product.productId),
-              quotation_sub_price: Number(product.price),
-              quotation_sub_quantity: Number(product.quantity),
-              quotation_sub_amount:
-                Number(product.price) * Number(product.quantity),
-              quotation_sub_status: product.status || "Pending",
-              quotation_sub_sort: sortIndex,
-              project_sub_sort: sortIndex,
-              sub_sort: sortIndex,
-              sort: sortIndex++,
+              quotation_sub_price: price,
+              quotation_sub_quantity: quantity,
+              quotation_sub_amount: amount,
+              quotation_sub_status: status,
+              quotation_sub_notes: notes,
+              // Project dual keys for backend safety
+              project_sub_service_id: Number(srv.serviceId),
+              project_sub_floor_id: Number(floor.floorId),
+              project_sub_area_id: Number(area.areaId),
+              project_sub_product_id: Number(product.productId),
+              project_sub_price: price,
+              project_sub_quantity: quantity,
+              project_sub_amount: amount,
+              project_sub_status: status,
+              project_sub_notes: notes,
+              // Generic fallback keys
+              sub_notes: notes,
+              notes: notes,
             });
           }
         });

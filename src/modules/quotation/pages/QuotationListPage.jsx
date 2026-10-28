@@ -93,28 +93,40 @@ const QuotationListPage = () => {
       }
 
       // 2. Prepare subs for project payload
-      const subs = (fullQuote.subs || []).map((item) => ({
-        // Project keys
-        project_sub_service_id: item.quotation_sub_service_id,
-        project_sub_floor_id: item.quotation_sub_floor_id,
-        project_sub_area_id: item.quotation_sub_area_id,
-        project_sub_product_id: item.quotation_sub_product_id,
-        project_sub_price: Number(item.quotation_sub_price) || 0,
-        project_sub_quantity: Number(item.quotation_sub_quantity) || 1,
-        project_sub_amount: Number(item.quotation_sub_amount) || 0,
-        project_sub_status: item.quotation_sub_status || "Pending",
-        project_sub_notes: item.quotation_sub_notes || item.project_sub_notes || "",
-        // Quotation dual keys
-        quotation_sub_service_id: item.quotation_sub_service_id,
-        quotation_sub_floor_id: item.quotation_sub_floor_id,
-        quotation_sub_area_id: item.quotation_sub_area_id,
-        quotation_sub_product_id: item.quotation_sub_product_id,
-        quotation_sub_price: Number(item.quotation_sub_price) || 0,
-        quotation_sub_quantity: Number(item.quotation_sub_quantity) || 1,
-        quotation_sub_amount: Number(item.quotation_sub_amount) || 0,
-        quotation_sub_status: item.quotation_sub_status || "Pending",
-        quotation_sub_notes: item.quotation_sub_notes || item.project_sub_notes || "",
-      }));
+      const subs = (fullQuote.subs || []).map((item, idx) => {
+        const notes = item.quotation_sub_notes || item.project_sub_notes || item.sub_notes || item.notes || "";
+        const sort = item.quotation_sub_sort ?? item.project_sub_sort ?? item.sub_sort ?? item.sort ?? (idx + 1);
+        return {
+          // Sort keys
+          quotation_sub_sort: sort,
+          project_sub_sort: sort,
+          sub_sort: sort,
+          sort: sort,
+          // Project keys
+          project_sub_service_id: item.quotation_sub_service_id ?? item.project_sub_service_id,
+          project_sub_floor_id: item.quotation_sub_floor_id ?? item.project_sub_floor_id,
+          project_sub_area_id: item.quotation_sub_area_id ?? item.project_sub_area_id,
+          project_sub_product_id: item.quotation_sub_product_id ?? item.project_sub_product_id,
+          project_sub_price: Number(item.quotation_sub_price ?? item.project_sub_price) || 0,
+          project_sub_quantity: Number(item.quotation_sub_quantity ?? item.project_sub_quantity) || 1,
+          project_sub_amount: Number(item.quotation_sub_amount ?? item.project_sub_amount) || 0,
+          project_sub_status: item.quotation_sub_status ?? item.project_sub_status ?? "Pending",
+          project_sub_notes: notes,
+          // Quotation dual keys
+          quotation_sub_service_id: item.quotation_sub_service_id ?? item.project_sub_service_id,
+          quotation_sub_floor_id: item.quotation_sub_floor_id ?? item.project_sub_floor_id,
+          quotation_sub_area_id: item.quotation_sub_area_id ?? item.project_sub_area_id,
+          quotation_sub_product_id: item.quotation_sub_product_id ?? item.project_sub_product_id,
+          quotation_sub_price: Number(item.quotation_sub_price ?? item.project_sub_price) || 0,
+          quotation_sub_quantity: Number(item.quotation_sub_quantity ?? item.project_sub_quantity) || 1,
+          quotation_sub_amount: Number(item.quotation_sub_amount ?? item.project_sub_amount) || 0,
+          quotation_sub_status: item.quotation_sub_status ?? item.project_sub_status ?? "Pending",
+          quotation_sub_notes: notes,
+          // Generic fallback keys
+          sub_notes: notes,
+          notes: notes,
+        };
+      });
 
       // 3. Create real project in /project table
       const projectPayload = {

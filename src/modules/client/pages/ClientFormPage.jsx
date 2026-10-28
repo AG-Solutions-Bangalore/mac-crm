@@ -152,7 +152,6 @@ const ClientFormPage = ({ isEdit, isRelation = false }) => {
   const validateForm = () => {
     let newErrors = {};
     if (!formData.name) newErrors.name = "Name is required";
-    if (!formData.email) newErrors.email = "Email is required";
     if (!formData.mobile || formData.mobile.length !== 10)
       newErrors.mobile = "10 digit mobile required";
     if (selectedServices.length === 0)
@@ -261,7 +260,7 @@ const ClientFormPage = ({ isEdit, isRelation = false }) => {
               {/* Email */}
               <div className="space-y-2">
                 <Label className="flex items-center gap-1">
-                  Email <RedStar />
+                  Email
                 </Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
