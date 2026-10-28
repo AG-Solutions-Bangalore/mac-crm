@@ -193,12 +193,7 @@ const flattenServicesToSubs = (servicesList) => {
 
             flattened.push({
               id: product.id || undefined,
-              // Sort keys
               quotation_sub_sort: currentSort,
-              project_sub_sort: currentSort,
-              sub_sort: currentSort,
-              sort: currentSort,
-              // Quotation specific keys
               quotation_sub_service_id: Number(srv.serviceId),
               quotation_sub_floor_id: Number(floor.floorId),
               quotation_sub_area_id: Number(area.areaId),
@@ -208,19 +203,6 @@ const flattenServicesToSubs = (servicesList) => {
               quotation_sub_amount: amount,
               quotation_sub_status: status,
               quotation_sub_notes: notes,
-              // Project dual keys
-              project_sub_service_id: Number(srv.serviceId),
-              project_sub_floor_id: Number(floor.floorId),
-              project_sub_area_id: Number(area.areaId),
-              project_sub_product_id: Number(product.productId),
-              project_sub_price: price,
-              project_sub_quantity: quantity,
-              project_sub_amount: amount,
-              project_sub_status: status,
-              project_sub_notes: notes,
-              // Generic fallback keys
-              sub_notes: notes,
-              notes: notes,
             });
           }
         });
@@ -731,6 +713,7 @@ const RevQuotationFormPage = () => {
                     price: 0,
                     quantity: 1,
                     status: "Pending",
+                    notes: "",
                   },
                 ],
               },
@@ -782,6 +765,7 @@ const RevQuotationFormPage = () => {
                 price: 0,
                 quantity: 1,
                 status: "Pending",
+                notes: "",
               },
             ],
           },
@@ -832,6 +816,7 @@ const RevQuotationFormPage = () => {
             price: 0,
             quantity: 1,
             status: "Pending",
+            notes: "",
           },
         ],
       });
@@ -872,6 +857,7 @@ const RevQuotationFormPage = () => {
         price: 0,
         quantity: 1,
         status: "Pending",
+        notes: "",
       });
       return updated;
     });
@@ -1244,7 +1230,6 @@ const RevQuotationFormPage = () => {
       quotation_buyer_id: Number(formData.quotation_buyer_id),
       quotation_property_id: Number(formData.quotation_property_id),
       quotation_booing_confirmation: bookingPct,
-      quotation_booking_confirmation: bookingPct,
       quotation_hardware: hardwarePct,
       quotation_installation: installationPct,
       subs: flattenedSubs,

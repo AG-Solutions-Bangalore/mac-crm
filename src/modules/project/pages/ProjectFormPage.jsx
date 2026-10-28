@@ -223,10 +223,8 @@ const flattenServicesToSubs = (servicesList) => {
             const currentSort = sortIndex++;
             flattened.push({
               id: product.id || undefined,
-              quotation_sub_sort: currentSort,
               project_sub_sort: currentSort,
-              sub_sort: currentSort,
-              sort: currentSort,
+              quotation_sub_sort: currentSort,
               // Project specific keys
               project_sub_service_id: Number(srv.serviceId),
               project_sub_floor_id: Number(floor.floorId),
@@ -247,9 +245,6 @@ const flattenServicesToSubs = (servicesList) => {
               quotation_sub_amount: amount,
               quotation_sub_status: status,
               quotation_sub_notes: product.notes || "",
-              // Generic fallback keys
-              sub_notes: product.notes || "",
-              notes: product.notes || "",
             });
           }
         });
@@ -998,13 +993,11 @@ const ProjectFormPage = () => {
       project_service_id: serviceId,
       project_remarks: remarks,
       project_status: status,
-      // Payment Milestones (dual keys for quotation & project compatibility)
+      // Payment Milestones
       quotation_booing_confirmation: bookingPct,
-      quotation_booking_confirmation: bookingPct,
       quotation_hardware: hardwarePct,
       quotation_installation: installationPct,
       project_booing_confirmation: bookingPct,
-      project_booking_confirmation: bookingPct,
       project_hardware: hardwarePct,
       project_installation: installationPct,
       // Dual mappings with Quotation keys for API compatibility
@@ -1016,13 +1009,6 @@ const ProjectFormPage = () => {
       quotation_service_id: serviceId,
       quotation_remarks: remarks,
       quotation_status: status,
-      // Generic fallbacks
-      buyer_id: buyerId,
-      property_id: propertyId,
-      category_id: categoryId,
-      service_id: serviceId,
-      remarks: remarks,
-      status: status,
       subs: flattenedSubs,
       ...overrides,
     };
