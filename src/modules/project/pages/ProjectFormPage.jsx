@@ -188,7 +188,7 @@ const groupSubsToServices = (subsList) => {
       price: Number(item.project_sub_price ?? item.quotation_sub_price ?? item.sub_price ?? item.price) || 0,
       quantity: Number(item.project_sub_quantity ?? item.quotation_sub_quantity ?? item.sub_quantity ?? item.quantity) || 1,
       status: item.project_sub_status || item.quotation_sub_status || item.sub_status || "Pending",
-      notes: item.project_sub_notes ?? item.quotation_sub_notes ?? item.sub_notes ?? "",
+      notes: item.project_sub_notes ?? item.quotation_sub_notes ?? item.sub_notes ?? item.notes ?? "",
     });
   });
 
@@ -247,6 +247,9 @@ const flattenServicesToSubs = (servicesList) => {
               quotation_sub_amount: amount,
               quotation_sub_status: status,
               quotation_sub_notes: product.notes || "",
+              // Generic fallback keys
+              sub_notes: product.notes || "",
+              notes: product.notes || "",
             });
           }
         });

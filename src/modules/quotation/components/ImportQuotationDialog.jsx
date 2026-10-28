@@ -290,6 +290,7 @@ export const parseQuotationTSV = ({
       price: row.price,
       quantity: row.qty,
       status: "Pending",
+      notes: "",
       rawProductName: row.rawProduct,
     });
   });
