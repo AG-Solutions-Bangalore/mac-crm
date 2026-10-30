@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import PreparedByPicker from "./PreparedByPicker";
 
 const PCT_PRESETS = [5, 7, 10, 15];
-const OVERLAY_PRESETS = [0, 25, 50, 60, 75, 100];
 
 // Top bar: navigation + view switcher + Consultancy / Installation % inputs +
 // Prepared-by selector + Export Excel / Print-Save PDF actions.
@@ -26,10 +25,6 @@ export default function ReportHeaderActions({
   onConsultancyPctChange,
   installPct = 5,
   onInstallPctChange,
-  coverPreviewOverlay = 100,
-  onCoverPreviewOverlayChange,
-  coverPdfOverlay = 100,
-  onCoverPdfOverlayChange,
   preparedById,
   onPreparedByChange,
   preparedByOptions = [],
@@ -131,25 +126,6 @@ export default function ReportHeaderActions({
           onInstallPctChange,
           "makc-install-presets",
           "Installation charge % of grand total (5 / 7 / 10 / 15 or custom)"
-        )}
-
-        {/* Cover photo veil strength — preview and PDF/print tune independently */}
-        {renderPctInput(
-          "Cover Preview %",
-          coverPreviewOverlay,
-          onCoverPreviewOverlayChange,
-          "makc-cover-preview-presets",
-          "White veil strength over the cover photo in the on-screen preview (0 = none, 100 = opaque)",
-          OVERLAY_PRESETS
-        )}
-
-        {renderPctInput(
-          "Cover PDF %",
-          coverPdfOverlay,
-          onCoverPdfOverlayChange,
-          "makc-cover-pdf-presets",
-          "White veil strength over the cover photo in the printed / saved PDF (0 = none, 100 = opaque)",
-          OVERLAY_PRESETS
         )}
 
         {/* Prepared-by selector — searchable, quick add/edit, manage link */}
