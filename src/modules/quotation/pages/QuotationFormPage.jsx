@@ -35,6 +35,7 @@ import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import ImportQuotationDialog from "../components/ImportQuotationDialog";
 import {
   clearPendingServiceBlocks,
+  hasAnyServiceData,
   hasIncompleteServicesEntries,
   loadPendingServiceBlocks,
   mergePendingServiceBlocks,
@@ -453,11 +454,11 @@ const QuotationFormPage = () => {
   const isDirty = useMemo(() => {
     if (!initialSnapshot) return false;
     if (isEdit) return snapshotKey !== initialSnapshot;
-    return JSON.stringify(servicesState) !== initialServicesSnapshot;
+    // In create mode, if user entered no service/floor/area/product data, form is not dirty
+    return hasAnyServiceData(servicesState);
   }, [
     isEdit,
     initialSnapshot,
-    initialServicesSnapshot,
     servicesState,
     snapshotKey,
   ]);
@@ -939,19 +940,10 @@ const QuotationFormPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Save & Leave ke liye: sirf puri tarah complete line items validate karo
+  // Save & Leave ke liye: allow partial save even with 0 complete items
   const validateFormForPartialSave = () => {
     const newErrors = {};
     if (!validateHeaderFields(newErrors)) return false;
-
-    const completeServices = sanitizeServicesState(servicesState);
-    if (flattenServicesToSubs(completeServices).length === 0) {
-      toast.error(
-        "Complete at least one Service → Floor → Area → Product to save the quotation."
-      );
-      focusErrorField("line-items");
-      return false;
-    }
 
     if (!validateMilestones(newErrors)) return false;
 

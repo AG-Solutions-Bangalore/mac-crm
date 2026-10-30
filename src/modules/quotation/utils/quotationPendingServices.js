@@ -116,6 +116,9 @@ export const extractIncompleteServices = (servicesList) => {
 export const hasIncompleteServicesEntries = (servicesList) =>
   extractIncompleteServices(servicesList).length > 0;
 
+export const hasAnyServiceData = (servicesList) =>
+  (servicesList || []).some(serviceHasData);
+
 export const mergePendingServiceBlocks = (baseServices, pendingServices) => {
   const merged = (baseServices || []).map(cloneService);
 

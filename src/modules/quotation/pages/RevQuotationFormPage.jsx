@@ -36,6 +36,7 @@ import ImportQuotationDialog from "../components/ImportQuotationDialog";
 import { QuickNameDialog, ProductQuickAddDialog, ServiceQuickAddDialog } from "../components/MasterQuickAddDialogs";
 import {
   clearPendingServiceBlocks,
+  hasAnyServiceData,
   hasIncompleteServicesEntries,
   loadPendingServiceBlocks,
   mergePendingServiceBlocks,
@@ -718,11 +719,10 @@ const RevQuotationFormPage = () => {
   const isDirty = useMemo(() => {
     if (!initialSnapshot) return false;
     if (isEdit) return snapshotKey !== initialSnapshot;
-    return JSON.stringify(servicesState) !== initialServicesSnapshot;
+    return hasAnyServiceData(servicesState);
   }, [
     isEdit,
     initialSnapshot,
-    initialServicesSnapshot,
     servicesState,
     snapshotKey,
   ]);
@@ -1277,19 +1277,10 @@ const RevQuotationFormPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Save & Leave ke liye: sirf puri tarah complete line items validate karo
+  // Save & Leave ke liye: allow partial save even with 0 complete items
   const validateFormForPartialSave = () => {
     const newErrors = {};
     if (!validateHeaderFields(newErrors)) return false;
-
-    const completeServices = sanitizeServicesState(servicesState);
-    if (flattenServicesToSubs(completeServices).length === 0) {
-      toast.error(
-        "Complete at least one Service → Floor → Area → Product to save the revised quotation."
-      );
-      focusErrorField("line-items");
-      return false;
-    }
 
     if (!validateMilestones(newErrors)) return false;
 
