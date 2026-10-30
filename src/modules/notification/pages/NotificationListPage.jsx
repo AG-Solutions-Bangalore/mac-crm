@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
+import { usePersistedSearch } from "@/hooks/usePersistedSearch";
 import moment from "moment";
 import { Edit, Bell } from "lucide-react";
 import DataTable from "@/components/common/data-table";
@@ -15,7 +16,7 @@ import NotificationDialog from "../components/NotificationDialog";
 
 const NotificationListPage = () => {
   const [page, setPage] = usePersistedPage();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = usePersistedSearch();
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState(null);
 

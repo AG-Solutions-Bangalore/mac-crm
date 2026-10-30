@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
+import { usePersistedSearch } from "@/hooks/usePersistedSearch";
 import { Edit, ArrowLeft, CheckCircle2, Award, FileText, CalendarDays, Trash2 } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
@@ -17,7 +18,7 @@ const RevQuotationListPage = () => {
   const { id: parentId } = useParams();
   const navigate = useNavigate();
   const [page, setPage] = usePersistedPage();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = usePersistedSearch();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingApproveId, setPendingApproveId] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);

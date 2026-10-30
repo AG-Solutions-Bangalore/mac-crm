@@ -2,6 +2,7 @@ import PageHeader from "@/components/common/page-header";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
+import { usePersistedSearch } from "@/hooks/usePersistedSearch";
 import { Edit, Image , Wrench } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import ImageCell from "@/components/common/ImageCell";
@@ -22,7 +23,7 @@ import { useServicesQuery } from "../hooks/useService";
 const ServiceListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = usePersistedPage();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = usePersistedSearch();
   const [statusFilter, setStatusFilter] = useState("all");
 
   const { data: responseData, isLoading, isFetching, isError, refetch } = useServicesQuery(

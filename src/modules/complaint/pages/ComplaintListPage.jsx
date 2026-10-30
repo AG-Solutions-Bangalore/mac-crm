@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
+import { usePersistedSearch } from "@/hooks/usePersistedSearch";
 import moment from "moment";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
@@ -9,7 +10,7 @@ import ComplaintStatusToggle from "../components/ComplaintStatusToggle";
 
 const ComplaintListPage = () => {
   const [page, setPage] = usePersistedPage();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = usePersistedSearch();
 
   const { data: responseData, isLoading, isFetching, isError, refetch } = useComplaintsQuery(page, searchTerm);
 
