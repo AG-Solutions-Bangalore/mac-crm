@@ -202,6 +202,12 @@ const QuotationListPage = () => {
         )
       : rawQuotationList;
 
+  quotationList.sort(
+    (a, b) =>
+      new Date(b.created_at || b.created_at_rev || 0).getTime() -
+      new Date(a.created_at || a.created_at_rev || 0).getTime()
+  );
+
   const formatDate = (value) =>
     value ? moment(value).format("DD-MM-YYYY") : "-";
 

@@ -55,6 +55,7 @@ export const quotationApi = {
     if (status && status !== "all") {
       url += `&filter=${encodeURIComponent(status)}`;
     }
+    url += `&sort=id&order=desc`;
     const response = await apiClient.get(url);
     return response.data;
   },
