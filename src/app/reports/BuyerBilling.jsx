@@ -49,7 +49,7 @@ const isCancelled = (s) => {
   return v === "cancel" || v === "cancelled";
 };
 
-const inr = (n) => `₹${Number(n || 0).toLocaleString()}`;
+const inr = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
 function BuyerBilling() {
   const { trigger, loading, error } = useApiMutation();

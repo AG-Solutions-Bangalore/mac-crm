@@ -1985,7 +1985,7 @@ const QuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[0].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[0].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -2026,7 +2026,7 @@ const QuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[1].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[1].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -2067,7 +2067,7 @@ const QuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[2].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[2].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -2452,7 +2452,7 @@ const QuotationFormPage = () => {
                                               Amount:
                                             </span>
                                             <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                                              ₹{rowAmount.toLocaleString()}
+                                              ₹{rowAmount.toLocaleString("en-IN")}
                                             </span>
                                           </div>
                                           <Button
@@ -2559,7 +2559,7 @@ const QuotationFormPage = () => {
                   <div className="text-base text-slate-800 dark:text-slate-200">
                     Grand Total Amount:{" "}
                     <span className="text-green-600 dark:text-green-400">
-                      ₹{totalAmount.toLocaleString()}
+                      ₹{totalAmount.toLocaleString("en-IN")}
                     </span>
                   </div>
                 </div>

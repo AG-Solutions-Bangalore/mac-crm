@@ -321,7 +321,7 @@ const QuotationListPage = () => {
           <p className="text-muted-foreground">Amount</p>
           <p className="font-semibold text-emerald-600">
             {q.quotation_amount
-              ? `₹${Number(q.quotation_amount).toLocaleString()}`
+              ? `₹${Number(q.quotation_amount).toLocaleString("en-IN")}`
               : "-"}
           </p>
         </div>
@@ -459,7 +459,7 @@ const QuotationListPage = () => {
         const val = row.original.quotation_amount;
         return (
           <span className="whitespace-nowrap text-[11px] tabular-nums">
-            {val ? `₹${Number(val).toLocaleString()}` : "-"}
+            {val ? `₹${Number(val).toLocaleString("en-IN")}` : "-"}
           </span>
         );
       },
@@ -603,7 +603,7 @@ const QuotationListPage = () => {
                   <div className="flex justify-between border-t pt-1 dark:border-slate-800">
                     <span className="text-slate-500">Amount:</span>
                     <span className="font-semibold text-emerald-600">
-                      ₹{Number(convertingQuotation.quotation_amount).toLocaleString()}
+                      ₹{Number(convertingQuotation.quotation_amount).toLocaleString("en-IN")}
                     </span>
                   </div>
                 )}

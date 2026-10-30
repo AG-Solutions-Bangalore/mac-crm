@@ -74,7 +74,7 @@ const ProductListPage = () => {
       accessorKey: "product_price",
       cell: ({ row }) => {
         const val = row.original.product_price;
-        return val ? `₹${Number(val).toLocaleString()}` : "-";
+        return val ? `₹${Number(val).toLocaleString("en-IN")}` : "-";
       },
     },
     {

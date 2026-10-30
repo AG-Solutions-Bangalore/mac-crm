@@ -1847,7 +1847,7 @@ const RevQuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[0].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[0].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -1888,7 +1888,7 @@ const RevQuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[1].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[1].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -1929,7 +1929,7 @@ const RevQuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[2].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[2].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -2423,7 +2423,7 @@ const RevQuotationFormPage = () => {
                                                                                 Amount:
                                                                               </span>
                                                                               <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                                                                                ₹{rowAmount.toLocaleString()}
+                                                                                ₹{rowAmount.toLocaleString("en-IN")}
                                                                               </span>
                                                                             </div>
                                                                             <div className="flex items-center gap-0.5">
@@ -2555,7 +2555,7 @@ const RevQuotationFormPage = () => {
               <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-900/60 p-4 rounded-xl font-bold border dark:border-slate-800 mt-6">
                 <div className="text-sm text-slate-700 dark:text-slate-300">Total Items Quantity: <span className="text-slate-900 dark:text-slate-100">{totalQty}</span></div>
                 <div className="text-base text-slate-800 dark:text-slate-200">
-                  Grand Total Amount: <span className="text-green-600 dark:text-green-400">₹{totalAmount.toLocaleString()}</span>
+                  Grand Total Amount: <span className="text-green-600 dark:text-green-400">₹{totalAmount.toLocaleString("en-IN")}</span>
                 </div>
               </div>
           </CardContent>

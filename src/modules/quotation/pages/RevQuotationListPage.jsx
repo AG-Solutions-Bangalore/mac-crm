@@ -103,7 +103,7 @@ const RevQuotationListPage = () => {
       accessorKey: "quotation_amount",
       cell: ({ row }) => {
         const val = row.original.quotation_amount;
-        return val ? `₹${Number(val).toLocaleString()}` : "-";
+        return val ? `₹${Number(val).toLocaleString("en-IN")}` : "-";
       },
     },
 

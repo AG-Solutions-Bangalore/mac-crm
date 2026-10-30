@@ -128,7 +128,7 @@ const ProjectListPage = () => {
         const val = row.original.project_amount || row.original.quotation_amount;
         return (
           <span className="whitespace-nowrap">
-            {val ? `₹${Number(val).toLocaleString()}` : "-"}
+            {val ? `₹${Number(val).toLocaleString("en-IN")}` : "-"}
           </span>
         );
       },

@@ -1960,7 +1960,7 @@ const ProjectFormPage = () => {
                 </p>
                 {grandTotal > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[0].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[0].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -2001,7 +2001,7 @@ const ProjectFormPage = () => {
                 </p>
                 {grandTotal > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[1].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[1].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -2042,7 +2042,7 @@ const ProjectFormPage = () => {
                 </p>
                 {grandTotal > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[2].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[2].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -2406,7 +2406,7 @@ const ProjectFormPage = () => {
                                         {(
                                           (Number(prod.price) || 0) *
                                           (Number(prod.quantity) || 0)
-                                        ).toLocaleString()}
+                                        ).toLocaleString("en-IN")}
                                       </div>
 
                                       <div className="self-end sm:self-center">
@@ -2462,7 +2462,7 @@ const ProjectFormPage = () => {
                   Grand Total
                 </span>
                 <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-                  ₹{grandTotal.toLocaleString()}
+                  ₹{grandTotal.toLocaleString("en-IN")}
                 </p>
               </div>
             </div>
