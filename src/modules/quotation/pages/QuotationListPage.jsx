@@ -181,26 +181,207 @@ const QuotationListPage = () => {
         )
       : rawQuotationList;
 
+  const formatDate = (value) =>
+    value ? moment(value).format("DD-MM-YYYY") : "-";
+
+  const renderStatus = (q) => {
+    const status = q.quotation_status;
+    if (status === "Approved") {
+      return <span className="pill pill-approved">Approved</span>;
+    }
+    if (status === "Project") {
+      return <span className="pill pill-in_progress">Project</span>;
+    }
+    return (
+      <span title="Toggle Pending / Cancel">
+        <ToggleStatus
+          initialStatus={status}
+          apiUrl={`/quotations/${q.id}/status`}
+          payloadKey="quotation_status"
+          activeValue="Pending"
+          inactiveValue="Cancel"
+          onSuccess={refetch}
+          method="patch"
+        />
+      </span>
+    );
+  };
+
+  const renderActions = (q, labeled = false) => {
+    const canFinishDate =
+      q.quotation_status === "Approved" && !q.quotation_finish_work_date;
+    const showConvertButton = q.quotation_status === "Approved";
+    const actions = [
+      {
+        label: "Edit",
+        title: "Edit Quotation",
+        icon: Edit,
+        onClick: () => navigate(`/quotation-list/revised/${q.id}`),
+      },
+      {
+        label: "Report",
+        title: "View Report",
+        icon: FileText,
+        onClick: () => navigate(`/quotation-report/${q.id}`),
+        extra: "text-slate-600 hover:text-slate-800",
+      },
+      ...(canFinishDate
+        ? [
+            {
+              label: "Finish Date",
+              title: "Add Finish Work Date",
+              icon: CalendarDays,
+              onClick: () => handleOpenFinishDateDialog(q),
+              extra:
+                "text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30",
+            },
+          ]
+        : []),
+      ...(showConvertButton
+        ? [
+            {
+              label: "Convert",
+              title: "Convert to Project",
+              icon: FolderKanban,
+              onClick: () => handleOpenConvertDialog(q),
+              extra:
+                "text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30",
+            },
+          ]
+        : []),
+    ];
+
+    return (
+      <div className="flex flex-wrap items-center gap-1.5">
+        {actions.map(({ label, title, icon: Icon, onClick, extra }) => (
+          <Button
+            key={title}
+            size={labeled ? "sm" : "icon"}
+            variant="outline"
+            className={
+              labeled
+                ? `h-8 gap-1.5 px-2.5 text-xs ${extra || ""}`
+                : `h-8 w-8 ${extra || ""}`
+            }
+            onClick={onClick}
+            title={title}
+            aria-label={title}
+          >
+            <Icon className="h-4 w-4 shrink-0" />
+            {labeled && <span>{label}</span>}
+          </Button>
+        ))}
+      </div>
+    );
+  };
+
+  const truncateCell = (value, full = false) => {
+    if (!value) return <span className="text-slate-400">-</span>;
+    return (
+      <span
+        className={
+          full
+            ? "break-words text-[11px] leading-tight [overflow-wrap:anywhere]"
+            : "line-clamp-2 break-words [overflow-wrap:anywhere]"
+        }
+        title={value}
+      >
+        {value}
+      </span>
+    );
+  };
+
+  const renderMobileCard = (q, index) => (
+    <div className="rounded-xl border border-border bg-card p-3 shadow-sm space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">{q.buyer_name || "—"}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {q.property_name || "—"}
+          </p>
+        </div>
+        <div className="shrink-0">{renderStatus(q)}</div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+        <div>
+          <p className="text-muted-foreground">Date</p>
+          <p className="font-medium">{formatDate(q.quotation_date)}</p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">Validity</p>
+          <p className="font-medium">
+            {formatDate(q.quotation_validity_date)}
+          </p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">Amount</p>
+          <p className="font-semibold text-emerald-600">
+            {q.quotation_amount
+              ? `₹${Number(q.quotation_amount).toLocaleString()}`
+              : "-"}
+          </p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">Finish work</p>
+          <p className="font-medium">
+            {formatDate(q.quotation_finish_work_date)}
+          </p>
+        </div>
+      </div>
+
+      {(q.quotation_category_name || q.quotation_service_name) && (
+        <div className="space-y-1 text-xs">
+          {q.quotation_category_name && (
+            <p className="line-clamp-2 break-words [overflow-wrap:anywhere]">
+              <span className="font-medium text-muted-foreground">
+                Categories:{" "}
+              </span>
+              {q.quotation_category_name}
+            </p>
+          )}
+          {q.quotation_service_name && (
+            <p className="line-clamp-2 break-words [overflow-wrap:anywhere]">
+              <span className="font-medium text-muted-foreground">
+                Services:{" "}
+              </span>
+              {q.quotation_service_name}
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2">
+        <span className="text-[11px] text-muted-foreground">
+          #{(page - 1) * 50 + index + 1}
+        </span>
+        {renderActions(q)}
+      </div>
+    </div>
+  );
+
   const columns = [
     {
       header: "Sl No",
       id: "sl_no",
+      size: 48,
+      meta: { className: "hidden 2xl:table-cell" },
       cell: ({ row }) => (page - 1) * 50 + row.index + 1,
     },
     {
       header: "Date",
       accessorKey: "quotation_date",
+      size: 104,
       cell: ({ row }) => (
         <span className="whitespace-nowrap">
-          {row.original.quotation_date
-            ? moment(row.original.quotation_date).format("DD-MM-YYYY")
-            : "-"}
+          {formatDate(row.original.quotation_date)}
         </span>
       ),
     },
     {
       header: "Validity Date",
       accessorKey: "quotation_validity_date",
+      size: 104,
       cell: ({ row }) => {
         const val = row.original.quotation_validity_date;
         if (!val) {
@@ -234,39 +415,47 @@ const QuotationListPage = () => {
       },
     },
     {
-      header: "Finish Work Date",
+      header: "Finish Date",
       accessorKey: "quotation_finish_work_date",
+      size: 104,
       cell: ({ row }) => (
         <span className="whitespace-nowrap">
-          {row.original.quotation_finish_work_date
-            ? moment(row.original.quotation_finish_work_date).format("DD-MM-YYYY")
-            : "-"}
+          {formatDate(row.original.quotation_finish_work_date)}
         </span>
       ),
     },
     {
       header: "Lead",
       accessorKey: "buyer_name",
+      size: 90,
+      cell: ({ row }) => truncateCell(row.original.buyer_name),
     },
     {
       header: "Property",
       accessorKey: "property_name",
+      size: 100,
+      cell: ({ row }) => truncateCell(row.original.property_name),
     },
     {
       header: "Categories",
       accessorKey: "quotation_category_name",
+      size: 120,
+      cell: ({ row }) => truncateCell(row.original.quotation_category_name),
     },
     {
       header: "Services",
       accessorKey: "quotation_service_name",
+      size: 210,
+      cell: ({ row }) => truncateCell(row.original.quotation_service_name, true),
     },
     {
       header: "Amount (₹)",
       accessorKey: "quotation_amount",
+      size: 96,
       cell: ({ row }) => {
         const val = row.original.quotation_amount;
         return (
-          <span className="whitespace-nowrap">
+          <span className="whitespace-nowrap text-[11px] tabular-nums">
             {val ? `₹${Number(val).toLocaleString()}` : "-"}
           </span>
         );
@@ -275,84 +464,15 @@ const QuotationListPage = () => {
     {
       header: "Status",
       accessorKey: "quotation_status",
-      cell: ({ row }) => {
-        const status = row.original.quotation_status;
-        if (status === "Approved") {
-          return <span className="pill pill-approved">Approved</span>;
-        }
-        if (status === "Project") {
-          return <span className="pill pill-in_progress">Project</span>;
-        }
-        return (
-          <ToggleStatus
-            initialStatus={status}
-            apiUrl={`/quotations/${row.original.id}/status`}
-            payloadKey="quotation_status"
-            activeValue="Pending"
-            inactiveValue="Cancel"
-            onSuccess={refetch}
-            method="patch"
-          />
-        );
-      },
+      size: 130,
+      cell: ({ row }) => renderStatus(row.original),
     },
     {
       header: "Actions",
       accessorKey: "actions",
+      size: 90,
       enableSorting: false,
-      cell: ({ row }) => {
-        const q = row.original;
-        const canFinishDate =
-          q.quotation_status === "Approved" && !q.quotation_finish_work_date;
-        const showConvertButton = q.quotation_status === "Approved";
-        return (
-          <div className="flex items-center gap-2">
-            <abbr title="Edit Quotation">
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={() => navigate(`/quotation-list/revised/${q.id}`)}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-            </abbr>
-            <abbr title="View Report">
-              <Button
-                size="icon"
-                variant="outline"
-                className="text-slate-600 hover:text-slate-800"
-                onClick={() => navigate(`/quotation-report/${q.id}`)}
-              >
-                <FileText className="h-4 w-4" />
-              </Button>
-            </abbr>
-            {canFinishDate && (
-              <abbr title="Add Finish Work Date">
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                  onClick={() => handleOpenFinishDateDialog(q)}
-                >
-                  <CalendarDays className="h-4 w-4" />
-                </Button>
-              </abbr>
-            )}
-            {showConvertButton && (
-              <abbr title="Convert to Project">
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                  onClick={() => handleOpenConvertDialog(q)}
-                >
-                  <FolderKanban className="h-4 w-4" />
-                </Button>
-              </abbr>
-            )}
-          </div>
-        );
-      },
+      cell: ({ row }) => renderActions(row.original),
     },
   ];
 
@@ -367,8 +487,10 @@ const QuotationListPage = () => {
       />
       <DataTable
         isLoading={isLoading || isFetching}
+        fitWidth
+        mobileCard={renderMobileCard}
         extraButton={
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <label
               className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 cursor-pointer select-none whitespace-nowrap"
               title="Hide quotes already converted to projects"
