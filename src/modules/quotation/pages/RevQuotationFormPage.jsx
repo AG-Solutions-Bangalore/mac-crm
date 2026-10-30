@@ -34,6 +34,16 @@ import UnsavedChangesDialog from "@/components/common/unsaved-changes-dialog";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import ImportQuotationDialog from "../components/ImportQuotationDialog";
 import { QuickNameDialog, ProductQuickAddDialog, ServiceQuickAddDialog } from "../components/MasterQuickAddDialogs";
+import {
+  clearPendingServiceBlocks,
+  hasAnyServiceData,
+  hasIncompleteServicesEntries,
+  loadPendingServiceBlocks,
+  mergePendingServiceBlocks,
+  revQuotationPendingKey,
+  sanitizeServicesState,
+  savePendingServiceBlocks,
+} from "../utils/quotationPendingServices";
 import { useQueryClient } from "@tanstack/react-query";
 import { calculateMilestoneAmounts } from "@/utils/milestoneUtils";
 import { buildProductOptions, filterProductOption } from "@/utils/productSelectUtils";
@@ -636,13 +646,33 @@ const RevQuotationFormPage = () => {
         quotation_hardware: rev.quotation_hardware ?? 60,
         quotation_installation: rev.quotation_installation ?? 10,
       };
-      setFormData(nextForm);
 
       let nextServices = null;
       if (rev.subs && Array.isArray(rev.subs) && rev.subs.length > 0) {
         nextServices = groupSubsToServices(rev.subs);
-        setServicesState(nextServices);
       }
+      const pendingServices = loadPendingServiceBlocks(
+        revQuotationPendingKey(rev.id ?? revId)
+      );
+      if (pendingServices?.length) {
+        nextServices = mergePendingServiceBlocks(
+          nextServices || groupSubsToServices([]),
+          pendingServices
+        );
+        const pendingIds = pendingServices
+          .map((srv) => srv.serviceId)
+          .filter(Boolean);
+        if (pendingIds.length) {
+          const currentIds = (nextForm.quotation_service_id || "")
+            .split(",")
+            .filter(Boolean);
+          nextForm.quotation_service_id = [
+            ...new Set([...currentIds, ...pendingIds]),
+          ].join(",");
+        }
+      }
+      setFormData(nextForm);
+      if (nextServices) setServicesState(nextServices);
       setInitialSnapshot(
         JSON.stringify({
           formData: nextForm,
@@ -675,10 +705,27 @@ const RevQuotationFormPage = () => {
     () => JSON.stringify({ formData, servicesState }),
     [formData, servicesState]
   );
-  const isDirty = useMemo(
-    () => Boolean(initialSnapshot && snapshotKey !== initialSnapshot),
-    [initialSnapshot, snapshotKey]
-  );
+  // Create mode me sirf line-item changes prompt karte hain; Basic Details
+  // (Lead/Property/dates) akela ho to bina popup ke leave kar sakte hain.
+  const initialServicesSnapshot = useMemo(() => {
+    if (!initialSnapshot) return null;
+    try {
+      return JSON.stringify(JSON.parse(initialSnapshot).servicesState);
+    } catch {
+      return null;
+    }
+  }, [initialSnapshot]);
+
+  const isDirty = useMemo(() => {
+    if (!initialSnapshot) return false;
+    if (isEdit) return snapshotKey !== initialSnapshot;
+    return hasAnyServiceData(servicesState);
+  }, [
+    isEdit,
+    initialSnapshot,
+    servicesState,
+    snapshotKey,
+  ]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -1135,8 +1182,7 @@ const RevQuotationFormPage = () => {
     }
   };
 
-  const validateForm = () => {
-    let newErrors = {};
+  const validateHeaderFields = (newErrors) => {
     if (!formData.quotation_buyer_id)
       newErrors.quotation_buyer_id = "Lead is required";
     if (!formData.quotation_property_id)
@@ -1161,6 +1207,28 @@ const RevQuotationFormPage = () => {
       focusErrorField("services");
       return false;
     }
+
+    return true;
+  };
+
+  const validateMilestones = (newErrors) => {
+    const totalMilestones =
+      (Number(formData.quotation_booing_confirmation) || 0) +
+      (Number(formData.quotation_hardware) || 0) +
+      (Number(formData.quotation_installation) || 0);
+    if (totalMilestones !== 100) {
+      toast.error(`Payment milestones must total 100% (Current: ${totalMilestones}%)`);
+      newErrors.quotation_booing_confirmation = `Total must be 100% (Current: ${totalMilestones}%)`;
+      setErrors(newErrors);
+      focusErrorField("quotation_booing_confirmation");
+      return false;
+    }
+    return true;
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!validateHeaderFields(newErrors)) return false;
 
     let hasLineItems = false;
     for (let s = 0; s < servicesState.length; s++) {
@@ -1203,24 +1271,25 @@ const RevQuotationFormPage = () => {
       return false;
     }
 
-    const totalMilestones =
-      (Number(formData.quotation_booing_confirmation) || 0) +
-      (Number(formData.quotation_hardware) || 0) +
-      (Number(formData.quotation_installation) || 0);
-    if (totalMilestones !== 100) {
-      toast.error(`Payment milestones must total 100% (Current: ${totalMilestones}%)`);
-      newErrors.quotation_booing_confirmation = `Total must be 100% (Current: ${totalMilestones}%)`;
-      setErrors(newErrors);
-      focusErrorField("quotation_booing_confirmation");
-      return false;
-    }
+    if (!validateMilestones(newErrors)) return false;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const buildRevPayload = () => {
-    const flattenedSubs = flattenServicesToSubs(servicesState);
+  // Save & Leave ke liye: allow partial save even with 0 complete items
+  const validateFormForPartialSave = () => {
+    const newErrors = {};
+    if (!validateHeaderFields(newErrors)) return false;
+
+    if (!validateMilestones(newErrors)) return false;
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const buildRevPayload = (servicesList = servicesState) => {
+    const flattenedSubs = flattenServicesToSubs(servicesList);
     const bookingPct = Number(formData.quotation_booing_confirmation ?? 30);
     const hardwarePct = Number(formData.quotation_hardware ?? 60);
     const installationPct = Number(formData.quotation_installation ?? 10);
@@ -1236,13 +1305,44 @@ const RevQuotationFormPage = () => {
     };
   };
 
-  const saveRevWithoutNavigate = async () => {
-    if (!validateForm()) return false;
-    const payload = buildRevPayload();
+  // allowPartial = true -> sirf complete line items save hote hai, adhoore discard.
+  const saveRevWithoutNavigate = async ({ allowPartial = false } = {}) => {
+    let payload;
+    let hadIncomplete = false;
+
+    if (allowPartial) {
+      if (!validateFormForPartialSave()) return false;
+      hadIncomplete = hasIncompleteServicesEntries(servicesState);
+      payload = buildRevPayload(sanitizeServicesState(servicesState));
+    } else {
+      if (!validateForm()) return false;
+      payload = buildRevPayload();
+    }
+
+    const notifySkipped = () => {
+      if (!hadIncomplete) return;
+      const savedCount = payload.subs.length;
+      toast.warning(
+        `${savedCount} completed line item${savedCount === 1 ? "" : "s"} saved. Incomplete entries were not saved — complete them and save again.`
+      );
+    };
+
+    const persistPendingState = (savedId) => {
+      if (!savedId) return;
+      const key = revQuotationPendingKey(savedId);
+      if (allowPartial) {
+        savePendingServiceBlocks(key, servicesState);
+      } else {
+        clearPendingServiceBlocks(key);
+      }
+    };
+
     try {
       if (isEdit) {
         await updateRevQuotationMutation.mutateAsync({ id: revId, data: payload });
         toast.success("Revised quotation updated successfully");
+        notifySkipped();
+        persistPendingState(revId);
         setInitialSnapshot(snapshotKey);
         refetch?.();
         return true;
@@ -1255,6 +1355,8 @@ const RevQuotationFormPage = () => {
           res?.id?.toString() ||
           "";
         toast.success("Revised quotation created successfully");
+        notifySkipped();
+        persistPendingState(newRevId);
         setInitialSnapshot(snapshotKey);
         return newRevId || true;
       }
@@ -1271,7 +1373,10 @@ const RevQuotationFormPage = () => {
     handleStay,
     handleLeaveWithoutSaving,
     handleSaveAndLeave,
-  } = useUnsavedChangesGuard({ isDirty, onSave: saveRevWithoutNavigate });
+  } = useUnsavedChangesGuard({
+    isDirty,
+    onSave: () => saveRevWithoutNavigate({ allowPartial: true }),
+  });
 
   // Save ke baad hamesha previous screen (revisions list) par wapas jao.
   const handleSubmit = async (e) => {
@@ -1284,7 +1389,9 @@ const RevQuotationFormPage = () => {
       );
       return;
     }
-    const result = await saveRevWithoutNavigate();
+    // Manual Save bhi Save & Leave jaisa lenient hai: complete items save,
+    // incomplete entries warning ke saath chhod do (pending draft me rehti hai).
+    const result = await saveRevWithoutNavigate({ allowPartial: true });
     if (!result) return;
     const destinationParentId = parentId || formData.quotation_id;
     navigate(

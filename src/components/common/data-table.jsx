@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 const DataTable = ({
   data = [],
@@ -56,6 +57,11 @@ const DataTable = ({
   searchValue,
   onSearchChange,
   isLoading = false,
+
+  // Opt-in responsive mode: fixed-width table on xl+ and stacked cards below xl.
+  // fitWidth -> table layout fit karta hai (no horizontal scrollbar).
+  fitWidth = false,
+  mobileCard = null,
 }) => {
   const [internalSearch, setInternalSearch] = useState(searchValue ?? "");
   const prevSearchValueRef = useRef(searchValue);
@@ -156,11 +162,23 @@ const DataTable = ({
       : { getPaginationRowModel: getPaginationRowModel() }),
   });
 
+  const visibleLeafColumns = table.getVisibleLeafColumns();
+  const totalWidthUnits =
+    visibleLeafColumns.reduce(
+      (sum, column) => sum + (column.columnDef.size || 150),
+      0,
+    ) || 1;
+  const widthStyleFor = (column) => {
+    if (!fitWidth) return undefined;
+    const size = column.columnDef.size || 150;
+    return { width: `${(size / totalWidthUnits) * 100}%` };
+  };
+
   return (
     <div className="space-y-3">
       {/* HEADER */}
-      <div className="flex items-center justify-between py-1">
-        <div className="relative w-64">
+      <div className="flex flex-col gap-3 py-1 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:w-64">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 pointer-events-none" />
           <Input
             value={internalSearch ?? ""}
@@ -181,8 +199,9 @@ const DataTable = ({
           ) : null}
         </div>
 
-        <div className="flex flex-col md:flex-row md:ml-auto gap-2 w-full md:w-auto">
-          {/* COLUMN TOGGLE */}
+        <div className="flex flex-col sm:flex-row flex-wrap sm:items-center gap-2 w-full sm:w-auto sm:ml-auto">
+          {/* COLUMN TOGGLE (desktop table only) */}
+          <div className={mobileCard ? "hidden xl:block" : "contents"}>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-9">
@@ -215,6 +234,7 @@ const DataTable = ({
                 })}
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
           {extraButton}
           {/* ADD BUTTON */}
           {addButton &&
@@ -235,8 +255,16 @@ const DataTable = ({
       </div>
 
       {/* TABLE */}
-      <div className="rounded-lg bg-card shadow-sm border border-border min-h-[31rem] block overflow-x-auto p-2">
-        <Table>
+      <div
+        className={cn(
+          "rounded-lg bg-card shadow-sm border border-border min-h-[31rem] block p-2",
+          fitWidth
+            ? "overflow-hidden [&>div]:overflow-x-hidden"
+            : "overflow-x-auto",
+          mobileCard && "hidden xl:block",
+        )}
+      >
+        <Table className={fitWidth ? "table-fixed text-xs" : undefined}>
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
               <TableRow key={hg.id}>
@@ -247,12 +275,16 @@ const DataTable = ({
                   return (
                     <TableHead
                       key={header.id}
+                      style={widthStyleFor(header.column)}
                       onClick={
                         canSort
                           ? header.column.getToggleSortingHandler()
                           : undefined
                       }
-                      className={canSort ? "cursor-pointer select-none" : ""}
+                      className={cn(
+                        canSort && "cursor-pointer select-none",
+                        header.column.columnDef.meta?.className,
+                      )}
                     >
                       <div className="flex items-center gap-1 whitespace-nowrap">
                         {flexRender(
@@ -309,7 +341,10 @@ const DataTable = ({
                   className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell
+                      key={cell.id}
+                      className={cn(cell.column.columnDef.meta?.className)}
+                    >
                       <motion.div
                         initial={{ opacity: 0, y: 8, filter: "blur(3px)" }}
                         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -335,8 +370,37 @@ const DataTable = ({
         </Table>
       </div>
 
+      {/* MOBILE CARDS */}
+      {mobileCard && (
+        <div className="xl:hidden space-y-3">
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, idx) => (
+              <div
+                key={`mobile-skeleton-${idx}`}
+                className="rounded-lg border border-border bg-card p-4 shadow-sm"
+              >
+                <Skeleton className="mb-2 h-4 w-1/2" />
+                <Skeleton className="h-3 w-2/3" />
+              </div>
+            ))
+          ) : table.getRowModel().rows.length ? (
+            table
+              .getRowModel()
+              .rows.map((row) => (
+                <div key={row.id}>
+                  {mobileCard(row.original, row.index)}
+                </div>
+              ))
+          ) : (
+            <div className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+              No data found
+            </div>
+          )}
+        </div>
+      )}
+
       {/* PAGINATION */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex-1 text-sm text-muted-foreground">
           Total Records:{" "}
           {backendPagination

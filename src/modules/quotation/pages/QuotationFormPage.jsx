@@ -33,6 +33,16 @@ import ConfirmDialog from "@/components/common/confirm-dialog";
 import UnsavedChangesDialog from "@/components/common/unsaved-changes-dialog";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import ImportQuotationDialog from "../components/ImportQuotationDialog";
+import {
+  clearPendingServiceBlocks,
+  hasAnyServiceData,
+  hasIncompleteServicesEntries,
+  loadPendingServiceBlocks,
+  mergePendingServiceBlocks,
+  quotationPendingKey,
+  sanitizeServicesState,
+  savePendingServiceBlocks,
+} from "../utils/quotationPendingServices";
 import { QuickNameDialog, ProductQuickAddDialog, ServiceQuickAddDialog } from "../components/MasterQuickAddDialogs";
 import { useCreateBuyerMutation } from "../../buyer/hooks/useBuyer";
 import { calculateMilestoneAmounts } from "@/utils/milestoneUtils";
@@ -252,12 +262,9 @@ const QuotationFormPage = () => {
   const [pendingDelete, setPendingDelete] = useState(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   // Unsaved-changes guard: pristine snapshot vs current form
-  const [initialSnapshot, setInitialSnapshot] = useState(null);
-  // Create mode: Services + Categories sab default selected rahenge
-  const [defaultSelection, setDefaultSelection] = useState({
-    categories: "",
-    services: "",
-  });
+  const [initialSnapshot, setInitialSnapshot] = useState(() =>
+    JSON.stringify({ formData, servicesState })
+  );
   const defaultsAppliedRef = useRef(false);
 
   // Buyer quick-add (single reusable SelectWithAdd + inline dialog)
@@ -376,13 +383,33 @@ const QuotationFormPage = () => {
         quotation_hardware: data.quotation_hardware ?? 60,
         quotation_installation: data.quotation_installation ?? 10,
       };
-      setFormData(nextForm);
 
       let nextServices = null;
       if (data.subs && Array.isArray(data.subs) && data.subs.length > 0) {
         nextServices = groupSubsToServices(data.subs);
-        setServicesState(nextServices);
       }
+      const pendingServices = loadPendingServiceBlocks(
+        quotationPendingKey(data.id ?? id)
+      );
+      if (pendingServices?.length) {
+        nextServices = mergePendingServiceBlocks(
+          nextServices || groupSubsToServices([]),
+          pendingServices
+        );
+        const pendingIds = pendingServices
+          .map((srv) => srv.serviceId)
+          .filter(Boolean);
+        if (pendingIds.length) {
+          const currentIds = (nextForm.quotation_service_id || "")
+            .split(",")
+            .filter(Boolean);
+          nextForm.quotation_service_id = [
+            ...new Set([...currentIds, ...pendingIds]),
+          ].join(",");
+        }
+      }
+      setFormData(nextForm);
+      if (nextServices) setServicesState(nextServices);
       // pristine snapshot taaki bina change ke bahar jane par popup na aaye
       const snapshotServices =
         nextServices ||
@@ -408,69 +435,32 @@ const QuotationFormPage = () => {
     }
   }, [isEdit, fetchedData]);
 
-  // Create mode: mount par pristine snapshot lock karo
-  useEffect(() => {
-    if (!isEdit && initialSnapshot === null) {
-      setInitialSnapshot(
-        JSON.stringify({
-          quotation_date: new Date().toISOString().split("T")[0],
-          quotation_validity_date: "",
-          quotation_buyer_id: "",
-          quotation_property_id: "",
-          quotation_category_id: "",
-          quotation_service_id: "",
-          quotation_remarks: "",
-          quotation_status: "Pending",
-          quotation_finish_work_date: "",
-          quotation_booing_confirmation: 30,
-          quotation_hardware: 60,
-          quotation_installation: 10,
-        })
-      );
-      // Note: servicesState ka empty default bhi dirty-check me shamil hai;
-      // neeche isDirty memo formData+servicesState dono dekhta hai, isliye
-      // create mode me pehla snapshot formData-default se set karke
-      // servicesState ko alag se compare karenge.
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEdit]);
-
   const snapshotKey = useMemo(
     () => JSON.stringify({ formData, servicesState }),
     [formData, servicesState]
   );
 
+  // Create mode me sirf line-item changes prompt karte hain; Basic Details
+  // (Lead/Property/dates) akela ho to bina popup ke leave kar sakte hain.
+  const initialServicesSnapshot = useMemo(() => {
+    if (!initialSnapshot) return null;
+    try {
+      return JSON.stringify(JSON.parse(initialSnapshot).servicesState);
+    } catch {
+      return null;
+    }
+  }, [initialSnapshot]);
+
   const isDirty = useMemo(() => {
-    if (initialSnapshot === null) return false;
+    if (!initialSnapshot) return false;
     if (isEdit) return snapshotKey !== initialSnapshot;
-    // Create mode: buyer/property/category/service/remarks/date ya line-items me kuch bhi bhara ho to dirty
-    const todayStr = new Date().toISOString().split("T")[0];
-    const hasBasic = Boolean(
-      formData.quotation_buyer_id ||
-        formData.quotation_property_id ||
-        (formData.quotation_category_id || "") !== defaultSelection.categories ||
-        (formData.quotation_service_id || "") !== defaultSelection.services ||
-        formData.quotation_remarks ||
-        formData.quotation_validity_date ||
-        (formData.quotation_date && formData.quotation_date !== todayStr)
-    );
-    const hasItems = servicesState.some(
-      (srv) =>
-        srv.serviceId ||
-        srv.floors.some(
-          (flr) =>
-            flr.floorId ||
-            flr.areas.some((a) => a.areaId || a.products.some((p) => p.productId))
-        )
-    );
-    return hasBasic || hasItems;
+    // In create mode, if user entered no service/floor/area/product data, form is not dirty
+    return hasAnyServiceData(servicesState);
   }, [
-    initialSnapshot,
-    snapshotKey,
     isEdit,
-    formData,
+    initialSnapshot,
     servicesState,
-    defaultSelection,
+    snapshotKey,
   ]);
 
   const handleInputChange = (e) => {
@@ -849,8 +839,7 @@ const QuotationFormPage = () => {
     }
   };
 
-  const validateForm = () => {
-    let newErrors = {};
+  const validateHeaderFields = (newErrors) => {
     if (!formData.quotation_buyer_id)
       newErrors.quotation_buyer_id = "Lead is required";
     if (!formData.quotation_property_id)
@@ -875,6 +864,28 @@ const QuotationFormPage = () => {
       focusErrorField("services");
       return false;
     }
+
+    return true;
+  };
+
+  const validateMilestones = (newErrors) => {
+    const totalMilestones =
+      (Number(formData.quotation_booing_confirmation) || 0) +
+      (Number(formData.quotation_hardware) || 0) +
+      (Number(formData.quotation_installation) || 0);
+    if (totalMilestones !== 100) {
+      toast.error(`Payment milestones must total 100% (Current: ${totalMilestones}%)`);
+      newErrors.quotation_booing_confirmation = `Total must be 100% (Current: ${totalMilestones}%)`;
+      setErrors(newErrors);
+      focusErrorField("quotation_booing_confirmation");
+      return false;
+    }
+    return true;
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!validateHeaderFields(newErrors)) return false;
 
     let hasLineItems = false;
     for (let s = 0; s < servicesState.length; s++) {
@@ -923,25 +934,26 @@ const QuotationFormPage = () => {
       return false;
     }
 
-    const totalMilestones =
-      (Number(formData.quotation_booing_confirmation) || 0) +
-      (Number(formData.quotation_hardware) || 0) +
-      (Number(formData.quotation_installation) || 0);
-    if (totalMilestones !== 100) {
-      toast.error(`Payment milestones must total 100% (Current: ${totalMilestones}%)`);
-      newErrors.quotation_booing_confirmation = `Total must be 100% (Current: ${totalMilestones}%)`;
-      setErrors(newErrors);
-      focusErrorField("quotation_booing_confirmation");
-      return false;
-    }
+    if (!validateMilestones(newErrors)) return false;
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Save & Leave ke liye: allow partial save even with 0 complete items
+  const validateFormForPartialSave = () => {
+    const newErrors = {};
+    if (!validateHeaderFields(newErrors)) return false;
+
+    if (!validateMilestones(newErrors)) return false;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   // Shared payload builder (create + overwrite + save-as-new sab yahi use karte hai)
-  const buildPayload = (overrides = {}) => {
-    const flattenedSubs = flattenServicesToSubs(servicesState);
+  const buildPayload = (overrides = {}, servicesList = servicesState) => {
+    const flattenedSubs = flattenServicesToSubs(servicesList);
     const bookingPct = Number(formData.quotation_booing_confirmation ?? 30);
     const hardwarePct = Number(formData.quotation_hardware ?? 60);
     const installationPct = Number(formData.quotation_installation ?? 10);
@@ -958,9 +970,38 @@ const QuotationFormPage = () => {
   };
 
   // Popup ke "Save & Leave" ke liye: bina navigate kiye save, success par true/id
-  const saveWithoutNavigate = async () => {
-    if (!validateForm()) return false;
-    const payload = buildPayload();
+  // allowPartial = true -> sirf complete line items save hote hai, adhoore discard.
+  const saveWithoutNavigate = async ({ allowPartial = false } = {}) => {
+    let payload;
+    let hadIncomplete = false;
+
+    if (allowPartial) {
+      if (!validateFormForPartialSave()) return false;
+      hadIncomplete = hasIncompleteServicesEntries(servicesState);
+      payload = buildPayload({}, sanitizeServicesState(servicesState));
+    } else {
+      if (!validateForm()) return false;
+      payload = buildPayload();
+    }
+
+    const notifySkipped = () => {
+      if (!hadIncomplete) return;
+      const savedCount = payload.subs.length;
+      toast.warning(
+        `${savedCount} completed line item${savedCount === 1 ? "" : "s"} saved. Incomplete entries were not saved — complete them and save again.`
+      );
+    };
+
+    const persistPendingState = (savedId) => {
+      if (!savedId) return;
+      const key = quotationPendingKey(savedId);
+      if (allowPartial) {
+        savePendingServiceBlocks(key, servicesState);
+      } else {
+        clearPendingServiceBlocks(key);
+      }
+    };
+
     try {
       if (isEdit) {
         await updateQuotationMutation.mutateAsync({ id, data: payload });
@@ -971,6 +1012,8 @@ const QuotationFormPage = () => {
           });
         }
         toast.success("Quotation updated successfully");
+        notifySkipped();
+        persistPendingState(id);
         setInitialSnapshot(snapshotKey);
         refetch?.();
         return true;
@@ -983,6 +1026,8 @@ const QuotationFormPage = () => {
           res?.id?.toString() ||
           "";
         toast.success("Quotation created successfully");
+        notifySkipped();
+        persistPendingState(newId);
         setInitialSnapshot(snapshotKey);
         return newId || true;
       }
@@ -1001,12 +1046,17 @@ const QuotationFormPage = () => {
     handleStay,
     handleLeaveWithoutSaving,
     handleSaveAndLeave,
-  } = useUnsavedChangesGuard({ isDirty, onSave: saveWithoutNavigate });
+  } = useUnsavedChangesGuard({
+    isDirty,
+    onSave: () => saveWithoutNavigate({ allowPartial: true }),
+  });
 
   // Save ke baad hamesha previous screen (quotation list) par wapas jao.
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const result = await saveWithoutNavigate();
+    // Manual Save bhi Save & Leave jaisa lenient hai: complete items save,
+    // incomplete entries warning ke saath chhod do (pending draft me rehti hai).
+    const result = await saveWithoutNavigate({ allowPartial: true });
     if (!result) return;
     navigate("/quotation-list", { replace: true });
   };
@@ -1031,6 +1081,7 @@ const QuotationFormPage = () => {
         res?.id?.toString() ||
         "";
       toast.success("Saved as new quotation with today's date");
+      clearPendingServiceBlocks(quotationPendingKey(id));
       setInitialSnapshot(snapshotKey);
       navigate(newId ? `/quotation-list/edit/${newId}` : "/quotation-list");
     } catch (error) {
@@ -1064,13 +1115,25 @@ const QuotationFormPage = () => {
       .map((s) => s.id?.toString())
       .filter(Boolean)
       .join(",");
-    setDefaultSelection({ categories: categoryIds, services: serviceIds });
-    setFormData((prev) => ({
-      ...prev,
-      quotation_category_id: prev.quotation_category_id || categoryIds,
-      quotation_service_id: prev.quotation_service_id || serviceIds,
-    }));
-  }, [isEdit, categories, services]);
+    const nextForm = {
+      ...formData,
+      quotation_category_id: formData.quotation_category_id || categoryIds,
+      quotation_service_id: formData.quotation_service_id || serviceIds,
+    };
+    const wasPristine = snapshotKey === initialSnapshot;
+    setFormData(nextForm);
+    if (wasPristine) {
+      setInitialSnapshot(JSON.stringify({ formData: nextForm, servicesState }));
+    }
+  }, [
+    isEdit,
+    categories,
+    services,
+    formData,
+    servicesState,
+    snapshotKey,
+    initialSnapshot,
+  ]);
 
   // Buyer options for the single reusable SelectWithAdd
   // (extraBuyers = abhi-abhi banaya hua buyer, refetch se pehle turant dikhe)
