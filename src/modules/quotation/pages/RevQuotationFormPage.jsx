@@ -1630,9 +1630,9 @@ const RevQuotationFormPage = () => {
         <Card>
           <CardContent className="p-6">
             <h3 className="text-lg font-semibold mb-4 text-slate-800">Basic Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex flex-col sm:flex-row gap-4">
               {/* Revision Date */}
-              <div className="space-y-2">
+              <div className="space-y-2 flex-1 min-w-0">
                 <Label className="flex">
                   Revision Date <RedStar />
                 </Label>
@@ -1645,32 +1645,54 @@ const RevQuotationFormPage = () => {
                 />
               </div>
 
-              {/* Buyer (Read-only reference) */}
-              <div className="space-y-2" data-error-field="buyer">
+              {/* Buyer */}
+              <div className="space-y-2 flex-1 min-w-0" data-error-field="buyer">
                 <Label>Lead</Label>
-                <select
-                  name="quotation_buyer_id"
-                  value={formData.quotation_buyer_id}
-                  disabled
-                  className="w-full border rounded-md h-10 px-3 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-500 text-sm"
-                >
-                  <option value="">Select Lead</option>
-                  {buyers.map((buyer) => (
-                    <option key={buyer.id} value={buyer.id}>
-                      {buyer.buyer_name}
-                    </option>
-                  ))}
-                </select>
+                <MemoizedSelect
+                  value={
+                    formData.quotation_buyer_id
+                      ? {
+                          value: formData.quotation_buyer_id,
+                          label:
+                            buyers.find(
+                              (b) => b.id?.toString() === formData.quotation_buyer_id.toString()
+                            )?.buyer_name ||
+                            formData.quotation_buyer_id,
+                        }
+                      : null
+                  }
+                  onChange={(selected) => {
+                    if (selected) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        quotation_buyer_id: selected.value.toString(),
+                      }));
+                      setErrors((prev) => ({ ...prev, quotation_buyer_id: "" }));
+                    } else {
+                      setFormData((prev) => ({
+                        ...prev,
+                        quotation_buyer_id: "",
+                      }));
+                    }
+                  }}
+                  options={buyers.map((b) => ({
+                    value: b.id?.toString(),
+                    label: b.buyer_name,
+                  }))}
+                  placeholder="Select Lead"
+                  isLoading={buyersLoading}
+                  className="w-full"
+                  hasError={!!errors.quotation_buyer_id}
+                />
               </div>
 
-              {/* Property (Read-only reference) */}
-              <div className="space-y-2" data-error-field="property">
+              {/* Property */}
+              <div className="space-y-2 flex-1 min-w-0" data-error-field="property">
                 <Label>Property</Label>
                 <select
                   name="quotation_property_id"
                   value={formData.quotation_property_id}
-                  disabled
-                  className="w-full border rounded-md h-10 px-3 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-500 text-sm"
+                  className="w-full border rounded-md h-10 px-3 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm"
                 >
                   <option value="">Select Property</option>
                   {properties.map((prop) => (
@@ -1695,7 +1717,31 @@ const RevQuotationFormPage = () => {
                       <input
                         type="checkbox"
                         checked={checkedCategories.includes(cat.id?.toString())}
-                        disabled
+                        onChange={(e) => {
+                          const catId = cat.id?.toString();
+                          const cur = checkedCategories;
+                          if (e.target.checked) {
+                            if (!cur.includes(catId)) {
+                              setFormData((prev) => ({
+                                ...prev,
+                                quotation_category_id:
+                                  prev.quotation_category_id &&
+                                  prev.quotation_category_id.length > 0
+                                    ? `${prev.quotation_category_id},${catId}`
+                                    : catId,
+                              }));
+                            }
+                          } else {
+                            setFormData((prev) => ({
+                              ...prev,
+                              quotation_category_id:
+                                prev.quotation_category_id
+                                  ?.split(",")
+                                  .filter((id) => id !== catId)
+                                  .join(",") || "",
+                            }));
+                          }
+                        }}
                         className="rounded border-slate-300 dark:border-slate-700 h-4 w-4 bg-transparent"
                       />
                       <span>{cat.category_name}</span>
@@ -1715,7 +1761,31 @@ const RevQuotationFormPage = () => {
                       <input
                         type="checkbox"
                         checked={checkedServices.includes(srv.id?.toString())}
-                        disabled
+                        onChange={(e) => {
+                          const srvId = srv.id?.toString();
+                          const cur = checkedServices;
+                          if (e.target.checked) {
+                            if (!cur.includes(srvId)) {
+                              setFormData((prev) => ({
+                                ...prev,
+                                quotation_service_id:
+                                  prev.quotation_service_id &&
+                                  prev.quotation_service_id.length > 0
+                                    ? `${prev.quotation_service_id},${srvId}`
+                                    : srvId,
+                              }));
+                            }
+                          } else {
+                            setFormData((prev) => ({
+                              ...prev,
+                              quotation_service_id:
+                                prev.quotation_service_id
+                                  ?.split(",")
+                                  .filter((id) => id !== srvId)
+                                  .join(",") || "",
+                            }));
+                          }
+                        }}
                         className="rounded border-slate-300 dark:border-slate-700 h-4 w-4 bg-transparent"
                       />
                       <span>{srv.service_name}</span>
