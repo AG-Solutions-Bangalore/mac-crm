@@ -408,7 +408,9 @@ export default function QuotationReportPage() {
     "-";
   const quotationNo = quotationDetail.quotation_no || quotationDetail.id || "2894";
   const quotationDateRaw =
-    quotationDetail.quotation_date || quotationDetail.created_at;
+    quotationDetail.quotation_date_rev ||
+    quotationDetail.quotation_date ||
+    quotationDetail.created_at;
   const quotationDate = quotationDateRaw
     ? new Date(quotationDateRaw).toLocaleDateString("en-US", {
       month: "long",

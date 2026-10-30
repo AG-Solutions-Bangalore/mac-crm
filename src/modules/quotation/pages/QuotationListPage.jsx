@@ -184,6 +184,9 @@ const QuotationListPage = () => {
   const formatDate = (value) =>
     value ? moment(value).format("DD-MM-YYYY") : "-";
 
+  const getQuotationDisplayDate = (q) =>
+    q.quotation_date_rev || q.quotation_date;
+
   const renderStatus = (q) => {
     const status = q.quotation_status;
     if (status === "Approved") {
@@ -306,7 +309,7 @@ const QuotationListPage = () => {
       <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
         <div>
           <p className="text-muted-foreground">Date</p>
-          <p className="font-medium">{formatDate(q.quotation_date)}</p>
+          <p className="font-medium">{formatDate(getQuotationDisplayDate(q))}</p>
         </div>
         <div>
           <p className="text-muted-foreground">Validity</p>
@@ -374,7 +377,7 @@ const QuotationListPage = () => {
       size: 104,
       cell: ({ row }) => (
         <span className="whitespace-nowrap">
-          {formatDate(row.original.quotation_date)}
+          {formatDate(getQuotationDisplayDate(row.original))}
         </span>
       ),
     },
