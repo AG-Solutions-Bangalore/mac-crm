@@ -234,7 +234,7 @@ export default function CoverPage({
           }}
         >
           Smart homes are not about gadgets — they are about how you live. With almost a decade of
-          experience and 800+ projects delivered across homes and select commercial spaces,
+          experience and 900+ projects delivered across homes and select commercial spaces,
           here&apos;s what you can expect from us.
         </p>
 

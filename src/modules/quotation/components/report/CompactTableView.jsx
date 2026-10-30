@@ -176,6 +176,7 @@ export default function CompactTableView({
                       <TableCell style={{ color: LIGHT.bodyText }}>{row.floor || "-"}</TableCell>
                       <TableCell style={{ color: LIGHT.bodyText }}>{row.area || "-"}</TableCell>
                       <TableCell className="font-bold" style={{ color: LIGHT.headingText }}>{row.product}</TableCell>
+                      <TableCell className="font-medium text-center" style={{ color: LIGHT.bodyText }}>{row.module || "-"}</TableCell>
                       <TableCell className="font-bold text-center" style={{ color: LIGHT.accent }}>{row.quantity || "-"}</TableCell>
                       {!hidePricing && (
                         <TableCell className="font-bold" style={{ color: LIGHT.accent }}>{formatMoney(row.totalPrice)}</TableCell>
@@ -194,7 +195,7 @@ export default function CompactTableView({
                       style={{ background: LIGHT.summaryBg, borderColor: LIGHT.headerBorder }}
                     >
                       <TableCell
-                        colSpan={hidePricing ? headers.length : 5}
+                        colSpan={hidePricing ? headers.length : 6}
                         className="uppercase text-xs tracking-wider"
                         style={{ color: LIGHT.accentStrong }}
                       >

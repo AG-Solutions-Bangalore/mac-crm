@@ -38,6 +38,7 @@ const headers = [
   "Floor",
   "Area",
   "Product",
+  "Module",
   "Quantity",
   "Total Price",
   "Finish",
@@ -291,8 +292,17 @@ export default function QuotationReportPage() {
     const appName = getServiceName(subVal(sub, "service_id"));
     const floorName = getFloorName(subVal(sub, "floor_id"));
     const areaName = getAreaName(subVal(sub, "area_id"));
+    const moduleName =
+      subVal(sub, "product_module") ||
+      sub.product_module ||
+      prodDetails?.product_module ||
+      "";
+    const baseProductName =
+      prodDetails?.product_name || sub.product_name || "Product ID: " + subVal(sub, "product_id");
     const productName =
-      prodDetails?.product_name || "Product ID: " + subVal(sub, "product_id");
+      moduleName && !baseProductName.startsWith(`${moduleName} - `)
+        ? `${moduleName} - ${baseProductName}`
+        : baseProductName;
 
     // Resolve category/finish selected under categories
     const categoryObj = categories.find(
@@ -315,6 +325,7 @@ export default function QuotationReportPage() {
       floor: floorName,
       area: areaName,
       product: productName,
+      module: sub.product_module || subVal(sub, "product_module") || "-",
       quantity: Number(subVal(sub, "quantity")) || 0,
       price: Number(subVal(sub, "price")) || 0,
       totalPrice: Number(subVal(sub, "amount")) || 0,
