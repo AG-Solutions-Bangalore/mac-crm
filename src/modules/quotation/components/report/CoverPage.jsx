@@ -315,7 +315,7 @@ export default function CoverPage({
             }}
           >
             <Star style={{ width: 12, height: 12, fill: "#b45309", color: "#b45309" }} />
-            800+ Projects Completed
+            900+ Projects Completed
           </span>
         </div>
       </div>
