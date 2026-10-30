@@ -28,6 +28,7 @@ import {
   useQuotationsQuery,
   useUpdateQuotationFinishWorkDateMutation,
   useUpdateQuotationStatusMutation,
+  useUpdateQuotationValidateDateMutation,
 } from "../hooks/useQuotation";
 import { quotationApi } from "../api/quotationApi";
 import { projectApi } from "../../project/api/projectApi";
@@ -45,6 +46,7 @@ const QuotationListPage = () => {
   const [finishDateDialogOpen, setFinishDateDialogOpen] = useState(false);
   const [selectedQuotation, setSelectedQuotation] = useState(null);
   const [finishDate, setFinishDate] = useState("");
+  const [dialogMode, setDialogMode] = useState("finish");
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [convertingQuotation, setConvertingQuotation] = useState(null);
 
@@ -52,6 +54,7 @@ const QuotationListPage = () => {
   const { data: responseData, isLoading, isFetching, isError, refetch } = useQuotationsQuery(page, searchTerm, statusFilter);
   const updateFinishWorkDateMutation = useUpdateQuotationFinishWorkDateMutation();
   const updateStatusMutation = useUpdateQuotationStatusMutation();
+  const updateValidateDateMutation = useUpdateQuotationValidateDateMutation();
 
   const handleOpenFinishDateDialog = (quotation) => {
     setSelectedQuotation(quotation);
@@ -59,19 +62,36 @@ const QuotationListPage = () => {
     setFinishDateDialogOpen(true);
   };
 
+  const handleOpenValidateDateDialog = (quotation) => {
+    setSelectedQuotation(quotation);
+    setFinishDate(quotation.quotation_validity_date || "");
+    setFinishDateDialogOpen(true);
+    setDialogMode("validate");
+  };
+
   const handleSaveFinishDate = async () => {
     if (!selectedQuotation) return;
     try {
-      await updateFinishWorkDateMutation.mutateAsync({
-        id: selectedQuotation.id,
-        finishWorkDate: finishDate,
-      });
+      if (dialogMode === "validate") {
+        await updateValidateDateMutation.mutateAsync({
+          id: selectedQuotation.id,
+          validityDate: finishDate,
+        });
+        toast.success("Validity date updated successfully");
+      } else {
+        await updateFinishWorkDateMutation.mutateAsync({
+          id: selectedQuotation.id,
+          finishWorkDate: finishDate,
+        });
+        toast.success("Finish work date updated successfully");
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to update date");
+    } finally {
       setFinishDateDialogOpen(false);
       setSelectedQuotation(null);
-      toast.success("Finish work date updated successfully");
+      setDialogMode("finish");
       refetch();
-    } catch (error) {
-      toast.error(error.message || "Failed to update finish work date");
     }
   };
 
@@ -213,6 +233,8 @@ const QuotationListPage = () => {
   const renderActions = (q, labeled = false) => {
     const canFinishDate =
       q.quotation_status === "Approved" && !q.quotation_finish_work_date;
+    const canUpdateValidateDate =
+      q.quotation_status === "Approved";
     const showConvertButton = q.quotation_status === "Approved";
     const actions = [
       {
@@ -237,6 +259,18 @@ const QuotationListPage = () => {
               onClick: () => handleOpenFinishDateDialog(q),
               extra:
                 "text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30",
+            },
+          ]
+        : []),
+      ...(canUpdateValidateDate
+        ? [
+            {
+              label: "Validity Date",
+              title: "Update Validity Date",
+              icon: CalendarDays,
+              onClick: () => handleOpenValidateDateDialog(q),
+              extra:
+                "text-sky-600 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/30",
             },
           ]
         : []),
@@ -533,11 +567,19 @@ const QuotationListPage = () => {
       <Dialog open={finishDateDialogOpen} onOpenChange={setFinishDateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Update Finish Work Date</DialogTitle>
+            <DialogTitle>
+              {dialogMode === "validate"
+                ? "Update Validity Date"
+                : "Update Finish Work Date"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Finish Work Date</Label>
+              <Label>
+                {dialogMode === "validate"
+                  ? "Validity Date"
+                  : "Finish Work Date"}
+              </Label>
               <Input
                 type="date"
                 value={finishDate}

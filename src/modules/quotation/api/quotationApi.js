@@ -123,4 +123,10 @@ export const quotationApi = {
     });
     return response.data;
   },
+  updateQuotationValidateDate: async (id, validityDate) => {
+    const response = await apiClient.put(`/update-quotation-validate-date/${id}`, {
+      quotation_validity_date: validityDate,
+    });
+    return response.data;
+  },
 };
