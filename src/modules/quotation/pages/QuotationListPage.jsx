@@ -308,6 +308,10 @@ const QuotationListPage = () => {
 
       <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
         <div>
+          <p className="text-muted-foreground">Customer</p>
+          <p className="font-medium">{q.buyer_name || "—"}</p>
+        </div>
+        <div>
           <p className="text-muted-foreground">Date</p>
           <p className="font-medium">{formatDate(getQuotationDisplayDate(q))}</p>
         </div>
@@ -315,14 +319,6 @@ const QuotationListPage = () => {
           <p className="text-muted-foreground">Validity</p>
           <p className="font-medium">
             {formatDate(q.quotation_validity_date)}
-          </p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">Amount</p>
-          <p className="font-semibold text-emerald-600">
-            {q.quotation_amount
-              ? `₹${Number(q.quotation_amount).toLocaleString("en-IN")}`
-              : "-"}
           </p>
         </div>
         <div>
@@ -370,6 +366,12 @@ const QuotationListPage = () => {
       size: 48,
       meta: { className: "hidden 2xl:table-cell" },
       cell: ({ row }) => (page - 1) * 50 + row.index + 1,
+    },
+    {
+      header: "Lead",
+      accessorKey: "buyer_name",
+      size: 110,
+      cell: ({ row }) => truncateCell(row.original.buyer_name),
     },
     {
       header: "Date",
@@ -426,24 +428,6 @@ const QuotationListPage = () => {
           {formatDate(row.original.quotation_finish_work_date)}
         </span>
       ),
-    },
-    {
-      header: "Lead",
-      accessorKey: "buyer_name",
-      size: 90,
-      cell: ({ row }) => truncateCell(row.original.buyer_name),
-    },
-    {
-      header: "Property",
-      accessorKey: "property_name",
-      size: 100,
-      cell: ({ row }) => truncateCell(row.original.property_name),
-    },
-    {
-      header: "Categories",
-      accessorKey: "quotation_category_name",
-      size: 120,
-      cell: ({ row }) => truncateCell(row.original.quotation_category_name),
     },
     {
       header: "Services",
