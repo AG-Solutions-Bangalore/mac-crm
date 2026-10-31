@@ -38,6 +38,8 @@ import { useActiveCategoriesQuery } from "../../category/hooks/useCategory";
 import { useActiveFloorsQuery, useCreateFloorMutation } from "../../floor/hooks/useFloor";
 import { useActiveAreasQuery, useCreateAreaMutation } from "../../area/hooks/useArea";
 import { useActiveBrandsQuery, useCreateBrandMutation } from "../../brand/hooks/useBrand";
+import { useActiveSalesTeamQuery } from "../../sales-team/hooks/useSalesTeam";
+import { getSalesTeamMemberId } from "../../sales-team/api/salesTeamApi";
 import { useCreateProductMutation } from "../../product/hooks/useProduct";
 import { useQueryClient } from "@tanstack/react-query";
 import MemoizedSelect from "@/components/common/memoized-select";
@@ -264,6 +266,7 @@ const ProjectFormPage = () => {
     price_validity_date: "",
     project_buyer_id: "",
     project_property_id: "",
+    quotation_prepared_id: "",
     project_category_id: "",
     project_service_id: "",
     project_remarks: "",
@@ -366,6 +369,7 @@ const ProjectFormPage = () => {
   const { data: floorsData, isLoading: floorsLoading, refetch: refetchFloors } = useActiveFloorsQuery();
   const { data: areasData, isLoading: areasLoading, refetch: refetchAreas } = useActiveAreasQuery();
   const { data: brandsData, isLoading: brandsLoading, refetch: refetchBrands } = useActiveBrandsQuery();
+  const { data: activeMembersData, isLoading: salesTeamLoading } = useActiveSalesTeamQuery();
   const queryClient = useQueryClient();
 
   // Fetch products matching selected categories and services
@@ -418,6 +422,8 @@ const ProjectFormPage = () => {
         project_property_id:
           (data.project_property_id ?? data.quotation_property_id ?? data.property_id)?.toString() ||
           "",
+        quotation_prepared_id:
+          data.quotation_prepared_id?.toString() || "",
         project_category_id:
           data.project_category_id || data.quotation_category_id || data.category_id || "",
         project_service_id:
@@ -989,6 +995,7 @@ const ProjectFormPage = () => {
       price_validity_date: validityDate,
       project_buyer_id: buyerId,
       project_property_id: propertyId,
+      quotation_prepared_id: Number(formData.quotation_prepared_id),
       project_category_id: categoryId,
       project_service_id: serviceId,
       project_remarks: remarks,
@@ -1083,6 +1090,13 @@ const ProjectFormPage = () => {
   const floors = floorsData?.data || [];
   const areas = areasData?.data || [];
   const brands = brandsData?.data || [];
+  const activeMembers = activeMembersData?.data || [];
+  const preparedByOptions = activeMembers.map((m) => ({
+    value: getSalesTeamMemberId(m)?.toString(),
+    label: m.name || m.member_name || "Sales Team Member",
+    phone: m.mobile || m.phone || "",
+    email: m.email || "",
+  }));
 
   // Create mode: masters load hone par Services + Categories sab tick ho jaye
   useEffect(() => {
@@ -1777,6 +1791,25 @@ const ProjectFormPage = () => {
                   }}
                   placeholder="Select Property"
                   hasError={Boolean(errors.project_property_id)}
+                />
+              </div>
+
+              {/* Prepared By */}
+              <div className="space-y-2" data-error-field="prepared">
+                <Label className="flex">
+                  Prepared By
+                </Label>
+                <MemoizedSelect
+                  options={preparedByOptions}
+                  value={formData.quotation_prepared_id}
+                  onChange={(option) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      quotation_prepared_id: option ? option.value : "",
+                    }));
+                  }}
+                  placeholder="Select Prepared By"
+                  hasError={Boolean(errors.quotation_prepared_id)}
                 />
               </div>
             </div>

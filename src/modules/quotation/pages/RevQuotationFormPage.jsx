@@ -26,6 +26,8 @@ import { useActiveCategoriesQuery } from "../../category/hooks/useCategory";
 import { useActiveFloorsQuery, useCreateFloorMutation } from "../../floor/hooks/useFloor";
 import { useActiveAreasQuery, useCreateAreaMutation } from "../../area/hooks/useArea";
 import { useActiveBrandsQuery, useCreateBrandMutation } from "../../brand/hooks/useBrand";
+import { useActiveSalesTeamQuery } from "../../sales-team/hooks/useSalesTeam";
+import { getSalesTeamMemberId } from "../../sales-team/api/salesTeamApi";
 import { useCreateProductMutation } from "../../product/hooks/useProduct";
 import MemoizedSelect from "@/components/common/memoized-select";
 import SelectWithAdd from "@/components/common/select-with-add";
@@ -232,6 +234,7 @@ const RevQuotationFormPage = () => {
     quotation_date_rev: new Date().toISOString().split("T")[0],
     quotation_buyer_id: "",
     quotation_property_id: "",
+    quotation_prepared_id: "",
     quotation_category_id: "",
     quotation_service_id: "",
     quotation_remarks: "",
@@ -317,6 +320,7 @@ const RevQuotationFormPage = () => {
   const { data: floorsData, isLoading: floorsLoading, refetch: refetchFloors } = useActiveFloorsQuery();
   const { data: areasData, isLoading: areasLoading, refetch: refetchAreas } = useActiveAreasQuery();
   const { data: brandsData, isLoading: brandsLoading, refetch: refetchBrands } = useActiveBrandsQuery();
+  const { data: activeMembersData, isLoading: salesTeamLoading } = useActiveSalesTeamQuery();
 
   // Fetch parent quotation for prefilling revised quote details on CREATE mode, and checking finish work date
   const { data: parentQuotationData, isLoading: parentLoading } = useQuotationQuery(parentId);
@@ -651,6 +655,7 @@ const RevQuotationFormPage = () => {
           30,
         quotation_hardware: rev.quotation_hardware ?? 60,
         quotation_installation: rev.quotation_installation ?? 10,
+        quotation_prepared_id: rev.quotation_prepared_id?.toString() || "",
       };
 
       let nextServices = null;
@@ -1307,6 +1312,7 @@ const RevQuotationFormPage = () => {
       quotation_booing_confirmation: bookingPct,
       quotation_hardware: hardwarePct,
       quotation_installation: installationPct,
+      quotation_prepared_id: Number(formData.quotation_prepared_id),
       subs: flattenedSubs,
     };
   };
@@ -1415,6 +1421,13 @@ const RevQuotationFormPage = () => {
   const floors = floorsData?.data || [];
   const areas = areasData?.data || [];
   const brands = brandsData?.data || [];
+  const activeMembers = activeMembersData?.data || [];
+  const preparedByOptions = activeMembers.map((m) => ({
+    value: getSalesTeamMemberId(m)?.toString(),
+    label: m.name || m.member_name || "Sales Team Member",
+    phone: m.mobile || m.phone || "",
+    email: m.email || "",
+  }));
 
   const checkedCategories = formData.quotation_category_id ? formData.quotation_category_id.split(",") : [];
   const checkedServices = formData.quotation_service_id ? formData.quotation_service_id.split(",") : [];
@@ -1551,6 +1564,7 @@ const RevQuotationFormPage = () => {
     floorsLoading ||
     areasLoading ||
     brandsLoading ||
+    salesTeamLoading ||
     parentLoading ||
     (isEdit && revLoading);
 
@@ -1707,6 +1721,35 @@ const RevQuotationFormPage = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Prepared By */}
+              <div className="space-y-2 flex-1 min-w-0" data-error-field="prepared">
+                <Label>Prepared By</Label>
+                <MemoizedSelect
+                  options={preparedByOptions}
+                  value={formData.quotation_prepared_id}
+                  onChange={(option) => {
+                    if (option) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        quotation_prepared_id: option.value.toString(),
+                      }));
+                    } else {
+                      setFormData((prev) => ({
+                        ...prev,
+                        quotation_prepared_id: "",
+                      }));
+                    }
+                  }}
+                  options={preparedByOptions.map((o) => ({
+                    value: o.value,
+                    label: o.label,
+                  }))}
+                  placeholder="Select Prepared By"
+                  className="w-full"
+                  hasError={!!errors.quotation_prepared_id}
+                />
               </div>
             </div>
 

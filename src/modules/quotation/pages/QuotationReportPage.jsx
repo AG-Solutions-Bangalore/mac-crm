@@ -193,7 +193,39 @@ export default function QuotationReportPage() {
     setInstallPct((prev) =>
       prev === 5 ? Number(quotationDetail.quotation_installation) || 5 : prev
     );
-  }, [quotationDetail]);
+
+    // Auto-select Prepared By from the quotation record.
+    // Prefer quotation_prepared_id; else fall back to matching prepared_name /
+    // prepared_email / prepared_mobile against the sales team options.
+    const preparedId = quotationDetail.quotation_prepared_id?.toString();
+    const preparedName = quotationDetail.prepared_name || "";
+    const preparedEmail = quotationDetail.prepared_email || "";
+    const preparedMobile = quotationDetail.prepared_mobile || "";
+
+    let matchId = null;
+    if (preparedId) {
+      matchId = preparedByOptions.find((p) => String(p.id) === String(preparedId))?.id;
+    }
+    if (!matchId && (preparedName || preparedEmail || preparedMobile)) {
+      matchId =
+        preparedByOptions.find((p) => {
+          const pEmail = (p.email || "").toLowerCase();
+          const pPhone = (p.phone || "").replace(/\D/g, "");
+          const pName = (p.name || "").toLowerCase();
+          return (
+            (preparedEmail && pEmail === preparedEmail.toLowerCase()) ||
+            (preparedMobile &&
+              pPhone &&
+              pPhone.slice(-10) === preparedMobile.replace(/\D/g, "").slice(-10)) ||
+            (preparedName && pName === preparedName.toLowerCase())
+          );
+        })?.id;
+    }
+
+    if (matchId && String(preparedById) !== String(matchId)) {
+      setPreparedById(matchId);
+    }
+  }, [quotationDetail, preparedByOptions, preparedById]);
 
   // Buyer lookup — fetch the buyer record so name / mobile / address are available
   const buyerId = quotationDetail?.quotation_buyer_id;

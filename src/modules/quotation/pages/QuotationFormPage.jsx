@@ -25,6 +25,8 @@ import { useActiveCategoriesQuery } from "../../category/hooks/useCategory";
 import { useActiveFloorsQuery, useCreateFloorMutation } from "../../floor/hooks/useFloor";
 import { useActiveAreasQuery, useCreateAreaMutation } from "../../area/hooks/useArea";
 import { useActiveBrandsQuery, useCreateBrandMutation } from "../../brand/hooks/useBrand";
+import { useActiveSalesTeamQuery } from "../../sales-team/hooks/useSalesTeam";
+import { getSalesTeamMemberId } from "../../sales-team/api/salesTeamApi";
 import { useCreateProductMutation } from "../../product/hooks/useProduct";
 import { useQueryClient } from "@tanstack/react-query";
 import MemoizedSelect from "@/components/common/memoized-select";
@@ -221,6 +223,7 @@ const QuotationFormPage = () => {
     quotation_validity_date: "",
     quotation_buyer_id: "",
     quotation_property_id: "",
+    quotation_prepared_id: "",
     quotation_category_id: "", // Comma-separated category IDs
     quotation_service_id: "", // Comma-separated service IDs
     quotation_remarks: "",
@@ -326,6 +329,7 @@ const QuotationFormPage = () => {
   const { data: floorsData, isLoading: floorsLoading, refetch: refetchFloors } = useActiveFloorsQuery();
   const { data: areasData, isLoading: areasLoading, refetch: refetchAreas } = useActiveAreasQuery();
   const { data: brandsData, isLoading: brandsLoading, refetch: refetchBrands } = useActiveBrandsQuery();
+  const { data: activeMembersData, isLoading: salesTeamLoading } = useActiveSalesTeamQuery();
   const queryClient = useQueryClient();
 
   // Fetch products matching selected categories and services
@@ -382,6 +386,7 @@ const QuotationFormPage = () => {
           30,
         quotation_hardware: data.quotation_hardware ?? 60,
         quotation_installation: data.quotation_installation ?? 10,
+        quotation_prepared_id: data.quotation_prepared_id?.toString() || "",
       };
 
       let nextServices = null;
@@ -965,6 +970,7 @@ const QuotationFormPage = () => {
       quotation_booing_confirmation: bookingPct,
       quotation_hardware: hardwarePct,
       quotation_installation: installationPct,
+      quotation_prepared_id: Number(formData.quotation_prepared_id),
       subs: flattenedSubs,
     };
   };
@@ -1579,6 +1585,13 @@ const QuotationFormPage = () => {
   };
 
   const brands = brandsData?.data || [];
+  const activeMembers = activeMembersData?.data || [];
+  const preparedByOptions = activeMembers.map((m) => ({
+    value: getSalesTeamMemberId(m)?.toString(),
+    label: m.name || m.member_name || "Sales Team Member",
+    phone: m.mobile || m.phone || "",
+    email: m.email || "",
+  }));
 
   const isFormLoading =
     buyersLoading ||
@@ -1588,6 +1601,7 @@ const QuotationFormPage = () => {
     floorsLoading ||
     areasLoading ||
     brandsLoading ||
+    salesTeamLoading ||
     (isEdit && isFetching);
 
   if (isFormLoading) return <LoadingBar />;
@@ -1787,6 +1801,25 @@ const QuotationFormPage = () => {
                   }}
                   placeholder="Select Property"
                   hasError={Boolean(errors.quotation_property_id)}
+                />
+              </div>
+
+              {/* Prepared By */}
+              <div className="space-y-2" data-error-field="prepared">
+                <Label className="flex">
+                  Prepared By
+                </Label>
+                <MemoizedSelect
+                  options={preparedByOptions}
+                  value={formData.quotation_prepared_id}
+                  onChange={(option) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      quotation_prepared_id: option ? option.value : "",
+                    }));
+                  }}
+                  placeholder="Select Prepared By"
+                  hasError={Boolean(errors.quotation_prepared_id)}
                 />
               </div>
             </div>
