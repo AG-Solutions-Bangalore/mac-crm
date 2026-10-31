@@ -13,6 +13,7 @@ const ToggleStatus = ({
   inactiveValue = "Inactive",
   method = "PUT",
   onSuccess,
+  onError,
 }) => {
   const [status, setStatus] = useState(initialStatus);
   const { trigger, loading } = useApiMutation();
@@ -43,10 +44,18 @@ const ToggleStatus = ({
           description: `Status changed to ${newStatus}`,
         });
       } else {
-        toast.error(res?.message || "Unable to update status");
+        if (onError) {
+          onError(res);
+        } else {
+          toast.error(res?.message || "Unable to update status");
+        }
       }
     } catch (err) {
-      toast.error(err?.message || "Unable to update status");
+      if (onError) {
+        onError(err);
+      } else {
+        toast.error(err?.message || "Unable to update status");
+      }
     }
   };
 

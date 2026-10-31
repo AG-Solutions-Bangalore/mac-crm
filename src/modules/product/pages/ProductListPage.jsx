@@ -9,6 +9,7 @@ import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
 import ToggleStatus from "@/components/toogle/status-toogle";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -138,6 +139,19 @@ const ProductListPage = () => {
           payloadKey="product_status"
           onSuccess={refetch}
           method="patch"
+          onError={(res) => {
+            console.log("Product toggle response:", res);
+            const msg = res?.message || "";
+            const code = res?.code ?? res?.status;
+            if (code === 422 || /service is inactive/i.test(msg)) {
+              console.warn("Product service inactive:", res);
+              toast.error(
+                "The selected service is inactive. Please activate that service or change to an active service, then try again."
+              );
+            } else {
+              toast.error(msg || "Unable to update status");
+            }
+          }}
         />
       ),
     },
