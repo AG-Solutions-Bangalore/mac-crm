@@ -633,8 +633,14 @@ const RevQuotationFormPage = () => {
       const nextForm = {
         quotation_id: rev.quotation_id?.toString() || parentId,
         quotation_date_rev: rev.quotation_date_rev || "",
-        quotation_buyer_id: rev.quotation_buyer_id?.toString() || "",
-        quotation_property_id: rev.quotation_property_id?.toString() || "",
+        quotation_buyer_id:
+          rev.quotation_buyer_id?.toString() ||
+          parentQuotationData?.data?.quotation_buyer_id?.toString() ||
+          "",
+        quotation_property_id:
+          rev.quotation_property_id?.toString() ||
+          parentQuotationData?.data?.quotation_property_id?.toString() ||
+          "",
         quotation_category_id: rev.quotation_category_id || "",
         quotation_service_id: rev.quotation_service_id || "",
         quotation_remarks: rev.quotation_remarks || "",
