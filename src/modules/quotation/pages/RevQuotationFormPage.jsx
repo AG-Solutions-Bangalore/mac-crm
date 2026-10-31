@@ -28,6 +28,7 @@ import { useActiveAreasQuery, useCreateAreaMutation } from "../../area/hooks/use
 import { useActiveBrandsQuery, useCreateBrandMutation } from "../../brand/hooks/useBrand";
 import { useActiveSalesTeamQuery } from "../../sales-team/hooks/useSalesTeam";
 import { getSalesTeamMemberId } from "../../sales-team/api/salesTeamApi";
+import PreparedByPicker from "../components/report/PreparedByPicker";
 import { useCreateProductMutation } from "../../product/hooks/useProduct";
 import MemoizedSelect from "@/components/common/memoized-select";
 import SelectWithAdd from "@/components/common/select-with-add";
@@ -1423,8 +1424,8 @@ const RevQuotationFormPage = () => {
   const brands = brandsData?.data || [];
   const activeMembers = activeMembersData?.data || [];
   const preparedByOptions = activeMembers.map((m) => ({
-    value: getSalesTeamMemberId(m)?.toString(),
-    label: m.name || m.member_name || "Sales Team Member",
+    id: getSalesTeamMemberId(m)?.toString(),
+    name: m.name || m.member_name || "Sales Team Member",
     phone: m.mobile || m.phone || "",
     email: m.email || "",
   }));
@@ -1726,29 +1727,15 @@ const RevQuotationFormPage = () => {
               {/* Prepared By */}
               <div className="space-y-2 flex-1 min-w-0" data-error-field="prepared">
                 <Label>Prepared By</Label>
-                <MemoizedSelect
-                  options={preparedByOptions}
+                <PreparedByPicker
                   value={formData.quotation_prepared_id}
-                  onChange={(option) => {
-                    if (option) {
-                      setFormData((prev) => ({
-                        ...prev,
-                        quotation_prepared_id: option.value.toString(),
-                      }));
-                    } else {
-                      setFormData((prev) => ({
-                        ...prev,
-                        quotation_prepared_id: "",
-                      }));
-                    }
-                  }}
-                  options={preparedByOptions.map((o) => ({
-                    value: o.value,
-                    label: o.label,
-                  }))}
-                  placeholder="Select Prepared By"
-                  className="w-full"
-                  hasError={!!errors.quotation_prepared_id}
+                  options={preparedByOptions}
+                  onChange={(id) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      quotation_prepared_id: id,
+                    }))
+                  }
                 />
               </div>
             </div>

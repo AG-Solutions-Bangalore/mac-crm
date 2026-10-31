@@ -27,6 +27,7 @@ import { useActiveAreasQuery, useCreateAreaMutation } from "../../area/hooks/use
 import { useActiveBrandsQuery, useCreateBrandMutation } from "../../brand/hooks/useBrand";
 import { useActiveSalesTeamQuery } from "../../sales-team/hooks/useSalesTeam";
 import { getSalesTeamMemberId } from "../../sales-team/api/salesTeamApi";
+import PreparedByPicker from "../components/report/PreparedByPicker";
 import { useCreateProductMutation } from "../../product/hooks/useProduct";
 import { useQueryClient } from "@tanstack/react-query";
 import MemoizedSelect from "@/components/common/memoized-select";
@@ -1587,8 +1588,8 @@ const QuotationFormPage = () => {
   const brands = brandsData?.data || [];
   const activeMembers = activeMembersData?.data || [];
   const preparedByOptions = activeMembers.map((m) => ({
-    value: getSalesTeamMemberId(m)?.toString(),
-    label: m.name || m.member_name || "Sales Team Member",
+    id: getSalesTeamMemberId(m)?.toString(),
+    name: m.name || m.member_name || "Sales Team Member",
     phone: m.mobile || m.phone || "",
     email: m.email || "",
   }));
@@ -1706,9 +1707,9 @@ const QuotationFormPage = () => {
             <h3 className="text-lg font-semibold mb-4 text-slate-800">
               Basic Details
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
               {/* Quotation Date */}
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
                 <Label className="flex">
                   Quotation Date <RedStar />
                 </Label>
@@ -1722,7 +1723,7 @@ const QuotationFormPage = () => {
               </div>
 
               {/* Validity Date */}
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
                 <Label className="flex">
                   Validity Date
                 </Label>
@@ -1735,7 +1736,7 @@ const QuotationFormPage = () => {
               </div>
 
               {/* Buyer Select */}
-              <div className="space-y-2" data-error-field="buyer">
+              <div className="space-y-2 md:col-span-3" data-error-field="buyer">
                 <Label className="flex">
                   Lead <RedStar />
                 </Label>
@@ -1782,7 +1783,7 @@ const QuotationFormPage = () => {
               </div>
 
               {/* Property Select */}
-              <div className="space-y-2" data-error-field="property">
+              <div className="space-y-2 md:col-span-3" data-error-field="property">
                 <Label className="flex">
                   Property <RedStar />
                 </Label>
@@ -1805,21 +1806,19 @@ const QuotationFormPage = () => {
               </div>
 
               {/* Prepared By */}
-              <div className="space-y-2" data-error-field="prepared">
+              <div className="space-y-2 md:col-span-2" data-error-field="prepared">
                 <Label className="flex">
                   Prepared By
                 </Label>
-                <MemoizedSelect
-                  options={preparedByOptions}
+                <PreparedByPicker
                   value={formData.quotation_prepared_id}
-                  onChange={(option) => {
+                  options={preparedByOptions}
+                  onChange={(id) =>
                     setFormData((prev) => ({
                       ...prev,
-                      quotation_prepared_id: option ? option.value : "",
-                    }));
-                  }}
-                  placeholder="Select Prepared By"
-                  hasError={Boolean(errors.quotation_prepared_id)}
+                      quotation_prepared_id: id,
+                    }))
+                  }
                 />
               </div>
             </div>
