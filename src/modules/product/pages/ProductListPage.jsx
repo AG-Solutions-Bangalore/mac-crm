@@ -1,5 +1,5 @@
 import PageHeader from "@/components/common/page-header";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { usePersistedSearch } from "@/hooks/usePersistedSearch";
@@ -18,6 +18,20 @@ import {
 } from "@/components/ui/select";
 import { useProductsQuery } from "../hooks/useProduct";
 import { useActiveServicesQuery } from "../../service/hooks/useService";
+
+const escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Strict whole-word search: "2M" matches "2M" but not "12M".
+const matchesSearch = (record, term) => {
+  if (!term) return true;
+  const tokens = term.trim().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return true;
+  const haystack = `${record.product_module || ""} ${record.product_name || ""}`;
+  return tokens.every((t) => {
+    const re = new RegExp(`(^|\\s)${escapeRegExp(t)}(\\s|$)`, "i");
+    return re.test(haystack);
+  });
+};
 
 const ProductListPage = () => {
   const navigate = useNavigate();
@@ -41,7 +55,14 @@ const ProductListPage = () => {
   );
 
   const paginationData = responseData?.data;
-  const productList = paginationData?.data || [];
+  const backendList = paginationData?.data || [];
+
+  // Backend does a loose LIKE search (e.g. "2M" also returns "12M"), so apply
+  // strict whole-word filtering on the module/product name client-side.
+  const productList = useMemo(
+    () => backendList.filter((r) => matchesSearch(r, searchTerm)),
+    [backendList, searchTerm]
+  );
 
 
   const columns = [
