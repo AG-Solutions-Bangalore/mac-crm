@@ -38,6 +38,9 @@ import { useActiveCategoriesQuery } from "../../category/hooks/useCategory";
 import { useActiveFloorsQuery, useCreateFloorMutation } from "../../floor/hooks/useFloor";
 import { useActiveAreasQuery, useCreateAreaMutation } from "../../area/hooks/useArea";
 import { useActiveBrandsQuery, useCreateBrandMutation } from "../../brand/hooks/useBrand";
+import { useActiveSalesTeamQuery } from "../../sales-team/hooks/useSalesTeam";
+import { getSalesTeamMemberId } from "../../sales-team/api/salesTeamApi";
+import PreparedByPicker from "../../quotation/components/report/PreparedByPicker";
 import { useCreateProductMutation } from "../../product/hooks/useProduct";
 import { useQueryClient } from "@tanstack/react-query";
 import MemoizedSelect from "@/components/common/memoized-select";
@@ -264,6 +267,7 @@ const ProjectFormPage = () => {
     price_validity_date: "",
     project_buyer_id: "",
     project_property_id: "",
+    quotation_prepared_id: "",
     project_category_id: "",
     project_service_id: "",
     project_remarks: "",
@@ -366,6 +370,7 @@ const ProjectFormPage = () => {
   const { data: floorsData, isLoading: floorsLoading, refetch: refetchFloors } = useActiveFloorsQuery();
   const { data: areasData, isLoading: areasLoading, refetch: refetchAreas } = useActiveAreasQuery();
   const { data: brandsData, isLoading: brandsLoading, refetch: refetchBrands } = useActiveBrandsQuery();
+  const { data: activeMembersData, isLoading: salesTeamLoading } = useActiveSalesTeamQuery();
   const queryClient = useQueryClient();
 
   // Fetch products matching selected categories and services
@@ -418,6 +423,8 @@ const ProjectFormPage = () => {
         project_property_id:
           (data.project_property_id ?? data.quotation_property_id ?? data.property_id)?.toString() ||
           "",
+        quotation_prepared_id:
+          data.quotation_prepared_id?.toString() || "",
         project_category_id:
           data.project_category_id || data.quotation_category_id || data.category_id || "",
         project_service_id:
@@ -989,6 +996,7 @@ const ProjectFormPage = () => {
       price_validity_date: validityDate,
       project_buyer_id: buyerId,
       project_property_id: propertyId,
+      quotation_prepared_id: Number(formData.quotation_prepared_id),
       project_category_id: categoryId,
       project_service_id: serviceId,
       project_remarks: remarks,
@@ -1083,6 +1091,13 @@ const ProjectFormPage = () => {
   const floors = floorsData?.data || [];
   const areas = areasData?.data || [];
   const brands = brandsData?.data || [];
+  const activeMembers = activeMembersData?.data || [];
+  const preparedByOptions = activeMembers.map((m) => ({
+    id: getSalesTeamMemberId(m)?.toString(),
+    name: m.name || m.member_name || "Sales Team Member",
+    phone: m.mobile || m.phone || "",
+    email: m.email || "",
+  }));
 
   // Create mode: masters load hone par Services + Categories sab tick ho jaye
   useEffect(() => {
@@ -1686,9 +1701,9 @@ const ProjectFormPage = () => {
             <h3 className="text-lg font-semibold mb-4 text-slate-800 dark:text-slate-200">
               Basic Details
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
               {/* Project Date */}
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
                 <Label className="flex">
                   Project Date <RedStar />
                 </Label>
@@ -1702,7 +1717,7 @@ const ProjectFormPage = () => {
               </div>
 
               {/* Price Validity Date (Project extra field) */}
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
                 <Label className="flex font-medium text-slate-700 dark:text-slate-300">
                   Price Validity Date
                 </Label>
@@ -1715,7 +1730,7 @@ const ProjectFormPage = () => {
               </div>
 
               {/* Buyer Select */}
-              <div className="space-y-2" data-error-field="buyer">
+              <div className="space-y-2 md:col-span-3" data-error-field="buyer">
                 <Label className="flex">
                   Lead <RedStar />
                 </Label>
@@ -1758,7 +1773,7 @@ const ProjectFormPage = () => {
               </div>
 
               {/* Property Select */}
-              <div className="space-y-2" data-error-field="property">
+              <div className="space-y-2 md:col-span-3" data-error-field="property">
                 <Label className="flex">
                   Property <RedStar />
                 </Label>
@@ -1777,6 +1792,23 @@ const ProjectFormPage = () => {
                   }}
                   placeholder="Select Property"
                   hasError={Boolean(errors.project_property_id)}
+                />
+              </div>
+
+              {/* Prepared By */}
+              <div className="space-y-2 md:col-span-2" data-error-field="prepared">
+                <Label className="flex">
+                  Prepared By
+                </Label>
+                <PreparedByPicker
+                  value={formData.quotation_prepared_id}
+                  options={preparedByOptions}
+                  onChange={(id) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      quotation_prepared_id: id,
+                    }))
+                  }
                 />
               </div>
             </div>
@@ -1960,7 +1992,7 @@ const ProjectFormPage = () => {
                 </p>
                 {grandTotal > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[0].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[0].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -2001,7 +2033,7 @@ const ProjectFormPage = () => {
                 </p>
                 {grandTotal > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[1].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[1].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -2042,7 +2074,7 @@ const ProjectFormPage = () => {
                 </p>
                 {grandTotal > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[2].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[2].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -2406,7 +2438,7 @@ const ProjectFormPage = () => {
                                         {(
                                           (Number(prod.price) || 0) *
                                           (Number(prod.quantity) || 0)
-                                        ).toLocaleString()}
+                                        ).toLocaleString("en-IN")}
                                       </div>
 
                                       <div className="self-end sm:self-center">
@@ -2462,7 +2494,7 @@ const ProjectFormPage = () => {
                   Grand Total
                 </span>
                 <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">
-                  ₹{grandTotal.toLocaleString()}
+                  ₹{grandTotal.toLocaleString("en-IN")}
                 </p>
               </div>
             </div>

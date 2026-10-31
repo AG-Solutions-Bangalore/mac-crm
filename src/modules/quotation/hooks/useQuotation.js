@@ -78,6 +78,18 @@ export function useUpdateQuotationFinishWorkDateMutation() {
   });
 }
 
+export function useUpdateQuotationValidateDateMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, validityDate }) =>
+      quotationApi.updateQuotationValidateDate(id, validityDate),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["quotations"] });
+      queryClient.invalidateQueries({ queryKey: ["quotation", variables.id] });
+    },
+  });
+}
+
 export function useDeleteQuotationSubMutation() {
   const queryClient = useQueryClient();
   return useMutation({

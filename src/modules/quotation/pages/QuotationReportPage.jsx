@@ -38,6 +38,7 @@ const headers = [
   "Floor",
   "Area",
   "Product",
+  "Module",
   "Quantity",
   "Total Price",
   "Finish",
@@ -184,6 +185,48 @@ export default function QuotationReportPage() {
       ? revData?.data
       : parentData?.data;
 
+  useEffect(() => {
+    if (!quotationDetail) return;
+    setConsultancyPct((prev) =>
+      prev === 5 ? Number(quotationDetail.quotation_booing_confirmation) || 5 : prev
+    );
+    setInstallPct((prev) =>
+      prev === 5 ? Number(quotationDetail.quotation_installation) || 5 : prev
+    );
+
+    // Auto-select Prepared By from the quotation record.
+    // Prefer quotation_prepared_id; else fall back to matching prepared_name /
+    // prepared_email / prepared_mobile against the sales team options.
+    const preparedId = quotationDetail.quotation_prepared_id?.toString();
+    const preparedName = quotationDetail.prepared_name || "";
+    const preparedEmail = quotationDetail.prepared_email || "";
+    const preparedMobile = quotationDetail.prepared_mobile || "";
+
+    let matchId = null;
+    if (preparedId) {
+      matchId = preparedByOptions.find((p) => String(p.id) === String(preparedId))?.id;
+    }
+    if (!matchId && (preparedName || preparedEmail || preparedMobile)) {
+      matchId =
+        preparedByOptions.find((p) => {
+          const pEmail = (p.email || "").toLowerCase();
+          const pPhone = (p.phone || "").replace(/\D/g, "");
+          const pName = (p.name || "").toLowerCase();
+          return (
+            (preparedEmail && pEmail === preparedEmail.toLowerCase()) ||
+            (preparedMobile &&
+              pPhone &&
+              pPhone.slice(-10) === preparedMobile.replace(/\D/g, "").slice(-10)) ||
+            (preparedName && pName === preparedName.toLowerCase())
+          );
+        })?.id;
+    }
+
+    if (matchId && String(preparedById) !== String(matchId)) {
+      setPreparedById(matchId);
+    }
+  }, [quotationDetail, preparedByOptions, preparedById]);
+
   // Buyer lookup — fetch the buyer record so name / mobile / address are available
   const buyerId = quotationDetail?.quotation_buyer_id;
   const needsBuyerFetch = Boolean(buyerId);
@@ -291,8 +334,17 @@ export default function QuotationReportPage() {
     const appName = getServiceName(subVal(sub, "service_id"));
     const floorName = getFloorName(subVal(sub, "floor_id"));
     const areaName = getAreaName(subVal(sub, "area_id"));
+    const moduleName =
+      subVal(sub, "product_module") ||
+      sub.product_module ||
+      prodDetails?.product_module ||
+      "";
+    const baseProductName =
+      prodDetails?.product_name || sub.product_name || "Product ID: " + subVal(sub, "product_id");
     const productName =
-      prodDetails?.product_name || "Product ID: " + subVal(sub, "product_id");
+      moduleName && !baseProductName.startsWith(`${moduleName} - `)
+        ? `${moduleName} - ${baseProductName}`
+        : baseProductName;
 
     // Resolve category/finish selected under categories
     const categoryObj = categories.find(
@@ -315,6 +367,7 @@ export default function QuotationReportPage() {
       floor: floorName,
       area: areaName,
       product: productName,
+      module: sub.product_module || subVal(sub, "product_module") || "-",
       quantity: Number(subVal(sub, "quantity")) || 0,
       price: Number(subVal(sub, "price")) || 0,
       totalPrice: Number(subVal(sub, "amount")) || 0,
@@ -408,7 +461,9 @@ export default function QuotationReportPage() {
     "-";
   const quotationNo = quotationDetail.quotation_no || quotationDetail.id || "2894";
   const quotationDateRaw =
-    quotationDetail.quotation_date || quotationDetail.created_at;
+    quotationDetail.quotation_date_rev ||
+    quotationDetail.quotation_date ||
+    quotationDetail.created_at;
   const quotationDate = quotationDateRaw
     ? new Date(quotationDateRaw).toLocaleDateString("en-US", {
       month: "long",
@@ -721,24 +776,17 @@ export default function QuotationReportPage() {
         `}
       </style>
 
-      {/* Header Actions Component (navigation + view + charges % + prepared-by + export/print) */}
+      {/* Header Actions Component (navigation + view + export/print) */}
       <ReportHeaderActions
         quotationNo={quotationNo}
         docLabel={docLabel}
         viewMode={viewMode}
         setViewMode={setViewMode}
         onNavigateBack={() => navigate(-1)}
-        consultancyPct={consultancyPct}
-        onConsultancyPctChange={setConsultancyPct}
-        installPct={installPct}
-        onInstallPctChange={setInstallPct}
         coverPreviewOverlay={coverPreviewOverlay}
         onCoverPreviewOverlayChange={setCoverPreviewOverlay}
         coverPdfOverlay={coverPdfOverlay}
         onCoverPdfOverlayChange={setCoverPdfOverlay}
-        preparedById={preparedById}
-        onPreparedByChange={setPreparedById}
-        preparedByOptions={preparedByOptions}
         onExportExcel={handleExportExcel}
         onPrint={handlePrint}
         onPrintNoPrice={handlePrintNoPrice}

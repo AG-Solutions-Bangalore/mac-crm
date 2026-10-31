@@ -143,6 +143,7 @@ const ProductFormPage = () => {
                 <div className="relative">
                   <Wrench className="absolute left-3 top-2.5 h-4 w-4 text-gray-500 z-10" />
                   <MemoizedSelect
+                    key={`service-${formData.service_id}`}
                     options={activeServices.map((service) => ({
                       value: service.id?.toString(),
                       label: service.service_name,
@@ -171,6 +172,7 @@ const ProductFormPage = () => {
                 <div className="relative">
                   <Tag className="absolute left-3 top-2.5 h-4 w-4 text-gray-500 z-10" />
                   <MemoizedSelect
+                    key={`category-${formData.category_id}`}
                     options={activeCategories.map((category) => ({
                       value: category.id?.toString(),
                       label: category.category_name,
@@ -199,6 +201,7 @@ const ProductFormPage = () => {
                 <div className="relative">
                   <Award className="absolute left-3 top-2.5 h-4 w-4 text-gray-500 z-10" />
                   <MemoizedSelect
+                    key={`brand-${formData.brand_id}`}
                     options={activeBrands.map((brand) => ({
                       value: brand.id?.toString(),
                       label: brand.brand_name,

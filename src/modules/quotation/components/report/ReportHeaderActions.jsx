@@ -8,13 +8,8 @@ import {
   FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import PreparedByPicker from "./PreparedByPicker";
 
-const PCT_PRESETS = [5, 7, 10, 15];
-const OVERLAY_PRESETS = [0, 25, 50, 60, 75, 100];
-
-// Top bar: navigation + view switcher + Consultancy / Installation % inputs +
-// Prepared-by selector + Export Excel / Print-Save PDF actions.
+// Top bar: navigation + view switcher + Export Excel / Print-Save PDF actions.
 // This bar is `quotation-no-print` so it never appears in print output.
 export default function ReportHeaderActions({
   quotationNo,
@@ -22,52 +17,10 @@ export default function ReportHeaderActions({
   viewMode,
   setViewMode,
   onNavigateBack,
-  consultancyPct = 5,
-  onConsultancyPctChange,
-  installPct = 5,
-  onInstallPctChange,
-  coverPreviewOverlay = 100,
-  onCoverPreviewOverlayChange,
-  coverPdfOverlay = 100,
-  onCoverPdfOverlayChange,
-  preparedById,
-  onPreparedByChange,
-  preparedByOptions = [],
   onExportExcel,
   onPrint,
   onPrintNoPrice,
 }) {
-  const renderPctInput = (label, value, onChange, listId, title, presets = PCT_PRESETS) => (
-    <label
-      className="flex h-[46px] shrink-0 items-center gap-1 rounded-lg border border-border bg-background px-2.5 text-[11px] font-semibold focus-within:border-sky-400"
-      title={title}
-    >
-      <span className="whitespace-nowrap text-muted-foreground">
-        {label}
-      </span>
-      <input
-        type="number"
-        min={0}
-        max={100}
-        step={0.5}
-        list={listId}
-        value={value}
-        onChange={(e) => {
-          const v = parseFloat(e.target.value);
-          onChange?.(Number.isNaN(v) ? 0 : Math.min(100, Math.max(0, v)));
-        }}
-        onFocus={(e) => e.target.select()}
-        onWheel={(e) => e.currentTarget.blur()}
-        className="w-10 bg-transparent text-center text-xs font-bold text-foreground outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-      />
-      <datalist id={listId}>
-        {presets.map((p) => (
-          <option key={p} value={p} />
-        ))}
-      </datalist>
-    </label>
-  );
-
   return (
     <div className="quotation-no-print flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-card text-card-foreground border border-border p-3 md:p-4 rounded-xl shadow-md sticky top-0 z-auto">
       {/* Title & Back Button */}
@@ -87,8 +40,8 @@ export default function ReportHeaderActions({
         </div>
       </div>
 
-      {/* View switcher + charge % + prepared-by + export actions */}
-      <div className="flex flex-wrap items-center gap-1.5">
+      {/* View switcher + Export Excel / Print-Save PDF actions */}
+      <div className="flex flex-wrap items-center gap-1.5 md:flex-nowrap">
         {/* Tab View Switcher */}
         <div className="bg-muted p-1 rounded-lg border border-border flex items-center mr-1">
           <Button
@@ -115,50 +68,7 @@ export default function ReportHeaderActions({
           </Button>
         </div>
 
-        {/* Consultancy & Design % — presets 5/7/10/15 or any custom value */}
-        {renderPctInput(
-          "Consultancy %",
-          consultancyPct,
-          onConsultancyPctChange,
-          "makc-consultancy-presets",
-          "Consultancy & Design charge % of grand total (5 / 7 / 10 / 15 or custom)"
-        )}
-
-        {/* Installation % — presets 5/7/10/15 or any custom value */}
-        {renderPctInput(
-          "Install %",
-          installPct,
-          onInstallPctChange,
-          "makc-install-presets",
-          "Installation charge % of grand total (5 / 7 / 10 / 15 or custom)"
-        )}
-
-        {/* Cover photo veil strength — preview and PDF/print tune independently */}
-        {renderPctInput(
-          "Cover Preview %",
-          coverPreviewOverlay,
-          onCoverPreviewOverlayChange,
-          "makc-cover-preview-presets",
-          "White veil strength over the cover photo in the on-screen preview (0 = none, 100 = opaque)",
-          OVERLAY_PRESETS
-        )}
-
-        {renderPctInput(
-          "Cover PDF %",
-          coverPdfOverlay,
-          onCoverPdfOverlayChange,
-          "makc-cover-pdf-presets",
-          "White veil strength over the cover photo in the printed / saved PDF (0 = none, 100 = opaque)",
-          OVERLAY_PRESETS
-        )}
-
-        {/* Prepared-by selector — searchable, quick add/edit, manage link */}
-        <PreparedByPicker
-          value={preparedById}
-          options={preparedByOptions}
-          onChange={onPreparedByChange}
-        />
-
+        {/* Export Excel */}
         <Button
           variant="outline"
           size="sm"

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
+import { usePersistedSearch } from "@/hooks/usePersistedSearch";
 import { Edit, FileText, CalendarDays, FolderKanban } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
@@ -28,6 +29,7 @@ import {
   useQuotationsQuery,
   useUpdateQuotationFinishWorkDateMutation,
   useUpdateQuotationStatusMutation,
+  useUpdateQuotationValidateDateMutation,
 } from "../hooks/useQuotation";
 import { quotationApi } from "../api/quotationApi";
 import { projectApi } from "../../project/api/projectApi";
@@ -37,7 +39,7 @@ import moment from "moment";
 const QuotationListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = usePersistedPage();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = usePersistedSearch();
   const [statusFilter, setStatusFilter] = useState("all");
   // Estimates-only view: converted (Project) quotes hidden by default (client-side,
   // backend has no hide-converted filter yet). Specific status selection overrides it.
@@ -45,6 +47,7 @@ const QuotationListPage = () => {
   const [finishDateDialogOpen, setFinishDateDialogOpen] = useState(false);
   const [selectedQuotation, setSelectedQuotation] = useState(null);
   const [finishDate, setFinishDate] = useState("");
+  const [dialogMode, setDialogMode] = useState("finish");
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [convertingQuotation, setConvertingQuotation] = useState(null);
 
@@ -52,6 +55,7 @@ const QuotationListPage = () => {
   const { data: responseData, isLoading, isFetching, isError, refetch } = useQuotationsQuery(page, searchTerm, statusFilter);
   const updateFinishWorkDateMutation = useUpdateQuotationFinishWorkDateMutation();
   const updateStatusMutation = useUpdateQuotationStatusMutation();
+  const updateValidateDateMutation = useUpdateQuotationValidateDateMutation();
 
   const handleOpenFinishDateDialog = (quotation) => {
     setSelectedQuotation(quotation);
@@ -59,19 +63,36 @@ const QuotationListPage = () => {
     setFinishDateDialogOpen(true);
   };
 
+  const handleOpenValidateDateDialog = (quotation) => {
+    setSelectedQuotation(quotation);
+    setFinishDate(quotation.quotation_validity_date || "");
+    setFinishDateDialogOpen(true);
+    setDialogMode("validate");
+  };
+
   const handleSaveFinishDate = async () => {
     if (!selectedQuotation) return;
     try {
-      await updateFinishWorkDateMutation.mutateAsync({
-        id: selectedQuotation.id,
-        finishWorkDate: finishDate,
-      });
+      if (dialogMode === "validate") {
+        await updateValidateDateMutation.mutateAsync({
+          id: selectedQuotation.id,
+          validityDate: finishDate,
+        });
+        toast.success("Validity date updated successfully");
+      } else {
+        await updateFinishWorkDateMutation.mutateAsync({
+          id: selectedQuotation.id,
+          finishWorkDate: finishDate,
+        });
+        toast.success("Finish work date updated successfully");
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to update date");
+    } finally {
       setFinishDateDialogOpen(false);
       setSelectedQuotation(null);
-      toast.success("Finish work date updated successfully");
+      setDialogMode("finish");
       refetch();
-    } catch (error) {
-      toast.error(error.message || "Failed to update finish work date");
     }
   };
 
@@ -181,8 +202,17 @@ const QuotationListPage = () => {
         )
       : rawQuotationList;
 
+  quotationList.sort(
+    (a, b) =>
+      new Date(b.created_at || b.created_at_rev || 0).getTime() -
+      new Date(a.created_at || a.created_at_rev || 0).getTime()
+  );
+
   const formatDate = (value) =>
     value ? moment(value).format("DD-MM-YYYY") : "-";
+
+  const getQuotationDisplayDate = (q) =>
+    q.quotation_date_rev || q.quotation_date;
 
   const renderStatus = (q) => {
     const status = q.quotation_status;
@@ -210,6 +240,8 @@ const QuotationListPage = () => {
   const renderActions = (q, labeled = false) => {
     const canFinishDate =
       q.quotation_status === "Approved" && !q.quotation_finish_work_date;
+    const canUpdateValidateDate =
+      q.quotation_status === "Approved";
     const showConvertButton = q.quotation_status === "Approved";
     const actions = [
       {
@@ -234,6 +266,18 @@ const QuotationListPage = () => {
               onClick: () => handleOpenFinishDateDialog(q),
               extra:
                 "text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30",
+            },
+          ]
+        : []),
+      ...(canUpdateValidateDate
+        ? [
+            {
+              label: "Validity Date",
+              title: "Update Validity Date",
+              icon: CalendarDays,
+              onClick: () => handleOpenValidateDateDialog(q),
+              extra:
+                "text-sky-600 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/30",
             },
           ]
         : []),
@@ -305,21 +349,17 @@ const QuotationListPage = () => {
 
       <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
         <div>
+          <p className="text-muted-foreground">Customer</p>
+          <p className="font-medium">{q.buyer_name || "—"}</p>
+        </div>
+        <div>
           <p className="text-muted-foreground">Date</p>
-          <p className="font-medium">{formatDate(q.quotation_date)}</p>
+          <p className="font-medium">{formatDate(getQuotationDisplayDate(q))}</p>
         </div>
         <div>
           <p className="text-muted-foreground">Validity</p>
           <p className="font-medium">
             {formatDate(q.quotation_validity_date)}
-          </p>
-        </div>
-        <div>
-          <p className="text-muted-foreground">Amount</p>
-          <p className="font-semibold text-emerald-600">
-            {q.quotation_amount
-              ? `₹${Number(q.quotation_amount).toLocaleString()}`
-              : "-"}
           </p>
         </div>
         <div>
@@ -369,12 +409,18 @@ const QuotationListPage = () => {
       cell: ({ row }) => (page - 1) * 50 + row.index + 1,
     },
     {
+      header: "Lead",
+      accessorKey: "buyer_name",
+      size: 110,
+      cell: ({ row }) => truncateCell(row.original.buyer_name),
+    },
+    {
       header: "Date",
       accessorKey: "quotation_date",
       size: 104,
       cell: ({ row }) => (
         <span className="whitespace-nowrap">
-          {formatDate(row.original.quotation_date)}
+          {formatDate(getQuotationDisplayDate(row.original))}
         </span>
       ),
     },
@@ -425,24 +471,6 @@ const QuotationListPage = () => {
       ),
     },
     {
-      header: "Lead",
-      accessorKey: "buyer_name",
-      size: 90,
-      cell: ({ row }) => truncateCell(row.original.buyer_name),
-    },
-    {
-      header: "Property",
-      accessorKey: "property_name",
-      size: 100,
-      cell: ({ row }) => truncateCell(row.original.property_name),
-    },
-    {
-      header: "Categories",
-      accessorKey: "quotation_category_name",
-      size: 120,
-      cell: ({ row }) => truncateCell(row.original.quotation_category_name),
-    },
-    {
       header: "Services",
       accessorKey: "quotation_service_name",
       size: 210,
@@ -456,7 +484,7 @@ const QuotationListPage = () => {
         const val = row.original.quotation_amount;
         return (
           <span className="whitespace-nowrap text-[11px] tabular-nums">
-            {val ? `₹${Number(val).toLocaleString()}` : "-"}
+            {val ? `₹${Number(val).toLocaleString("en-IN")}` : "-"}
           </span>
         );
       },
@@ -546,11 +574,19 @@ const QuotationListPage = () => {
       <Dialog open={finishDateDialogOpen} onOpenChange={setFinishDateDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Update Finish Work Date</DialogTitle>
+            <DialogTitle>
+              {dialogMode === "validate"
+                ? "Update Validity Date"
+                : "Update Finish Work Date"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Finish Work Date</Label>
+              <Label>
+                {dialogMode === "validate"
+                  ? "Validity Date"
+                  : "Finish Work Date"}
+              </Label>
               <Input
                 type="date"
                 value={finishDate}
@@ -600,7 +636,7 @@ const QuotationListPage = () => {
                   <div className="flex justify-between border-t pt-1 dark:border-slate-800">
                     <span className="text-slate-500">Amount:</span>
                     <span className="font-semibold text-emerald-600">
-                      ₹{Number(convertingQuotation.quotation_amount).toLocaleString()}
+                      ₹{Number(convertingQuotation.quotation_amount).toLocaleString("en-IN")}
                     </span>
                   </div>
                 )}

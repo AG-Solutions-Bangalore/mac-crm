@@ -55,6 +55,7 @@ export const quotationApi = {
     if (status && status !== "all") {
       url += `&filter=${encodeURIComponent(status)}`;
     }
+    url += `&sort=id&order=desc`;
     const response = await apiClient.get(url);
     return response.data;
   },
@@ -120,6 +121,12 @@ export const quotationApi = {
   updateQuotationFinishWorkDate: async (id, finishWorkDate) => {
     const response = await apiClient.put(`/update-quotation-finish-work-date/${id}`, {
       quotation_finish_work_date: finishWorkDate,
+    });
+    return response.data;
+  },
+  updateQuotationValidateDate: async (id, validityDate) => {
+    const response = await apiClient.put(`/update-quotation-validate-date/${id}`, {
+      quotation_validity_date: validityDate,
     });
     return response.data;
   },

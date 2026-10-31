@@ -2,6 +2,7 @@ import PageHeader from "@/components/common/page-header";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
+import { usePersistedSearch } from "@/hooks/usePersistedSearch";
 import { Edit, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +21,7 @@ import { useFloorsQuery } from "../hooks/useFloor";
 const FloorListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = usePersistedPage();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = usePersistedSearch();
   const [statusFilter, setStatusFilter] = useState("all");
 
   const { data: responseData, isLoading, isFetching, isError, refetch } = useFloorsQuery(

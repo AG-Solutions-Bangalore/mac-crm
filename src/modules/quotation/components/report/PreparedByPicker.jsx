@@ -161,12 +161,9 @@ export default function PreparedByPicker({
           <button
             type="button"
             title="Prepared by — search, add or edit members"
-            className="flex h-[46px] shrink-0 items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-[11px] font-semibold outline-none transition-colors hover:border-sky-400 focus:border-sky-400"
+            className="w-full flex h-[46px] shrink-0 items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-[11px] font-semibold outline-none transition-colors hover:border-sky-400 focus:border-sky-400"
           >
-            <span className="whitespace-nowrap text-muted-foreground">
-              Prepared By
-            </span>
-            <span className="max-w-[170px] truncate text-xs font-bold text-foreground">
+            <span className="max-w-[220px] truncate text-xs font-bold text-foreground">
               {selected ? `${selected.name} · ${selected.phone}` : "Select member"}
             </span>
             <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />

@@ -1,13 +1,15 @@
 import PageHeader from "@/components/common/page-header";
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
+import { usePersistedSearch } from "@/hooks/usePersistedSearch";
 import { Edit , Package } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
 import ToggleStatus from "@/components/toogle/status-toogle";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   Select,
   SelectContent,
@@ -18,10 +20,35 @@ import {
 import { useProductsQuery } from "../hooks/useProduct";
 import { useActiveServicesQuery } from "../../service/hooks/useService";
 
+const escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Strict whole-word search: "2M" matches "2M" but not "12M".
+// Uses \b word boundaries so punctuation (e.g. "Socket,") still matches.
+// Search scope: Module + Product Name + Service + Category + Brand.
+const matchesSearch = (record, term) => {
+  if (!term) return true;
+  const tokens = term.trim().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return true;
+  const haystack = [
+    record.product_module,
+    record.product_name,
+    record.service_name,
+    record.category_name,
+    record.brand_name,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  return tokens.every((t) => {
+    const re = new RegExp(`\\b${escapeRegExp(t)}\\b`, "i");
+    return re.test(haystack);
+  });
+};
+
 const ProductListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = usePersistedPage();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = usePersistedSearch();
   const [statusFilter, setStatusFilter] = useState("all");
   const [serviceFilter, setServiceFilter] = useState("all");
 
@@ -30,8 +57,12 @@ const ProductListPage = () => {
   const selectedService = services.find(
     (service) => service.id?.toString() === serviceFilter
   );
+  // Combine typed text + selected service so the backend loose pre-filter gets
+  // both tokens; client-side strict filter then narrows precisely.
   const effectiveSearch =
-    serviceFilter === "all" ? searchTerm : selectedService?.service_name || "";
+    serviceFilter === "all"
+      ? searchTerm
+      : `${searchTerm} ${selectedService?.service_name || ""}`.trim();
 
   const { data: responseData, isLoading, isFetching, isError, refetch } = useProductsQuery(
     page,
@@ -40,7 +71,20 @@ const ProductListPage = () => {
   );
 
   const paginationData = responseData?.data;
-  const productList = paginationData?.data || [];
+  const backendList = paginationData?.data || [];
+
+  // Backend does a loose LIKE search (e.g. "2M" also returns "12M"), so apply
+  // strict whole-word filtering client-side, plus the service filter.
+  const productList = useMemo(
+    () =>
+      backendList.filter(
+        (r) =>
+          matchesSearch(r, searchTerm) &&
+          (serviceFilter === "all" ||
+            r.service_name?.toString() === serviceFilter)
+      ),
+    [backendList, searchTerm, serviceFilter]
+  );
 
 
   const columns = [
@@ -74,7 +118,7 @@ const ProductListPage = () => {
       accessorKey: "product_price",
       cell: ({ row }) => {
         const val = row.original.product_price;
-        return val ? `₹${Number(val).toLocaleString()}` : "-";
+        return val ? `₹${Number(val).toLocaleString("en-IN")}` : "-";
       },
     },
     {
@@ -95,6 +139,19 @@ const ProductListPage = () => {
           payloadKey="product_status"
           onSuccess={refetch}
           method="patch"
+          onError={(res) => {
+            console.log("Product toggle response:", res);
+            const msg = res?.message || "";
+            const code = res?.code ?? res?.status;
+            if (code === 422 || /service is inactive/i.test(msg)) {
+              console.warn("Product service inactive:", res);
+              toast.error(
+                "The selected service is inactive. Please activate that service or change to an active service, then try again."
+              );
+            } else {
+              toast.error(msg || "Unable to update status");
+            }
+          }}
         />
       ),
     },

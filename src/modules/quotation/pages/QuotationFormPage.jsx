@@ -25,6 +25,9 @@ import { useActiveCategoriesQuery } from "../../category/hooks/useCategory";
 import { useActiveFloorsQuery, useCreateFloorMutation } from "../../floor/hooks/useFloor";
 import { useActiveAreasQuery, useCreateAreaMutation } from "../../area/hooks/useArea";
 import { useActiveBrandsQuery, useCreateBrandMutation } from "../../brand/hooks/useBrand";
+import { useActiveSalesTeamQuery } from "../../sales-team/hooks/useSalesTeam";
+import { getSalesTeamMemberId } from "../../sales-team/api/salesTeamApi";
+import PreparedByPicker from "../components/report/PreparedByPicker";
 import { useCreateProductMutation } from "../../product/hooks/useProduct";
 import { useQueryClient } from "@tanstack/react-query";
 import MemoizedSelect from "@/components/common/memoized-select";
@@ -221,6 +224,7 @@ const QuotationFormPage = () => {
     quotation_validity_date: "",
     quotation_buyer_id: "",
     quotation_property_id: "",
+    quotation_prepared_id: "",
     quotation_category_id: "", // Comma-separated category IDs
     quotation_service_id: "", // Comma-separated service IDs
     quotation_remarks: "",
@@ -326,6 +330,7 @@ const QuotationFormPage = () => {
   const { data: floorsData, isLoading: floorsLoading, refetch: refetchFloors } = useActiveFloorsQuery();
   const { data: areasData, isLoading: areasLoading, refetch: refetchAreas } = useActiveAreasQuery();
   const { data: brandsData, isLoading: brandsLoading, refetch: refetchBrands } = useActiveBrandsQuery();
+  const { data: activeMembersData, isLoading: salesTeamLoading } = useActiveSalesTeamQuery();
   const queryClient = useQueryClient();
 
   // Fetch products matching selected categories and services
@@ -382,6 +387,7 @@ const QuotationFormPage = () => {
           30,
         quotation_hardware: data.quotation_hardware ?? 60,
         quotation_installation: data.quotation_installation ?? 10,
+        quotation_prepared_id: data.quotation_prepared_id?.toString() || "",
       };
 
       let nextServices = null;
@@ -965,6 +971,7 @@ const QuotationFormPage = () => {
       quotation_booing_confirmation: bookingPct,
       quotation_hardware: hardwarePct,
       quotation_installation: installationPct,
+      quotation_prepared_id: Number(formData.quotation_prepared_id),
       subs: flattenedSubs,
     };
   };
@@ -1579,6 +1586,13 @@ const QuotationFormPage = () => {
   };
 
   const brands = brandsData?.data || [];
+  const activeMembers = activeMembersData?.data || [];
+  const preparedByOptions = activeMembers.map((m) => ({
+    id: getSalesTeamMemberId(m)?.toString(),
+    name: m.name || m.member_name || "Sales Team Member",
+    phone: m.mobile || m.phone || "",
+    email: m.email || "",
+  }));
 
   const isFormLoading =
     buyersLoading ||
@@ -1588,6 +1602,7 @@ const QuotationFormPage = () => {
     floorsLoading ||
     areasLoading ||
     brandsLoading ||
+    salesTeamLoading ||
     (isEdit && isFetching);
 
   if (isFormLoading) return <LoadingBar />;
@@ -1692,9 +1707,9 @@ const QuotationFormPage = () => {
             <h3 className="text-lg font-semibold mb-4 text-slate-800">
               Basic Details
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
               {/* Quotation Date */}
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
                 <Label className="flex">
                   Quotation Date <RedStar />
                 </Label>
@@ -1708,7 +1723,7 @@ const QuotationFormPage = () => {
               </div>
 
               {/* Validity Date */}
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-2">
                 <Label className="flex">
                   Validity Date
                 </Label>
@@ -1721,7 +1736,7 @@ const QuotationFormPage = () => {
               </div>
 
               {/* Buyer Select */}
-              <div className="space-y-2" data-error-field="buyer">
+              <div className="space-y-2 md:col-span-3" data-error-field="buyer">
                 <Label className="flex">
                   Lead <RedStar />
                 </Label>
@@ -1768,7 +1783,7 @@ const QuotationFormPage = () => {
               </div>
 
               {/* Property Select */}
-              <div className="space-y-2" data-error-field="property">
+              <div className="space-y-2 md:col-span-3" data-error-field="property">
                 <Label className="flex">
                   Property <RedStar />
                 </Label>
@@ -1787,6 +1802,23 @@ const QuotationFormPage = () => {
                   }}
                   placeholder="Select Property"
                   hasError={Boolean(errors.quotation_property_id)}
+                />
+              </div>
+
+              {/* Prepared By */}
+              <div className="space-y-2 md:col-span-2" data-error-field="prepared">
+                <Label className="flex">
+                  Prepared By
+                </Label>
+                <PreparedByPicker
+                  value={formData.quotation_prepared_id}
+                  options={preparedByOptions}
+                  onChange={(id) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      quotation_prepared_id: id,
+                    }))
+                  }
                 />
               </div>
             </div>
@@ -1985,7 +2017,7 @@ const QuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[0].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[0].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -2026,7 +2058,7 @@ const QuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[1].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[1].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -2067,7 +2099,7 @@ const QuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[2].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[2].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -2452,7 +2484,7 @@ const QuotationFormPage = () => {
                                               Amount:
                                             </span>
                                             <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                                              ₹{rowAmount.toLocaleString()}
+                                              ₹{rowAmount.toLocaleString("en-IN")}
                                             </span>
                                           </div>
                                           <Button
@@ -2559,7 +2591,7 @@ const QuotationFormPage = () => {
                   <div className="text-base text-slate-800 dark:text-slate-200">
                     Grand Total Amount:{" "}
                     <span className="text-green-600 dark:text-green-400">
-                      ₹{totalAmount.toLocaleString()}
+                      ₹{totalAmount.toLocaleString("en-IN")}
                     </span>
                   </div>
                 </div>

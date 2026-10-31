@@ -2,6 +2,7 @@ import PageHeader from "@/components/common/page-header";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
+import { usePersistedSearch } from "@/hooks/usePersistedSearch";
 import { Edit, Contact } from "lucide-react";
 import { toast } from "sonner";
 import DataTable from "@/components/common/data-table";
@@ -24,7 +25,7 @@ const getMembers = (responseData) => {
 const SalesTeamListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = usePersistedPage();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = usePersistedSearch();
 
   const {
     data: responseData,

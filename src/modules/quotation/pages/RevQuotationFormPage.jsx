@@ -26,6 +26,9 @@ import { useActiveCategoriesQuery } from "../../category/hooks/useCategory";
 import { useActiveFloorsQuery, useCreateFloorMutation } from "../../floor/hooks/useFloor";
 import { useActiveAreasQuery, useCreateAreaMutation } from "../../area/hooks/useArea";
 import { useActiveBrandsQuery, useCreateBrandMutation } from "../../brand/hooks/useBrand";
+import { useActiveSalesTeamQuery } from "../../sales-team/hooks/useSalesTeam";
+import { getSalesTeamMemberId } from "../../sales-team/api/salesTeamApi";
+import PreparedByPicker from "../components/report/PreparedByPicker";
 import { useCreateProductMutation } from "../../product/hooks/useProduct";
 import MemoizedSelect from "@/components/common/memoized-select";
 import SelectWithAdd from "@/components/common/select-with-add";
@@ -232,6 +235,7 @@ const RevQuotationFormPage = () => {
     quotation_date_rev: new Date().toISOString().split("T")[0],
     quotation_buyer_id: "",
     quotation_property_id: "",
+    quotation_prepared_id: "",
     quotation_category_id: "",
     quotation_service_id: "",
     quotation_remarks: "",
@@ -317,6 +321,7 @@ const RevQuotationFormPage = () => {
   const { data: floorsData, isLoading: floorsLoading, refetch: refetchFloors } = useActiveFloorsQuery();
   const { data: areasData, isLoading: areasLoading, refetch: refetchAreas } = useActiveAreasQuery();
   const { data: brandsData, isLoading: brandsLoading, refetch: refetchBrands } = useActiveBrandsQuery();
+  const { data: activeMembersData, isLoading: salesTeamLoading } = useActiveSalesTeamQuery();
 
   // Fetch parent quotation for prefilling revised quote details on CREATE mode, and checking finish work date
   const { data: parentQuotationData, isLoading: parentLoading } = useQuotationQuery(parentId);
@@ -633,8 +638,14 @@ const RevQuotationFormPage = () => {
       const nextForm = {
         quotation_id: rev.quotation_id?.toString() || parentId,
         quotation_date_rev: rev.quotation_date_rev || "",
-        quotation_buyer_id: rev.quotation_buyer_id?.toString() || "",
-        quotation_property_id: rev.quotation_property_id?.toString() || "",
+        quotation_buyer_id:
+          rev.quotation_buyer_id?.toString() ||
+          parentQuotationData?.data?.quotation_buyer_id?.toString() ||
+          "",
+        quotation_property_id:
+          rev.quotation_property_id?.toString() ||
+          parentQuotationData?.data?.quotation_property_id?.toString() ||
+          "",
         quotation_category_id: rev.quotation_category_id || "",
         quotation_service_id: rev.quotation_service_id || "",
         quotation_remarks: rev.quotation_remarks || "",
@@ -645,6 +656,7 @@ const RevQuotationFormPage = () => {
           30,
         quotation_hardware: rev.quotation_hardware ?? 60,
         quotation_installation: rev.quotation_installation ?? 10,
+        quotation_prepared_id: rev.quotation_prepared_id?.toString() || "",
       };
 
       let nextServices = null;
@@ -1301,6 +1313,7 @@ const RevQuotationFormPage = () => {
       quotation_booing_confirmation: bookingPct,
       quotation_hardware: hardwarePct,
       quotation_installation: installationPct,
+      quotation_prepared_id: Number(formData.quotation_prepared_id),
       subs: flattenedSubs,
     };
   };
@@ -1409,6 +1422,13 @@ const RevQuotationFormPage = () => {
   const floors = floorsData?.data || [];
   const areas = areasData?.data || [];
   const brands = brandsData?.data || [];
+  const activeMembers = activeMembersData?.data || [];
+  const preparedByOptions = activeMembers.map((m) => ({
+    id: getSalesTeamMemberId(m)?.toString(),
+    name: m.name || m.member_name || "Sales Team Member",
+    phone: m.mobile || m.phone || "",
+    email: m.email || "",
+  }));
 
   const checkedCategories = formData.quotation_category_id ? formData.quotation_category_id.split(",") : [];
   const checkedServices = formData.quotation_service_id ? formData.quotation_service_id.split(",") : [];
@@ -1545,6 +1565,7 @@ const RevQuotationFormPage = () => {
     floorsLoading ||
     areasLoading ||
     brandsLoading ||
+    salesTeamLoading ||
     parentLoading ||
     (isEdit && revLoading);
 
@@ -1630,9 +1651,9 @@ const RevQuotationFormPage = () => {
         <Card>
           <CardContent className="p-6">
             <h3 className="text-lg font-semibold mb-4 text-slate-800">Basic Details</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex flex-col sm:flex-row gap-4">
               {/* Revision Date */}
-              <div className="space-y-2">
+              <div className="space-y-2 flex-1 min-w-0">
                 <Label className="flex">
                   Revision Date <RedStar />
                 </Label>
@@ -1645,32 +1666,54 @@ const RevQuotationFormPage = () => {
                 />
               </div>
 
-              {/* Buyer (Read-only reference) */}
-              <div className="space-y-2" data-error-field="buyer">
+              {/* Buyer */}
+              <div className="space-y-2 flex-1 min-w-0" data-error-field="buyer">
                 <Label>Lead</Label>
-                <select
-                  name="quotation_buyer_id"
-                  value={formData.quotation_buyer_id}
-                  disabled
-                  className="w-full border rounded-md h-10 px-3 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-500 text-sm"
-                >
-                  <option value="">Select Lead</option>
-                  {buyers.map((buyer) => (
-                    <option key={buyer.id} value={buyer.id}>
-                      {buyer.buyer_name}
-                    </option>
-                  ))}
-                </select>
+                <MemoizedSelect
+                  value={
+                    formData.quotation_buyer_id
+                      ? {
+                          value: formData.quotation_buyer_id,
+                          label:
+                            buyers.find(
+                              (b) => b.id?.toString() === formData.quotation_buyer_id.toString()
+                            )?.buyer_name ||
+                            formData.quotation_buyer_id,
+                        }
+                      : null
+                  }
+                  onChange={(selected) => {
+                    if (selected) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        quotation_buyer_id: selected.value.toString(),
+                      }));
+                      setErrors((prev) => ({ ...prev, quotation_buyer_id: "" }));
+                    } else {
+                      setFormData((prev) => ({
+                        ...prev,
+                        quotation_buyer_id: "",
+                      }));
+                    }
+                  }}
+                  options={buyers.map((b) => ({
+                    value: b.id?.toString(),
+                    label: b.buyer_name,
+                  }))}
+                  placeholder="Select Lead"
+                  isLoading={buyersLoading}
+                  className="w-full"
+                  hasError={!!errors.quotation_buyer_id}
+                />
               </div>
 
-              {/* Property (Read-only reference) */}
-              <div className="space-y-2" data-error-field="property">
+              {/* Property */}
+              <div className="space-y-2 flex-1 min-w-0" data-error-field="property">
                 <Label>Property</Label>
                 <select
                   name="quotation_property_id"
                   value={formData.quotation_property_id}
-                  disabled
-                  className="w-full border rounded-md h-10 px-3 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-500 text-sm"
+                  className="w-full border rounded-md h-10 px-3 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm"
                 >
                   <option value="">Select Property</option>
                   {properties.map((prop) => (
@@ -1679,6 +1722,21 @@ const RevQuotationFormPage = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Prepared By */}
+              <div className="space-y-2 flex-1 min-w-0" data-error-field="prepared">
+                <Label>Prepared By</Label>
+                <PreparedByPicker
+                  value={formData.quotation_prepared_id}
+                  options={preparedByOptions}
+                  onChange={(id) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      quotation_prepared_id: id,
+                    }))
+                  }
+                />
               </div>
             </div>
 
@@ -1695,7 +1753,31 @@ const RevQuotationFormPage = () => {
                       <input
                         type="checkbox"
                         checked={checkedCategories.includes(cat.id?.toString())}
-                        disabled
+                        onChange={(e) => {
+                          const catId = cat.id?.toString();
+                          const cur = checkedCategories;
+                          if (e.target.checked) {
+                            if (!cur.includes(catId)) {
+                              setFormData((prev) => ({
+                                ...prev,
+                                quotation_category_id:
+                                  prev.quotation_category_id &&
+                                  prev.quotation_category_id.length > 0
+                                    ? `${prev.quotation_category_id},${catId}`
+                                    : catId,
+                              }));
+                            }
+                          } else {
+                            setFormData((prev) => ({
+                              ...prev,
+                              quotation_category_id:
+                                prev.quotation_category_id
+                                  ?.split(",")
+                                  .filter((id) => id !== catId)
+                                  .join(",") || "",
+                            }));
+                          }
+                        }}
                         className="rounded border-slate-300 dark:border-slate-700 h-4 w-4 bg-transparent"
                       />
                       <span>{cat.category_name}</span>
@@ -1715,7 +1797,31 @@ const RevQuotationFormPage = () => {
                       <input
                         type="checkbox"
                         checked={checkedServices.includes(srv.id?.toString())}
-                        disabled
+                        onChange={(e) => {
+                          const srvId = srv.id?.toString();
+                          const cur = checkedServices;
+                          if (e.target.checked) {
+                            if (!cur.includes(srvId)) {
+                              setFormData((prev) => ({
+                                ...prev,
+                                quotation_service_id:
+                                  prev.quotation_service_id &&
+                                  prev.quotation_service_id.length > 0
+                                    ? `${prev.quotation_service_id},${srvId}`
+                                    : srvId,
+                              }));
+                            }
+                          } else {
+                            setFormData((prev) => ({
+                              ...prev,
+                              quotation_service_id:
+                                prev.quotation_service_id
+                                  ?.split(",")
+                                  .filter((id) => id !== srvId)
+                                  .join(",") || "",
+                            }));
+                          }
+                        }}
                         className="rounded border-slate-300 dark:border-slate-700 h-4 w-4 bg-transparent"
                       />
                       <span>{srv.service_name}</span>
@@ -1847,7 +1953,7 @@ const RevQuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[0].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[0].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -1888,7 +1994,7 @@ const RevQuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[1].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[1].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -1929,7 +2035,7 @@ const RevQuotationFormPage = () => {
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[2].toLocaleString()}
+                    ≈ ₹{milestoneAmounts[2].toLocaleString("en-IN")}
                   </div>
                 )}
               </div>
@@ -2423,7 +2529,7 @@ const RevQuotationFormPage = () => {
                                                                                 Amount:
                                                                               </span>
                                                                               <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                                                                                ₹{rowAmount.toLocaleString()}
+                                                                                ₹{rowAmount.toLocaleString("en-IN")}
                                                                               </span>
                                                                             </div>
                                                                             <div className="flex items-center gap-0.5">
@@ -2555,7 +2661,7 @@ const RevQuotationFormPage = () => {
               <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-900/60 p-4 rounded-xl font-bold border dark:border-slate-800 mt-6">
                 <div className="text-sm text-slate-700 dark:text-slate-300">Total Items Quantity: <span className="text-slate-900 dark:text-slate-100">{totalQty}</span></div>
                 <div className="text-base text-slate-800 dark:text-slate-200">
-                  Grand Total Amount: <span className="text-green-600 dark:text-green-400">₹{totalAmount.toLocaleString()}</span>
+                  Grand Total Amount: <span className="text-green-600 dark:text-green-400">₹{totalAmount.toLocaleString("en-IN")}</span>
                 </div>
               </div>
           </CardContent>
