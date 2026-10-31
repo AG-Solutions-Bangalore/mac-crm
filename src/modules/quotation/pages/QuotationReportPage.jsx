@@ -185,6 +185,16 @@ export default function QuotationReportPage() {
       ? revData?.data
       : parentData?.data;
 
+  useEffect(() => {
+    if (!quotationDetail) return;
+    setConsultancyPct((prev) =>
+      prev === 5 ? Number(quotationDetail.quotation_booing_confirmation) || 5 : prev
+    );
+    setInstallPct((prev) =>
+      prev === 5 ? Number(quotationDetail.quotation_installation) || 5 : prev
+    );
+  }, [quotationDetail]);
+
   // Buyer lookup — fetch the buyer record so name / mobile / address are available
   const buyerId = quotationDetail?.quotation_buyer_id;
   const needsBuyerFetch = Boolean(buyerId);
