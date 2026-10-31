@@ -8,9 +8,8 @@ import {
   FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import PreparedByPicker from "./PreparedByPicker";
 
-// Top bar: navigation + view switcher + Prepared-by selector + Export Excel / Print-Save PDF actions.
+// Top bar: navigation + view switcher + Export Excel / Print-Save PDF actions.
 // This bar is `quotation-no-print` so it never appears in print output.
 export default function ReportHeaderActions({
   quotationNo,
@@ -18,9 +17,6 @@ export default function ReportHeaderActions({
   viewMode,
   setViewMode,
   onNavigateBack,
-  preparedById,
-  onPreparedByChange,
-  preparedByOptions = [],
   onExportExcel,
   onPrint,
   onPrintNoPrice,
@@ -44,7 +40,7 @@ export default function ReportHeaderActions({
         </div>
       </div>
 
-      {/* View switcher + charge % + prepared-by + export actions */}
+      {/* View switcher + Export Excel / Print-Save PDF actions */}
       <div className="flex flex-wrap items-center gap-1.5 md:flex-nowrap">
         {/* Tab View Switcher */}
         <div className="bg-muted p-1 rounded-lg border border-border flex items-center mr-1">
@@ -72,13 +68,7 @@ export default function ReportHeaderActions({
           </Button>
         </div>
 
-        {/* Prepared-by selector — searchable, quick add/edit, manage link */}
-        <PreparedByPicker
-          value={preparedById}
-          options={preparedByOptions}
-          onChange={onPreparedByChange}
-        />
-
+        {/* Export Excel */}
         <Button
           variant="outline"
           size="sm"

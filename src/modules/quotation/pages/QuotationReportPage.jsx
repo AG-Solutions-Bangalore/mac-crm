@@ -776,24 +776,17 @@ export default function QuotationReportPage() {
         `}
       </style>
 
-      {/* Header Actions Component (navigation + view + charges % + prepared-by + export/print) */}
+      {/* Header Actions Component (navigation + view + export/print) */}
       <ReportHeaderActions
         quotationNo={quotationNo}
         docLabel={docLabel}
         viewMode={viewMode}
         setViewMode={setViewMode}
         onNavigateBack={() => navigate(-1)}
-        consultancyPct={consultancyPct}
-        onConsultancyPctChange={setConsultancyPct}
-        installPct={installPct}
-        onInstallPctChange={setInstallPct}
         coverPreviewOverlay={coverPreviewOverlay}
         onCoverPreviewOverlayChange={setCoverPreviewOverlay}
         coverPdfOverlay={coverPdfOverlay}
         onCoverPdfOverlayChange={setCoverPdfOverlay}
-        preparedById={preparedById}
-        onPreparedByChange={setPreparedById}
-        preparedByOptions={preparedByOptions}
         onExportExcel={handleExportExcel}
         onPrint={handlePrint}
         onPrintNoPrice={handlePrintNoPrice}
