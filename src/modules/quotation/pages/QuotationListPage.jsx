@@ -145,6 +145,15 @@ const QuotationListPage = () => {
       });
 
       // 3. Create real project in /project table
+      const legacyConsultancyDesign =
+        (Number(fullQuote.quotation_design_amount) || 0) +
+        (Number(fullQuote.quotation_consultation_amount) || 0);
+      const consultancyDesignAmount =
+        Number(fullQuote.quotation_consultancy_design) ||
+        legacyConsultancyDesign;
+      const installationAmount =
+        Number(fullQuote.quotation_installation_amount) || 0;
+
       const projectPayload = {
         project_date: fullQuote.quotation_date || new Date().toISOString().split("T")[0],
         price_validity_date: fullQuote.quotation_validity_date || "",
@@ -162,6 +171,10 @@ const QuotationListPage = () => {
         quotation_service_id: fullQuote.quotation_service_id || "",
         quotation_remarks: fullQuote.quotation_remarks || "",
         quotation_status: "Project",
+        quotation_consultancy_design: consultancyDesignAmount,
+        quotation_installation_amount: installationAmount,
+        project_consultancy_design: consultancyDesignAmount,
+        project_installation_amount: installationAmount,
         buyer_id: Number(fullQuote.quotation_buyer_id),
         property_id: Number(fullQuote.quotation_property_id),
         category_id: fullQuote.quotation_category_id || "",

@@ -59,7 +59,6 @@ export default function CompactTableView({
   grandTotal,
   consultancyFee = 0,
   installationFee,
-  installPct = 5,
   netTotal,
   formatMoney,
 }) {

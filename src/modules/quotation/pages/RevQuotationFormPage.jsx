@@ -235,6 +235,9 @@ const calculateServiceTotal = (srv) =>
     }, 0);
   }, 0);
 
+const calculateServicesTotal = (servicesList) =>
+  servicesList.reduce((sum, srv) => sum + calculateServiceTotal(srv), 0);
+
 const RevQuotationFormPage = () => {
   const { id: parentId, revId } = useParams();
   const isEdit = Boolean(revId);
@@ -253,6 +256,7 @@ const RevQuotationFormPage = () => {
     quotation_booing_confirmation: 30,
     quotation_hardware: 60,
     quotation_installation: 10,
+    quotation_consultancy_design: 0,
     quotation_design_amount: 0,
     quotation_consultation_amount: 0,
     quotation_installation_amount: 0,
@@ -291,6 +295,8 @@ const RevQuotationFormPage = () => {
   const [initialSnapshot, setInitialSnapshot] = useState(null);
   // Create mode: Services + Categories sab default selected rahenge
   const revDefaultsAppliedRef = useRef(false);
+  const consultancyDesignTouchedRef = useRef(false);
+  const installationAmountTouchedRef = useRef(false);
 
   const handleApplyImport = ({ nestedState, serviceIds, categoryIds }) => {
     const currentServices = formData.quotation_service_id
@@ -588,6 +594,26 @@ const RevQuotationFormPage = () => {
           .join(",")
       : "";
 
+    const storedConsultancyDesign = parent.quotation_consultancy_design;
+    const hasStoredConsultancyDesign =
+      storedConsultancyDesign !== null &&
+      storedConsultancyDesign !== undefined &&
+      storedConsultancyDesign !== "";
+    const legacyConsultancyDesign =
+      (Number(parent.quotation_design_amount) || 0) +
+      (Number(parent.quotation_consultation_amount) || 0);
+    const storedInstallationAmount = parent.quotation_installation_amount;
+    const hasStoredInstallationAmount =
+      storedInstallationAmount !== null &&
+      storedInstallationAmount !== undefined &&
+      storedInstallationAmount !== "";
+
+    consultancyDesignTouchedRef.current =
+      (hasStoredConsultancyDesign && Number(storedConsultancyDesign) > 0) ||
+      legacyConsultancyDesign > 0;
+    installationAmountTouchedRef.current =
+      hasStoredInstallationAmount && Number(storedInstallationAmount) > 0;
+
     const nextForm = {
       quotation_id: parent.id?.toString() || parentId,
       quotation_date_rev: new Date().toISOString().split("T")[0],
@@ -604,9 +630,14 @@ const RevQuotationFormPage = () => {
         30,
       quotation_hardware: parent.quotation_hardware ?? 60,
       quotation_installation: parent.quotation_installation ?? 10,
-      quotation_design_amount: parent.quotation_design_amount ?? 0,
-      quotation_consultation_amount: parent.quotation_consultation_amount ?? 0,
-      quotation_installation_amount: parent.quotation_installation_amount ?? 0,
+      quotation_consultancy_design: hasStoredConsultancyDesign
+        ? Number(storedConsultancyDesign)
+        : legacyConsultancyDesign,
+      quotation_design_amount: 0,
+      quotation_consultation_amount: 0,
+      quotation_installation_amount: hasStoredInstallationAmount
+        ? Number(storedInstallationAmount)
+        : 0,
     };
     setFormData(nextForm);
 
@@ -651,6 +682,26 @@ const RevQuotationFormPage = () => {
   useEffect(() => {
     if (isEdit && revQuotationData?.data) {
       const rev = revQuotationData.data;
+      const storedConsultancyDesign = rev.quotation_consultancy_design;
+      const hasStoredConsultancyDesign =
+        storedConsultancyDesign !== null &&
+        storedConsultancyDesign !== undefined &&
+        storedConsultancyDesign !== "";
+      const legacyConsultancyDesign =
+        (Number(rev.quotation_design_amount) || 0) +
+        (Number(rev.quotation_consultation_amount) || 0);
+      const storedInstallationAmount = rev.quotation_installation_amount;
+      const hasStoredInstallationAmount =
+        storedInstallationAmount !== null &&
+        storedInstallationAmount !== undefined &&
+        storedInstallationAmount !== "";
+
+      consultancyDesignTouchedRef.current =
+        (hasStoredConsultancyDesign && Number(storedConsultancyDesign) > 0) ||
+        legacyConsultancyDesign > 0;
+      installationAmountTouchedRef.current =
+        hasStoredInstallationAmount && Number(storedInstallationAmount) > 0;
+
       const nextForm = {
         quotation_id: rev.quotation_id?.toString() || parentId,
         quotation_date_rev: rev.quotation_date_rev || "",
@@ -672,9 +723,14 @@ const RevQuotationFormPage = () => {
           30,
         quotation_hardware: rev.quotation_hardware ?? 60,
         quotation_installation: rev.quotation_installation ?? 10,
-        quotation_design_amount: rev.quotation_design_amount ?? 0,
-        quotation_consultation_amount: rev.quotation_consultation_amount ?? 0,
-        quotation_installation_amount: rev.quotation_installation_amount ?? 0,
+        quotation_consultancy_design: hasStoredConsultancyDesign
+          ? Number(storedConsultancyDesign)
+          : legacyConsultancyDesign,
+        quotation_design_amount: 0,
+        quotation_consultation_amount: 0,
+        quotation_installation_amount: hasStoredInstallationAmount
+          ? Number(storedInstallationAmount)
+          : 0,
         quotation_prepared_id: rev.quotation_prepared_id?.toString() || "",
       };
 
@@ -732,6 +788,39 @@ const RevQuotationFormPage = () => {
     }
   }, [isEdit, revQuotationData, parentId]);
 
+  // Auto-fill the fee amounts until the user edits them manually.
+  useEffect(() => {
+    const subtotal = calculateServicesTotal(servicesState);
+    const autoConsultancyDesign = Math.round(subtotal * 0.05);
+    const autoInstallation = Math.round(subtotal * 0.1);
+    setFormData((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      if (
+        !consultancyDesignTouchedRef.current &&
+        Number(prev.quotation_consultancy_design) !== autoConsultancyDesign
+      ) {
+        next.quotation_consultancy_design = autoConsultancyDesign;
+        changed = true;
+      }
+      if (
+        !installationAmountTouchedRef.current &&
+        Number(prev.quotation_installation_amount) !== autoInstallation
+      ) {
+        next.quotation_installation_amount = autoInstallation;
+        changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [servicesState]);
+
+  useEffect(() => {
+    if (!isEdit) {
+      consultancyDesignTouchedRef.current = false;
+      installationAmountTouchedRef.current = false;
+    }
+  }, [isEdit]);
+
   const snapshotKey = useMemo(
     () => JSON.stringify({ formData, servicesState }),
     [formData, servicesState]
@@ -760,6 +849,12 @@ const RevQuotationFormPage = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    if (name === "quotation_consultancy_design") {
+      consultancyDesignTouchedRef.current = true;
+    }
+    if (name === "quotation_installation_amount") {
+      installationAmountTouchedRef.current = true;
+    }
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({
       ...prev,
@@ -1618,11 +1713,23 @@ const RevQuotationFormPage = () => {
     }, 0);
   }, 0);
 
-  const designAmount = Number(formData.quotation_design_amount) || 0;
-  const consultationAmount = Number(formData.quotation_consultation_amount) || 0;
+  const consultancyDesignAmount =
+    Number(formData.quotation_consultancy_design) || 0;
   const installationAmount = Number(formData.quotation_installation_amount) || 0;
 
-  const totalWithFixedItems = totalAmount + designAmount + consultationAmount + installationAmount;
+  const totalWithFixedItems =
+    totalAmount + consultancyDesignAmount + installationAmount;
+
+  const resetFeeAmounts = () => {
+    consultancyDesignTouchedRef.current = false;
+    installationAmountTouchedRef.current = false;
+    const subtotal = calculateServicesTotal(servicesState);
+    setFormData((prev) => ({
+      ...prev,
+      quotation_consultancy_design: Math.round(subtotal * 0.05),
+      quotation_installation_amount: Math.round(subtotal * 0.1),
+    }));
+  };
 
   const milestoneTotal =
     (Number(formData.quotation_booing_confirmation) || 0) +
@@ -2510,8 +2617,91 @@ const RevQuotationFormPage = () => {
                 <Plus size={14} /> Add Service
               </button>
 
+              {/* Consultancy & Installation Charges */}
+              <Card className="mt-4">
+                <CardContent className="p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b dark:border-slate-800 pb-3 mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                        <CreditCard className="w-5 h-5 text-primary" />
+                        Consultancy & Installation Charges
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Auto-calculated on the line-item total. You can edit the amounts.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                      onClick={resetFeeAmounts}
+                    >
+                      <RotateCcw className="w-3 h-3 mr-1" />
+                      Reset (5% / 10%)
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          Consultancy & Design Amount
+                        </Label>
+                        <span className="text-xs font-bold text-primary">5%</span>
+                      </div>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">
+                          ₹
+                        </span>
+                        <Input
+                          type="number"
+                          name="quotation_consultancy_design"
+                          min="0"
+                          step="1"
+                          value={formData.quotation_consultancy_design ?? ""}
+                          onChange={handleInputChange}
+                          className="pl-7 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                          placeholder="Auto 5%"
+                        />
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Auto 5% ≈ ₹{Math.round(totalAmount * 0.05).toLocaleString("en-IN")}
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          Installation Amount
+                        </Label>
+                        <span className="text-xs font-bold text-primary">10%</span>
+                      </div>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">
+                          ₹
+                        </span>
+                        <Input
+                          type="number"
+                          name="quotation_installation_amount"
+                          min="0"
+                          step="1"
+                          value={formData.quotation_installation_amount ?? ""}
+                          onChange={handleInputChange}
+                          className="pl-7 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                          placeholder="Auto 10%"
+                        />
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Auto 10% ≈ ₹{Math.round(totalAmount * 0.1).toLocaleString("en-IN")}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
                    {/* Payment Milestones Section */}
-        <Card>
+        <Card className="mt-3">
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b dark:border-slate-800 pb-3 mb-4">
               <div>
@@ -2567,7 +2757,7 @@ const RevQuotationFormPage = () => {
               <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    1. Booking Confirmation
+                    1. Booking Advance
                   </Label>
                   <span className="text-xs font-bold text-primary">
                     {formData.quotation_booing_confirmation ?? 30}%
@@ -2595,7 +2785,7 @@ const RevQuotationFormPage = () => {
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
-                  Upon booking confirmation
+                  Upon Booking Advance
                 </p>
                 {totalAmount > 0 && (
                   <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
@@ -2608,7 +2798,7 @@ const RevQuotationFormPage = () => {
               <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    2. Hardware Dispatch
+                    2. Before Hardware Ordering
                   </Label>
                   <span className="text-xs font-bold text-primary">
                     {formData.quotation_hardware ?? 60}%
@@ -2649,7 +2839,7 @@ const RevQuotationFormPage = () => {
               <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    3. Installation & Handover
+                    3.After installtion
                   </Label>
                   <span className="text-xs font-bold text-primary">
                     {formData.quotation_installation ?? 10}%

@@ -58,6 +58,18 @@ const formatMoney = (value) => {
   })}`;
 };
 
+const toOptionalAmount = (value) => {
+  if (value === "" || value === null || value === undefined) return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+};
+
+const toPercentage = (value, fallback) => {
+  if (value === "" || value === null || value === undefined) return fallback;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+};
+
 // Bright white villa hero (covers ~72% of the cover page background)
 const MOCK_IMAGES = {
   coverBg: HERO_BG_URL,
@@ -83,10 +95,6 @@ export default function QuotationReportPage() {
   // independent so the exported document can differ from the on-screen view.
   const [coverPreviewOverlay, setCoverPreviewOverlay] = useState(95);
   const [coverPdfOverlay, setCoverPdfOverlay] = useState(80);
-  // Consultancy & Design % and Installation % — both editable from header bar,
-  // each applied on the grand total. No % is shown in the printed proposal.
-  const [consultancyPct, setConsultancyPct] = useState(5);
-  const [installPct, setInstallPct] = useState(5);
   // Prepared-by selection (defaults to the logged-in member, else first active member)
   const [preparedById, setPreparedById] = useState("");
   // Logged-in user (fallback for "Prepared By")
@@ -187,14 +195,6 @@ export default function QuotationReportPage() {
 
   useEffect(() => {
     if (!quotationDetail) return;
-    // Always sync the fee percentages to the current quotation record.
-    // Removing the `prev === 5` guard: React Router reuses this component
-    // instance across quotation/:id changes (re-render, not remount), so the
-    // guard left stale percentages from a previously-viewed quotation applied
-    // to the new grand total — producing the wrong Consultancy / Installation
-    // / Net Project Value the client flagged.
-    setConsultancyPct(Number(quotationDetail.quotation_booing_confirmation) || 5);
-    setInstallPct(Number(quotationDetail.quotation_installation) || 5);
 
     // Auto-select Prepared By from the quotation record.
     // Prefer quotation_prepared_id; else fall back to matching prepared_name /
@@ -413,10 +413,31 @@ export default function QuotationReportPage() {
   });
 
   // Totals — taxes are inclusive, so Net = Grand + Consultancy + Installation.
-  // No separate GST line item is shown anywhere in the proposal, and no %
-  // figures are printed — only the computed values.
-  const consultancyFee = Math.round(grandTotal * (consultancyPct / 100));
-  const installationFee = Math.round(grandTotal * (installPct / 100));
+  // Use the saved amounts from the quotation/revised/project record; fall back
+  // to the legacy fields and then to the default 5% / 10% rates for old records.
+  const legacyConsultancyDesign =
+    (Number(quotationDetail.quotation_design_amount) || 0) +
+    (Number(quotationDetail.quotation_consultation_amount) || 0);
+  const storedConsultancyDesign =
+    toOptionalAmount(quotationDetail.quotation_consultancy_design) ??
+    toOptionalAmount(quotationDetail.project_consultancy_design);
+  const storedInstallationAmount =
+    toOptionalAmount(quotationDetail.quotation_installation_amount) ??
+    toOptionalAmount(quotationDetail.project_installation_amount);
+
+  // Old records have 0/missing fee fields — fall back to the legacy values,
+  // then to the default 5% / 10% rates.
+  const consultancyFee =
+    storedConsultancyDesign !== null && storedConsultancyDesign > 0
+      ? storedConsultancyDesign
+      : legacyConsultancyDesign > 0
+        ? legacyConsultancyDesign
+        : Math.round(grandTotal * 0.05);
+  const installationFee =
+    storedInstallationAmount !== null && storedInstallationAmount > 0
+      ? storedInstallationAmount
+      : Math.round(grandTotal * 0.1);
+
   const netTotal = grandTotal + consultancyFee + installationFee;
 
   // Client name — the API exposes `buyer_name` (see QuotationListPage),
@@ -511,26 +532,23 @@ export default function QuotationReportPage() {
     (!selectedPreparer ? fallbackEmail : "");
 
   // Milestones sum to the Net Project Value (inclusive of installation).
-  const bookingPct =
-    Number(
-      quotationDetail.quotation_booing_confirmation ??
+  // Respect explicit 0% values from the quotation instead of falling back.
+  const bookingPct = toPercentage(
+    quotationDetail.quotation_booing_confirmation ??
       quotationDetail.quotation_booking_confirmation ??
       quotationDetail.project_booing_confirmation ??
-      quotationDetail.project_booking_confirmation ??
-      30
-    ) || 30;
-  const hardwarePct =
-    Number(
-      quotationDetail.quotation_hardware ??
-      quotationDetail.project_hardware ??
-      60
-    ) || 60;
-  const installationPct =
-    Number(
-      quotationDetail.quotation_installation ??
-      quotationDetail.project_installation ??
-      10
-    ) || 10;
+      quotationDetail.project_booking_confirmation,
+    30
+  );
+  const hardwarePct = toPercentage(
+    quotationDetail.quotation_hardware ?? quotationDetail.project_hardware,
+    60
+  );
+  const installationPct = toPercentage(
+    quotationDetail.quotation_installation ??
+      quotationDetail.project_installation,
+    10
+  );
 
   const milestoneAmounts = calculateMilestoneAmounts(netTotal, [
     bookingPct,
@@ -539,7 +557,7 @@ export default function QuotationReportPage() {
   ]);
 
   const paymentRows = [
-    { section: "Payment Cycle", label: "Booking Confirmation", amount: milestoneAmounts[0], percentage: `${bookingPct}%` },
+    { section: "Payment Cycle", label: "Booking Advance", amount: milestoneAmounts[0], percentage: `${bookingPct}%` },
     { section: "Payment Cycle", label: "Hardware Ordering & Dispatch", amount: milestoneAmounts[1], percentage: `${hardwarePct}%` },
     { section: "Payment Cycle", label: "Installation & Pre-Commissioning", amount: milestoneAmounts[2], percentage: `${installationPct}%` },
   ];
@@ -805,7 +823,6 @@ export default function QuotationReportPage() {
             grandTotal={grandTotal}
             consultancyFee={consultancyFee}
             installationFee={installationFee}
-            installPct={installPct}
             netTotal={netTotal}
             formatMoney={formatMoney}
           />
@@ -834,10 +851,8 @@ export default function QuotationReportPage() {
               clientName={clientName}
               formatMoney={formatMoney}
               grandTotal={grandTotal}
-              consultancyPct={consultancyPct}
               consultancyFee={consultancyFee}
               installationFee={installationFee}
-              installPct={installPct}
               netTotal={netTotal}
               paymentRows={paymentRows}
               hidePricing={hidePricing}
