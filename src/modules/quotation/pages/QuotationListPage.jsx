@@ -260,8 +260,6 @@ const QuotationListPage = () => {
   const renderActions = (q, labeled = false) => {
     const canFinishDate =
       q.quotation_status === "Approved" && !q.quotation_finish_work_date;
-    const canUpdateValidateDate =
-      q.quotation_status === "Approved";
     const showConvertButton = q.quotation_status === "Approved";
     const actions = [
       {
@@ -289,18 +287,14 @@ const QuotationListPage = () => {
             },
           ]
         : []),
-      ...(canUpdateValidateDate
-        ? [
-            {
-              label: "Validity Date",
-              title: "Update Validity Date",
-              icon: CalendarDays,
-              onClick: () => handleOpenValidateDateDialog(q),
-              extra:
-                "text-sky-600 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/30",
-            },
-          ]
-        : []),
+      {
+        label: "Validity Date",
+        title: "Update Validity Date",
+        icon: CalendarDays,
+        onClick: () => handleOpenValidateDateDialog(q),
+        extra:
+          "text-sky-600 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/30",
+      },
       ...(showConvertButton
         ? [
             {
