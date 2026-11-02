@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet, RefreshCw, GripVertical, CreditCard, CheckCircle2, AlertCircle, RotateCcw } from "lucide-react";
+import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet, RefreshCw, GripVertical, CreditCard, BadgePercent, CheckCircle2, AlertCircle, RotateCcw } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,6 +53,13 @@ import {
   calculatePercentageAmount,
   deriveFeePercentage,
 } from "@/utils/milestoneUtils";
+import {
+  calculateDiscountAmount,
+  calculateNetPayable,
+  deriveDiscountPct,
+  hardwareExGst,
+  normalizeDiscountPct,
+} from "@/utils/discountUtils";
 import { buildProductOptions, filterProductOption } from "@/utils/productSelectUtils";
 
 let uidSeed = 0;
@@ -266,6 +273,8 @@ const RevQuotationFormPage = () => {
     quotation_consultation_amount: 0,
     quotation_installation_amount: 0,
     quotation_installation_pct: 10,
+    quotation_discount_pct: 0,
+    quotation_discount_amount: 0,
   });
 
   const [servicesState, setServicesState] = useState([
@@ -611,6 +620,9 @@ const RevQuotationFormPage = () => {
       storedInstallationAmount !== null &&
       storedInstallationAmount !== undefined &&
       storedInstallationAmount !== "";
+    const storedDiscountAmount =
+      parent.quotation_discount_amount ?? parent.project_discount_amount;
+    const discountAmountValue = Number(storedDiscountAmount) || 0;
 
     const nextForm = {
       quotation_id: parent.id?.toString() || parentId,
@@ -636,6 +648,8 @@ const RevQuotationFormPage = () => {
       quotation_installation_amount: hasStoredInstallationAmount
         ? Number(storedInstallationAmount)
         : 0,
+      quotation_discount_pct: 0,
+      quotation_discount_amount: discountAmountValue,
     };
 
     let nextServices = null;
@@ -654,6 +668,10 @@ const RevQuotationFormPage = () => {
       nextForm.quotation_installation_amount,
       feeSubtotal,
       10
+    );
+    nextForm.quotation_discount_pct = deriveDiscountPct(
+      feeSubtotal,
+      discountAmountValue
     );
 
     setFormData(nextForm);
@@ -706,6 +724,9 @@ const RevQuotationFormPage = () => {
         storedInstallationAmount !== null &&
         storedInstallationAmount !== undefined &&
         storedInstallationAmount !== "";
+      const storedDiscountAmount =
+        rev.quotation_discount_amount ?? rev.project_discount_amount;
+      const discountAmountValue = Number(storedDiscountAmount) || 0;
 
       const nextForm = {
         quotation_id: rev.quotation_id?.toString() || parentId,
@@ -736,6 +757,8 @@ const RevQuotationFormPage = () => {
         quotation_installation_amount: hasStoredInstallationAmount
           ? Number(storedInstallationAmount)
           : 0,
+        quotation_discount_pct: 0,
+        quotation_discount_amount: discountAmountValue,
         quotation_prepared_id: rev.quotation_prepared_id?.toString() || "",
       };
 
@@ -773,6 +796,10 @@ const RevQuotationFormPage = () => {
         nextForm.quotation_installation_amount,
         feeSubtotal,
         10
+      );
+      nextForm.quotation_discount_pct = deriveDiscountPct(
+        feeSubtotal,
+        discountAmountValue
       );
 
       setFormData(nextForm);
@@ -852,6 +879,13 @@ const RevQuotationFormPage = () => {
       }
       return prev;
     });
+  };
+
+  const handleDiscountBlur = () => {
+    setFormData((prev) => ({
+      ...prev,
+      quotation_discount_pct: normalizeDiscountPct(prev.quotation_discount_pct),
+    }));
   };
 
   // Nested State Actions
@@ -1343,6 +1377,18 @@ const RevQuotationFormPage = () => {
     return true;
   };
 
+  const validateDiscount = () => {
+    const raw = Number(formData.quotation_discount_pct);
+    if (
+      formData.quotation_discount_pct !== "" &&
+      (!Number.isFinite(raw) || raw < 0 || raw > 100)
+    ) {
+      toast.error("Discount must be between 0% and 100%");
+      return false;
+    }
+    return true;
+  };
+
   const validateForm = () => {
     const newErrors = {};
     if (!validateHeaderFields(newErrors)) return false;
@@ -1389,6 +1435,7 @@ const RevQuotationFormPage = () => {
     }
 
     if (!validateMilestones(newErrors)) return false;
+    if (!validateDiscount()) return false;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -1400,6 +1447,7 @@ const RevQuotationFormPage = () => {
     if (!validateHeaderFields(newErrors)) return false;
 
     if (!validateMilestones(newErrors)) return false;
+    if (!validateDiscount()) return false;
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -1429,9 +1477,15 @@ const RevQuotationFormPage = () => {
       subtotal,
       feeInstallationPct
     );
+    const discountAmount = calculateDiscountAmount(
+      subtotal,
+      formData.quotation_discount_pct
+    );
     const payloadForm = { ...formData };
     delete payloadForm.quotation_consultancy_design_pct;
     delete payloadForm.quotation_installation_pct;
+    delete payloadForm.quotation_discount_pct;
+    delete payloadForm.quotation_discount_amount;
 
     return {
       ...payloadForm,
@@ -1445,6 +1499,7 @@ const RevQuotationFormPage = () => {
       quotation_design_amount: 0,
       quotation_consultation_amount: 0,
       quotation_installation_amount: installationAmount,
+      quotation_discount_amount: discountAmount,
       quotation_prepared_id: formData.quotation_prepared_id ? Number(formData.quotation_prepared_id) : null,
       subs: flattenedSubs,
     };
@@ -1754,8 +1809,16 @@ const RevQuotationFormPage = () => {
     installationPct
   );
 
-  const totalWithFixedItems =
-    totalAmount + consultancyDesignAmount + installationAmount;
+  const discountAmount = calculateDiscountAmount(
+    totalAmount,
+    formData.quotation_discount_pct
+  );
+  const netPayable = calculateNetPayable({
+    hardwareTotal: totalAmount,
+    consultancyAmount: consultancyDesignAmount,
+    installationAmount,
+    discountAmount,
+  });
 
   const resetFeeAmounts = () => {
     setFormData((prev) => ({
@@ -1770,7 +1833,7 @@ const RevQuotationFormPage = () => {
     (Number(formData.quotation_hardware) || 0) +
     (Number(formData.quotation_installation) || 0);
 
-  const milestoneAmounts = calculateMilestoneAmounts(totalAmount, [
+  const milestoneAmounts = calculateMilestoneAmounts(netPayable, [
     formData.quotation_booing_confirmation ?? 30,
     formData.quotation_hardware ?? 60,
     formData.quotation_installation ?? 10,
@@ -2758,6 +2821,88 @@ const RevQuotationFormPage = () => {
                 </CardContent>
               </Card>
 
+              {/* Discount on Hardware */}
+              <Card className="mt-4">
+                <CardContent className="p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b dark:border-slate-800 pb-3 mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                        <BadgePercent className="w-5 h-5 text-primary" />
+                        Discount on Hardware
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Applied on hardware value excluding 18% GST. Consultancy & installation are not discounted.
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                      GST-excluded base: ₹
+                      {Math.round(hardwareExGst(totalAmount)).toLocaleString("en-IN")}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                          Discount
+                        </Label>
+                        <span className="text-xs font-bold text-primary">
+                          {normalizeDiscountPct(formData.quotation_discount_pct)}%
+                        </span>
+                      </div>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          name="quotation_discount_pct"
+                          data-error-field="quotation_discount_pct"
+                          min="0"
+                          max="100"
+                          step="any"
+                          value={formData.quotation_discount_pct ?? ""}
+                          onChange={handleInputChange}
+                          onBlur={handleDiscountBlur}
+                          className="pr-8 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                          placeholder="0"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">
+                          %
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Discount is calculated on hardware after removing 18% GST.
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+                      <div className="flex justify-between gap-3">
+                        <span>Hardware (incl. GST)</span>
+                        <span className="font-semibold">
+                          ₹{totalAmount.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span>Hardware (ex-GST)</span>
+                        <span className="font-semibold">
+                          ₹{Math.round(hardwareExGst(totalAmount)).toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-3">
+                        <span>Discount amount</span>
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                          − ₹{discountAmount.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <div className="flex justify-between gap-3 border-t dark:border-slate-800 pt-2">
+                        <span className="font-semibold">Net Payable</span>
+                        <span className="font-bold text-green-600 dark:text-green-400">
+                          ₹{netPayable.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
                    {/* Payment Milestones Section */}
         <Card className="mt-3">
           <CardContent className="p-6">
@@ -2947,8 +3092,15 @@ const RevQuotationFormPage = () => {
               {/* Summary Row */}
               <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-900/60 p-4 rounded-xl font-bold border dark:border-slate-800 mt-6">
                 <div className="text-sm text-slate-700 dark:text-slate-300">Total Items Quantity: <span className="text-slate-900 dark:text-slate-100">{totalQty}</span></div>
-                <div className="text-base text-slate-800 dark:text-slate-200">
-                  Grand Total Amount: <span className="text-green-600 dark:text-green-400">₹{totalWithFixedItems.toLocaleString("en-IN")}</span>
+                <div className="text-right">
+                  <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                    Hardware ₹{totalAmount.toLocaleString("en-IN")} + Fees ₹
+                    {(consultancyDesignAmount + installationAmount).toLocaleString("en-IN")} − Discount ₹
+                    {discountAmount.toLocaleString("en-IN")}
+                  </div>
+                  <div className="text-base text-slate-800 dark:text-slate-200">
+                    Net Payable: <span className="text-green-600 dark:text-green-400">₹{netPayable.toLocaleString("en-IN")}</span>
+                  </div>
                 </div>
               </div>
           </CardContent>

@@ -31,6 +31,7 @@ import DynamicProposalDocument from "../components/report/DynamicProposalDocumen
 import CompactTableView from "../components/report/CompactTableView";
 import { createStyledQuotationWorkbook, downloadBlob } from "@/app/reports/quotation-xlsx";
 import { calculateMilestoneAmounts } from "@/utils/milestoneUtils";
+import { deriveDiscountPct } from "@/utils/discountUtils";
 
 
 const headers = [
@@ -429,8 +430,17 @@ export default function QuotationReportPage() {
     storedConsultancyDesign ??
     (legacyConsultancyDesign > 0 ? legacyConsultancyDesign : 0);
   const installationFee = storedInstallationAmount ?? 0;
+  const discountAmount = Math.max(
+    0,
+    toOptionalAmount(
+      quotationDetail.quotation_discount_amount ??
+        quotationDetail.project_discount_amount
+    ) ?? 0
+  );
+  const discountPct = deriveDiscountPct(grandTotal, discountAmount);
 
-  const netTotal = grandTotal + consultancyFee + installationFee;
+  const netTotal =
+    grandTotal + consultancyFee + installationFee - discountAmount;
 
   // Client name — the API exposes `buyer_name` (see QuotationListPage),
   // not `client_name`, which is why the old lookup always hit the fallback.
@@ -607,7 +617,16 @@ export default function QuotationReportPage() {
   };
 
   const handleExportExcel = () => {
-    const workbook = createStyledQuotationWorkbook({ items });
+    const workbook = createStyledQuotationWorkbook({
+      items,
+      totals: {
+        grandTotal,
+        consultancyFee,
+        installationFee,
+        discountAmount,
+        netTotal,
+      },
+    });
     downloadBlob(workbook, `MAKc_${docLabel}_${quotationNo}.xlsx`);
   };
 
@@ -815,6 +834,8 @@ export default function QuotationReportPage() {
             grandTotal={grandTotal}
             consultancyFee={consultancyFee}
             installationFee={installationFee}
+            discountAmount={discountAmount}
+            discountPct={discountPct}
             netTotal={netTotal}
             formatMoney={formatMoney}
           />
@@ -845,6 +866,8 @@ export default function QuotationReportPage() {
               grandTotal={grandTotal}
               consultancyFee={consultancyFee}
               installationFee={installationFee}
+              discountAmount={discountAmount}
+              discountPct={discountPct}
               netTotal={netTotal}
               paymentRows={paymentRows}
               hidePricing={hidePricing}

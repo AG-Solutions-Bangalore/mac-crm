@@ -153,6 +153,11 @@ const QuotationListPage = () => {
         legacyConsultancyDesign;
       const installationAmount =
         Number(fullQuote.quotation_installation_amount) || 0;
+      const discountAmount =
+        Number(
+          fullQuote.quotation_discount_amount ??
+            fullQuote.project_discount_amount
+        ) || 0;
 
       const projectPayload = {
         project_date: fullQuote.quotation_date || new Date().toISOString().split("T")[0],
@@ -173,8 +178,10 @@ const QuotationListPage = () => {
         quotation_status: "Project",
         quotation_consultancy_design: consultancyDesignAmount,
         quotation_installation_amount: installationAmount,
+        quotation_discount_amount: discountAmount,
         project_consultancy_design: consultancyDesignAmount,
         project_installation_amount: installationAmount,
+        project_discount_amount: discountAmount,
         buyer_id: Number(fullQuote.quotation_buyer_id),
         property_id: Number(fullQuote.quotation_property_id),
         category_id: fullQuote.quotation_category_id || "",

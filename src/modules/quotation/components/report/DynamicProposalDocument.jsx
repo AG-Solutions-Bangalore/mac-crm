@@ -186,6 +186,8 @@ export default function DynamicProposalDocument({
   grandTotal,
   consultancyFee,
   installationFee,
+  discountAmount = 0,
+  discountPct = 0,
   netTotal,
   paymentRows,
   hidePricing = false,
@@ -559,6 +561,26 @@ export default function DynamicProposalDocument({
                   </div>
                 ))}
               </div>
+              {discountAmount > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    paddingTop: "10px",
+                    marginTop: "10px",
+                    borderTop: t.summaryRowBorder,
+                    fontSize: "10px",
+                  }}
+                >
+                  <span style={{ color: t.summaryRowLabel, fontWeight: 700 }}>
+                    Discount ({discountPct}%)
+                  </span>
+                  <span style={{ color: t.warrantyText, fontWeight: 800, fontSize: "13px" }}>
+                    − {formatMoney(discountAmount)}
+                  </span>
+                </div>
+              )}
               <div
                 style={{
                   display: "flex",

@@ -59,6 +59,8 @@ export default function CompactTableView({
   grandTotal,
   consultancyFee = 0,
   installationFee,
+  discountAmount = 0,
+  discountPct = 0,
   netTotal,
   formatMoney,
 }) {
@@ -75,7 +77,7 @@ export default function CompactTableView({
       {/* Enforce ui-sans-serif on every text in this view */}
       <style>{`.makc-compact-view, .makc-compact-view * { font-family: ${FONT} !important; }`}</style>
       {/* Metric Cards (screen only — hidden in print) */}
-      <div className="grid gap-4 md:grid-cols-5 quotation-no-print">
+      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6 quotation-no-print">
         <Card
           className="border shadow-sm"
           style={{ background: LIGHT.cardBg, borderColor: LIGHT.cardBorder, color: LIGHT.pageText }}
@@ -110,6 +112,19 @@ export default function CompactTableView({
           <CardHeader className="pb-2">
             <CardDescription style={{ color: LIGHT.mutedText }}>Installation</CardDescription>
             <CardTitle className="text-2xl font-bold" style={{ color: LIGHT.gold }}>{formatMoney(installationFee)}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card
+          className="border shadow-sm"
+          style={{ background: LIGHT.cardBg, borderColor: LIGHT.cardBorder, color: LIGHT.pageText }}
+        >
+          <CardHeader className="pb-2">
+            <CardDescription style={{ color: LIGHT.mutedText }}>
+              Discount ({discountPct}%)
+            </CardDescription>
+            <CardTitle className="text-2xl font-bold" style={{ color: LIGHT.green }}>
+              − {formatMoney(discountAmount)}
+            </CardTitle>
           </CardHeader>
         </Card>
         <Card
@@ -219,12 +234,13 @@ export default function CompactTableView({
           {!hidePricing && (
             <>
               <div
-                className="mt-4 grid gap-2 break-inside-avoid md:grid-cols-4"
+                className="mt-4 grid gap-2 break-inside-avoid md:grid-cols-5"
               >
                 {[
                   { label: "Grand Total", value: formatMoney(grandTotal), color: LIGHT.headingText },
                   { label: "Consultancy & Design", value: formatMoney(consultancyFee), color: LIGHT.bodyText },
                   { label: "Installation", value: formatMoney(installationFee), color: LIGHT.bodyText },
+                  { label: `Discount (${discountPct}%)`, value: `− ${formatMoney(discountAmount)}`, color: LIGHT.green },
                   { label: "Net Project Value", value: formatMoney(netTotal), color: LIGHT.accent },
                 ].map((s) => (
                   <div
