@@ -86,7 +86,12 @@ export default function PricingPage({
         {/* Payment Roadmap */}
         <div className="bg-slate-900/60 border border-slate-800 p-4 rounded-2xl space-y-2.5">
           <h4 className="text-xs font-bold text-sky-400 uppercase tracking-widest">Payment Milestones</h4>
-          <div className="grid grid-cols-3 gap-3 text-center">
+          <div
+            className="grid gap-3 text-center"
+            style={{
+              gridTemplateColumns: `repeat(${Math.max(paymentRows.length, 1)}, minmax(0, 1fr))`,
+            }}
+          >
             {paymentRows.map((pay, pIdx) => (
               <div key={pIdx} className="bg-slate-950 border border-slate-800 p-3 rounded-xl">
                 <span className="text-xs font-bold text-sky-400">{pay.percentage}</span>

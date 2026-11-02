@@ -184,10 +184,10 @@ export default function DynamicProposalDocument({
   clientName,
   formatMoney,
   grandTotal,
-  consultancyPct,
   consultancyFee,
   installationFee,
-  installPct = 5,
+  discountAmount = 0,
+  discountPct = 0,
   netTotal,
   paymentRows,
   hidePricing = false,
@@ -561,6 +561,26 @@ export default function DynamicProposalDocument({
                   </div>
                 ))}
               </div>
+              {discountAmount > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    paddingTop: "10px",
+                    marginTop: "10px",
+                    borderTop: t.summaryRowBorder,
+                    fontSize: "10px",
+                  }}
+                >
+                  <span style={{ color: t.summaryRowLabel, fontWeight: 700 }}>
+                    Discount ({discountPct}%)
+                  </span>
+                  <span style={{ color: t.warrantyText, fontWeight: 800, fontSize: "13px" }}>
+                    − {formatMoney(discountAmount)}
+                  </span>
+                </div>
+              )}
               <div
                 style={{
                   display: "flex",
@@ -606,7 +626,13 @@ export default function DynamicProposalDocument({
         <div>
           <SectionHeading number="02" title="Payment Milestones" subtitle="Structured payment schedule for seamless project execution" isLight={isLight} />
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: `repeat(${Math.max(paymentRows.length, 1)}, minmax(0, 1fr))`,
+              gap: "10px",
+            }}
+          >
             {paymentRows.map((pay, i) => (
               <div
                 key={i}

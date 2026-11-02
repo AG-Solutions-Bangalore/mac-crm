@@ -31,6 +31,7 @@ import DynamicProposalDocument from "../components/report/DynamicProposalDocumen
 import CompactTableView from "../components/report/CompactTableView";
 import { createStyledQuotationWorkbook, downloadBlob } from "@/app/reports/quotation-xlsx";
 import { calculateMilestoneAmounts } from "@/utils/milestoneUtils";
+import { deriveDiscountPct } from "@/utils/discountUtils";
 
 
 const headers = [
@@ -58,6 +59,18 @@ const formatMoney = (value) => {
   })}`;
 };
 
+const toOptionalAmount = (value) => {
+  if (value === "" || value === null || value === undefined) return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+};
+
+const toPercentage = (value, fallback) => {
+  if (value === "" || value === null || value === undefined) return fallback;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+};
+
 // Bright white villa hero (covers ~72% of the cover page background)
 const MOCK_IMAGES = {
   coverBg: HERO_BG_URL,
@@ -83,10 +96,6 @@ export default function QuotationReportPage() {
   // independent so the exported document can differ from the on-screen view.
   const [coverPreviewOverlay, setCoverPreviewOverlay] = useState(95);
   const [coverPdfOverlay, setCoverPdfOverlay] = useState(80);
-  // Consultancy & Design % and Installation % — both editable from header bar,
-  // each applied on the grand total. No % is shown in the printed proposal.
-  const [consultancyPct, setConsultancyPct] = useState(5);
-  const [installPct, setInstallPct] = useState(5);
   // Prepared-by selection (defaults to the logged-in member, else first active member)
   const [preparedById, setPreparedById] = useState("");
   // Logged-in user (fallback for "Prepared By")
@@ -187,14 +196,6 @@ export default function QuotationReportPage() {
 
   useEffect(() => {
     if (!quotationDetail) return;
-    // Always sync the fee percentages to the current quotation record.
-    // Removing the `prev === 5` guard: React Router reuses this component
-    // instance across quotation/:id changes (re-render, not remount), so the
-    // guard left stale percentages from a previously-viewed quotation applied
-    // to the new grand total — producing the wrong Consultancy / Installation
-    // / Net Project Value the client flagged.
-    setConsultancyPct(Number(quotationDetail.quotation_booing_confirmation) || 5);
-    setInstallPct(Number(quotationDetail.quotation_installation) || 5);
 
     // Auto-select Prepared By from the quotation record.
     // Prefer quotation_prepared_id; else fall back to matching prepared_name /
@@ -413,11 +414,33 @@ export default function QuotationReportPage() {
   });
 
   // Totals — taxes are inclusive, so Net = Grand + Consultancy + Installation.
-  // No separate GST line item is shown anywhere in the proposal, and no %
-  // figures are printed — only the computed values.
-  const consultancyFee = Math.round(grandTotal * (consultancyPct / 100));
-  const installationFee = Math.round(grandTotal * (installPct / 100));
-  const netTotal = grandTotal + consultancyFee + installationFee;
+  // Display only the values saved by the backend; never apply client-side
+  // defaults when the API explicitly returns 0.
+  const legacyConsultancyDesign =
+    (Number(quotationDetail.quotation_design_amount) || 0) +
+    (Number(quotationDetail.quotation_consultation_amount) || 0);
+  const storedConsultancyDesign =
+    toOptionalAmount(quotationDetail.quotation_consultancy_design) ??
+    toOptionalAmount(quotationDetail.project_consultancy_design);
+  const storedInstallationAmount =
+    toOptionalAmount(quotationDetail.quotation_installation_amount) ??
+    toOptionalAmount(quotationDetail.project_installation_amount);
+
+  const consultancyFee =
+    storedConsultancyDesign ??
+    (legacyConsultancyDesign > 0 ? legacyConsultancyDesign : 0);
+  const installationFee = storedInstallationAmount ?? 0;
+  const discountAmount = Math.max(
+    0,
+    toOptionalAmount(
+      quotationDetail.quotation_discount_amount ??
+        quotationDetail.project_discount_amount
+    ) ?? 0
+  );
+  const discountPct = deriveDiscountPct(grandTotal, discountAmount);
+
+  const netTotal =
+    grandTotal + consultancyFee + installationFee - discountAmount;
 
   // Client name — the API exposes `buyer_name` (see QuotationListPage),
   // not `client_name`, which is why the old lookup always hit the fallback.
@@ -511,26 +534,23 @@ export default function QuotationReportPage() {
     (!selectedPreparer ? fallbackEmail : "");
 
   // Milestones sum to the Net Project Value (inclusive of installation).
-  const bookingPct =
-    Number(
-      quotationDetail.quotation_booing_confirmation ??
+  // Respect explicit 0% values from the quotation instead of falling back.
+  const bookingPct = toPercentage(
+    quotationDetail.quotation_booing_confirmation ??
       quotationDetail.quotation_booking_confirmation ??
       quotationDetail.project_booing_confirmation ??
-      quotationDetail.project_booking_confirmation ??
-      30
-    ) || 30;
-  const hardwarePct =
-    Number(
-      quotationDetail.quotation_hardware ??
-      quotationDetail.project_hardware ??
-      60
-    ) || 60;
-  const installationPct =
-    Number(
-      quotationDetail.quotation_installation ??
-      quotationDetail.project_installation ??
-      10
-    ) || 10;
+      quotationDetail.project_booking_confirmation,
+    30
+  );
+  const hardwarePct = toPercentage(
+    quotationDetail.quotation_hardware ?? quotationDetail.project_hardware,
+    60
+  );
+  const installationPct = toPercentage(
+    quotationDetail.quotation_installation ??
+      quotationDetail.project_installation,
+    10
+  );
 
   const milestoneAmounts = calculateMilestoneAmounts(netTotal, [
     bookingPct,
@@ -539,10 +559,10 @@ export default function QuotationReportPage() {
   ]);
 
   const paymentRows = [
-    { section: "Payment Cycle", label: "Booking Confirmation", amount: milestoneAmounts[0], percentage: `${bookingPct}%` },
+    { section: "Payment Cycle", label: "Booking Advance", amount: milestoneAmounts[0], percentage: `${bookingPct}%` },
     { section: "Payment Cycle", label: "Hardware Ordering & Dispatch", amount: milestoneAmounts[1], percentage: `${hardwarePct}%` },
     { section: "Payment Cycle", label: "Installation & Pre-Commissioning", amount: milestoneAmounts[2], percentage: `${installationPct}%` },
-  ];
+  ].filter((row) => parseFloat(row.percentage) > 0);
 
   // Hero PNG bada hai — print/PDF se pehle ensure karo ki cover image load/decode ho chuki hai
   // (4s timeout, taaki slow network par print block na ho).
@@ -597,7 +617,16 @@ export default function QuotationReportPage() {
   };
 
   const handleExportExcel = () => {
-    const workbook = createStyledQuotationWorkbook({ items });
+    const workbook = createStyledQuotationWorkbook({
+      items,
+      totals: {
+        grandTotal,
+        consultancyFee,
+        installationFee,
+        discountAmount,
+        netTotal,
+      },
+    });
     downloadBlob(workbook, `MAKc_${docLabel}_${quotationNo}.xlsx`);
   };
 
@@ -805,7 +834,8 @@ export default function QuotationReportPage() {
             grandTotal={grandTotal}
             consultancyFee={consultancyFee}
             installationFee={installationFee}
-            installPct={installPct}
+            discountAmount={discountAmount}
+            discountPct={discountPct}
             netTotal={netTotal}
             formatMoney={formatMoney}
           />
@@ -834,10 +864,10 @@ export default function QuotationReportPage() {
               clientName={clientName}
               formatMoney={formatMoney}
               grandTotal={grandTotal}
-              consultancyPct={consultancyPct}
               consultancyFee={consultancyFee}
               installationFee={installationFee}
-              installPct={installPct}
+              discountAmount={discountAmount}
+              discountPct={discountPct}
               netTotal={netTotal}
               paymentRows={paymentRows}
               hidePricing={hidePricing}

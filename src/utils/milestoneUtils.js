@@ -8,6 +8,22 @@
  * @param {Array<number|string>} pcts - Array of percentage values, e.g. [30, 60, 10]
  * @returns {number[]} Array of calculated integer amounts, matching the length of pcts
  */
+export const calculatePercentageAmount = (baseAmount, percentage) => {
+  const base = Number(baseAmount) || 0;
+  const pct = Number(percentage) || 0;
+  return Math.round((base * pct) / 100);
+};
+
+export const deriveFeePercentage = (amount, baseAmount, fallback) => {
+  if (amount === "" || amount === null || amount === undefined) return fallback;
+  const value = Number(amount);
+  if (!Number.isFinite(value)) return fallback;
+  if (value === 0) return 0;
+  const base = Number(baseAmount) || 0;
+  if (base <= 0) return fallback;
+  return Math.round((value / base) * 10000) / 100;
+};
+
 export const calculateMilestoneAmounts = (total, pcts = []) => {
   const roundTotal = Math.round(Number(total) || 0);
   if (roundTotal <= 0 || !Array.isArray(pcts) || pcts.length === 0) {

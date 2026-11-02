@@ -119,7 +119,7 @@ const createCell = ({ row, col, value = "", style = 0, formula, number = false }
   return `<c r="${ref}"${styleAttr} t="inlineStr"><is><t>${xml(value)}</t></is></c>`;
 };
 
-const buildSheetModel = ({ items }) => {
+const buildSheetModel = ({ items, totals = {} }) => {
   const rows = new Map();
   const merges = [];
   const categoryTotalRows = [];
@@ -227,19 +227,52 @@ const buildSheetModel = ({ items }) => {
   styleRange(grandRow, 2, 10, 8);
   addCell(grandRow, 2, { value: "Total Project", style: 8 });
   addCell(grandRow, 8, { value: grandTotal, style: 9, formula: grandFormula });
-  currentRow += 3;
+  currentRow += 1;
+
+  const consultancyFee = normalizeNumber(totals.consultancyFee);
+  const installationFee = normalizeNumber(totals.installationFee);
+  const discountAmount = normalizeNumber(totals.discountAmount);
+  const netTotal = normalizeNumber(totals.netTotal ?? grandTotal);
+  const adjustments = [
+    ["Consultancy & Design", consultancyFee],
+    ["Installation", installationFee],
+    ["Discount", -discountAmount],
+  ];
+  const hasAdjustments =
+    adjustments.some(([, value]) => value !== 0) || netTotal !== grandTotal;
+
+  let netRow = grandRow;
+  if (hasAdjustments) {
+    adjustments.forEach(([label, value]) => {
+      merges.push(`B${currentRow}:G${currentRow}`);
+      styleRange(currentRow, 2, 10, 6);
+      addCell(currentRow, 2, { value: label, style: 6 });
+      addCell(currentRow, 8, { value, style: 7 });
+      currentRow += 1;
+    });
+
+    netRow = currentRow;
+    merges.push(`B${netRow}:G${netRow}`);
+    styleRange(netRow, 2, 10, 8);
+    addCell(netRow, 2, { value: "Net Project Value", style: 8 });
+    addCell(netRow, 8, { value: netTotal, style: 9 });
+    currentRow += 1;
+  }
+
+  currentRow += 2;
 
   const paymentStart = currentRow;
+  const paymentBaseRef = cellRef(8, netRow);
   merges.push(`D${currentRow}:F${currentRow}`);
   styleRange(currentRow, 4, 6, 10);
   addCell(currentRow, 4, { value: "Payment Cycle", style: 10 });
   currentRow += 1;
 
   [
-    ["Booking", `${cellRef(8, grandRow)}*30%`, grandTotal * 0.3],
-    ["Before Hardware", `${cellRef(8, grandRow)}*60%`, grandTotal * 0.6],
-    ["After Installation", `${cellRef(8, grandRow)}*10%`, grandTotal * 0.1],
-    ["Total", `SUM(F${paymentStart + 1}:F${paymentStart + 3})`, grandTotal],
+    ["Booking", `${paymentBaseRef}*30%`, netTotal * 0.3],
+    ["Before Hardware", `${paymentBaseRef}*60%`, netTotal * 0.6],
+    ["After Installation", `${paymentBaseRef}*10%`, netTotal * 0.1],
+    ["Total", `SUM(F${paymentStart + 1}:F${paymentStart + 3})`, netTotal],
   ].forEach(([label, formula, value]) => {
     addCell(currentRow, 4, { style: 11 });
     addCell(currentRow, 5, { value: label, style: label === "Total" ? 12 : 11 });
@@ -519,8 +552,8 @@ const createZipBlob = (files) => {
   });
 };
 
-export const createStyledQuotationWorkbook = ({ items }) => {
-  const model = buildSheetModel({ items });
+export const createStyledQuotationWorkbook = ({ items, totals = {} }) => {
+  const model = buildSheetModel({ items, totals });
   const worksheetXml = buildWorksheetXml(model);
 
   return createZipBlob([
