@@ -552,7 +552,7 @@ export default function QuotationReportPage() {
     { section: "Payment Cycle", label: "Booking Advance", amount: milestoneAmounts[0], percentage: `${bookingPct}%` },
     { section: "Payment Cycle", label: "Hardware Ordering & Dispatch", amount: milestoneAmounts[1], percentage: `${hardwarePct}%` },
     { section: "Payment Cycle", label: "Installation & Pre-Commissioning", amount: milestoneAmounts[2], percentage: `${installationPct}%` },
-  ];
+  ].filter((row) => parseFloat(row.percentage) > 0);
 
   // Hero PNG bada hai — print/PDF se pehle ensure karo ki cover image load/decode ho chuki hai
   // (4s timeout, taaki slow network par print block na ho).

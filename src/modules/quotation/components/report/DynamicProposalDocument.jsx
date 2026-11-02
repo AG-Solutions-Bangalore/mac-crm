@@ -604,7 +604,13 @@ export default function DynamicProposalDocument({
         <div>
           <SectionHeading number="02" title="Payment Milestones" subtitle="Structured payment schedule for seamless project execution" isLight={isLight} />
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: `repeat(${Math.max(paymentRows.length, 1)}, minmax(0, 1fr))`,
+              gap: "10px",
+            }}
+          >
             {paymentRows.map((pay, i) => (
               <div
                 key={i}
