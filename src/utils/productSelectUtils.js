@@ -1,7 +1,6 @@
-const clean = (value) => (value ?? "").toString().trim();
+import { matchesSearchTokens } from "./productSearch";
 
-const escapeRegExp = (value) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const clean = (value) => (value ?? "").toString().trim();
 
 export const buildProductOption = (product, brandName = "", categoryName = "") => {
   const moduleName = clean(product?.product_module);
@@ -80,16 +79,10 @@ export const buildProductOptions = (products = [], resolveNames = {}) => {
 };
 
 export const filterProductOption = (option, rawInput) => {
-  const query = clean(rawInput).toLowerCase();
-  if (!query) return true;
-
-  const haystack = (
+  const haystack =
     option?.searchText ??
     option?.data?.searchText ??
-    clean(option?.label)
-  ).toLowerCase();
+    clean(option?.label);
 
-  return query.split(/\s+/).every((token) =>
-    new RegExp(`(^|[^a-z0-9])${escapeRegExp(token)}`).test(haystack)
-  );
+  return matchesSearchTokens(haystack, rawInput);
 };

@@ -19,31 +19,7 @@ import {
 } from "@/components/ui/select";
 import { useProductsQuery } from "../hooks/useProduct";
 import { useActiveServicesQuery } from "../../service/hooks/useService";
-
-const escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-// Strict whole-word search: "2M" matches "2M" but not "12M".
-// Uses \b word boundaries so punctuation (e.g. "Socket,") still matches.
-// Search scope: Module + Product Name + Service + Category + Brand.
-const matchesSearch = (record, term) => {
-  if (!term) return true;
-  const tokens = term.trim().split(/\s+/).filter(Boolean);
-  if (tokens.length === 0) return true;
-  const haystack = [
-    record.product_module,
-    record.product_name,
-    record.service_name,
-    record.category_name,
-    record.brand_name,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
-  return tokens.every((t) => {
-    const re = new RegExp(`\\b${escapeRegExp(t)}\\b`, "i");
-    return re.test(haystack);
-  });
-};
+import { matchesProductSearch } from "@/utils/productSearch";
 
 const ProductListPage = () => {
   const navigate = useNavigate();
@@ -58,7 +34,7 @@ const ProductListPage = () => {
     (service) => service.id?.toString() === serviceFilter
   );
   // Combine typed text + selected service so the backend loose pre-filter gets
-  // both tokens; client-side strict filter then narrows precisely.
+  // both tokens; client-side hybrid filter then narrows precisely.
   const effectiveSearch =
     serviceFilter === "all"
       ? searchTerm
@@ -74,12 +50,12 @@ const ProductListPage = () => {
   const backendList = paginationData?.data || [];
 
   // Backend does a loose LIKE search (e.g. "2M" also returns "12M"), so apply
-  // strict whole-word filtering client-side, plus the service filter.
+  // hybrid filtering client-side, plus the service filter.
   const productList = useMemo(
     () =>
       backendList.filter(
         (r) =>
-          matchesSearch(r, searchTerm) &&
+          matchesProductSearch(r, searchTerm) &&
           (serviceFilter === "all" ||
             r.service_name?.toString() === serviceFilter)
       ),
