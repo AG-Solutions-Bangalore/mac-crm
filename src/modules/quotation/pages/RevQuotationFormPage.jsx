@@ -225,6 +225,16 @@ const flattenServicesToSubs = (servicesList) => {
   return flattened;
 };
 
+// Helper: Calculate subtotal for a single service block (product line items only)
+const calculateServiceTotal = (srv) =>
+  srv.floors.reduce((fSum, f) => {
+    return fSum + f.areas.reduce((aSum, a) => {
+      return aSum + a.products.reduce((pSum, p) =>
+        pSum + (Number(p.price) || 0) * (Number(p.quantity) || 0), 0
+      );
+    }, 0);
+  }, 0);
+
 const RevQuotationFormPage = () => {
   const { id: parentId, revId } = useParams();
   const isEdit = Boolean(revId);
@@ -243,6 +253,9 @@ const RevQuotationFormPage = () => {
     quotation_booing_confirmation: 30,
     quotation_hardware: 60,
     quotation_installation: 10,
+    quotation_design_amount: 0,
+    quotation_consultation_amount: 0,
+    quotation_installation_amount: 0,
   });
 
   const [servicesState, setServicesState] = useState([
@@ -591,6 +604,9 @@ const RevQuotationFormPage = () => {
         30,
       quotation_hardware: parent.quotation_hardware ?? 60,
       quotation_installation: parent.quotation_installation ?? 10,
+      quotation_design_amount: parent.quotation_design_amount ?? 0,
+      quotation_consultation_amount: parent.quotation_consultation_amount ?? 0,
+      quotation_installation_amount: parent.quotation_installation_amount ?? 0,
     };
     setFormData(nextForm);
 
@@ -656,6 +672,9 @@ const RevQuotationFormPage = () => {
           30,
         quotation_hardware: rev.quotation_hardware ?? 60,
         quotation_installation: rev.quotation_installation ?? 10,
+        quotation_design_amount: rev.quotation_design_amount ?? 0,
+        quotation_consultation_amount: rev.quotation_consultation_amount ?? 0,
+        quotation_installation_amount: rev.quotation_installation_amount ?? 0,
         quotation_prepared_id: rev.quotation_prepared_id?.toString() || "",
       };
 
@@ -1313,7 +1332,7 @@ const RevQuotationFormPage = () => {
       quotation_booing_confirmation: bookingPct,
       quotation_hardware: hardwarePct,
       quotation_installation: installationPct,
-      quotation_prepared_id: Number(formData.quotation_prepared_id),
+      quotation_prepared_id: formData.quotation_prepared_id ? Number(formData.quotation_prepared_id) : null,
       subs: flattenedSubs,
     };
   };
@@ -1599,6 +1618,12 @@ const RevQuotationFormPage = () => {
     }, 0);
   }, 0);
 
+  const designAmount = Number(formData.quotation_design_amount) || 0;
+  const consultationAmount = Number(formData.quotation_consultation_amount) || 0;
+  const installationAmount = Number(formData.quotation_installation_amount) || 0;
+
+  const totalWithFixedItems = totalAmount + designAmount + consultationAmount + installationAmount;
+
   const milestoneTotal =
     (Number(formData.quotation_booing_confirmation) || 0) +
     (Number(formData.quotation_hardware) || 0) +
@@ -1864,190 +1889,8 @@ const RevQuotationFormPage = () => {
           </CardContent>
         </Card>
 
-        {/* Payment Milestones Section */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b dark:border-slate-800 pb-3 mb-4">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                  <CreditCard className="w-5 h-5 text-primary" />
-                  Payment Milestones (%)
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Set milestone percentage distribution as per requirement (must total 100%)
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
-                    milestoneTotal === 100
-                      ? "bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400 border border-green-200 dark:border-green-800"
-                      : "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
-                  }`}
-                >
-                  {milestoneTotal === 100 ? (
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                  ) : (
-                    <AlertCircle className="w-3.5 h-3.5" />
-                  )}
-                  Total: {milestoneTotal}%
-                </span>
-                {(Number(formData.quotation_booing_confirmation) !== 30 ||
-                  Number(formData.quotation_hardware) !== 60 ||
-                  Number(formData.quotation_installation) !== 10) && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
-                    onClick={() => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        quotation_booing_confirmation: 30,
-                        quotation_hardware: 60,
-                        quotation_installation: 10,
-                      }));
-                    }}
-                  >
-                    <RotateCcw className="w-3 h-3 mr-1" />
-                    Reset (30 / 60 / 10)
-                  </Button>
-                )}
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Milestone 1 */}
-              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    1. Booking Confirmation
-                  </Label>
-                  <span className="text-xs font-bold text-primary">
-                    {formData.quotation_booing_confirmation ?? 30}%
-                  </span>
-                </div>
-                <div className="relative">
-                  <Input
-                    type="number"
-                    name="quotation_booing_confirmation"
-                    data-error-field="quotation_booing_confirmation"
-                    min="0"
-                    max="100"
-                    step="1"
-                    value={formData.quotation_booing_confirmation ?? ""}
-                    onChange={handleInputChange}
-                    className={`pr-8 bg-white dark:bg-slate-900 ${
-                      errors.quotation_booing_confirmation
-                        ? "border-red-500 focus-visible:ring-red-500"
-                        : "border-slate-200 dark:border-slate-800"
-                    }`}
-                    placeholder="30"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">
-                    %
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
-                  Upon booking confirmation
-                </p>
-                {totalAmount > 0 && (
-                  <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[0].toLocaleString("en-IN")}
-                  </div>
-                )}
-              </div>
-
-              {/* Milestone 2 */}
-              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    2. Hardware Dispatch
-                  </Label>
-                  <span className="text-xs font-bold text-primary">
-                    {formData.quotation_hardware ?? 60}%
-                  </span>
-                </div>
-                <div className="relative">
-                  <Input
-                    type="number"
-                    name="quotation_hardware"
-                    data-error-field="quotation_hardware"
-                    min="0"
-                    max="100"
-                    step="1"
-                    value={formData.quotation_hardware ?? ""}
-                    onChange={handleInputChange}
-                    className={`pr-8 bg-white dark:bg-slate-900 ${
-                      errors.quotation_booing_confirmation
-                        ? "border-red-500 focus-visible:ring-red-500"
-                        : "border-slate-200 dark:border-slate-800"
-                    }`}
-                    placeholder="60"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">
-                    %
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
-                  Upon hardware ordering & dispatch
-                </p>
-                {totalAmount > 0 && (
-                  <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[1].toLocaleString("en-IN")}
-                  </div>
-                )}
-              </div>
-
-              {/* Milestone 3 */}
-              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    3. Installation & Handover
-                  </Label>
-                  <span className="text-xs font-bold text-primary">
-                    {formData.quotation_installation ?? 10}%
-                  </span>
-                </div>
-                <div className="relative">
-                  <Input
-                    type="number"
-                    name="quotation_installation"
-                    data-error-field="quotation_installation"
-                    min="0"
-                    max="100"
-                    step="1"
-                    value={formData.quotation_installation ?? ""}
-                    onChange={handleInputChange}
-                    className={`pr-8 bg-white dark:bg-slate-900 ${
-                      errors.quotation_booing_confirmation
-                        ? "border-red-500 focus-visible:ring-red-500"
-                        : "border-slate-200 dark:border-slate-800"
-                    }`}
-                    placeholder="10"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">
-                    %
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
-                  Upon installation & pre-commissioning
-                </p>
-                {totalAmount > 0 && (
-                  <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
-                    ≈ ₹{milestoneAmounts[2].toLocaleString("en-IN")}
-                  </div>
-                )}
-              </div>
-            </div>
-            {errors.quotation_booing_confirmation && (
-              <p className="text-xs text-red-500 font-medium mt-3 flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5" />
-                {errors.quotation_booing_confirmation}
-              </p>
-            )}
-          </CardContent>
-        </Card>
+     
 
         {/* Nested Timeline Tree Line Items Section */}
         <Card>
@@ -2637,6 +2480,16 @@ const RevQuotationFormPage = () => {
                             >
                               <Plus size={12} /> Add Floor
                             </button>
+
+                            {/* Service Subtotal */}
+                            <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/10 p-3 rounded-xl font-bold border border-slate-200 dark:border-slate-800 mt-4">
+                              <div className="text-sm text-slate-700 dark:text-slate-300">
+                                {services.find((s) => s.id?.toString() === srv.serviceId)?.service_name || "Service Total"} Total
+                              </div>
+                              <div className="text-base text-slate-800 dark:text-slate-200">
+                                ₹{calculateServiceTotal(srv).toLocaleString("en-IN")}
+                              </div>
+                            </div>
                           </div>
                         )}
                       </Draggable>
@@ -2657,16 +2510,203 @@ const RevQuotationFormPage = () => {
                 <Plus size={14} /> Add Service
               </button>
 
+                   {/* Payment Milestones Section */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b dark:border-slate-800 pb-3 mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                  Payment Milestones (%)
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Set milestone percentage distribution as per requirement (must total 100%)
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+                    milestoneTotal === 100
+                      ? "bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400 border border-green-200 dark:border-green-800"
+                      : "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 border border-amber-200 dark:border-amber-800"
+                  }`}
+                >
+                  {milestoneTotal === 100 ? (
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  ) : (
+                    <AlertCircle className="w-3.5 h-3.5" />
+                  )}
+                  Total: {milestoneTotal}%
+                </span>
+                {(Number(formData.quotation_booing_confirmation) !== 30 ||
+                  Number(formData.quotation_hardware) !== 60 ||
+                  Number(formData.quotation_installation) !== 10) && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                    onClick={() => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        quotation_booing_confirmation: 30,
+                        quotation_hardware: 60,
+                        quotation_installation: 10,
+                      }));
+                    }}
+                  >
+                    <RotateCcw className="w-3 h-3 mr-1" />
+                    Reset (30 / 60 / 10)
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Milestone 1 */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    1. Booking Confirmation
+                  </Label>
+                  <span className="text-xs font-bold text-primary">
+                    {formData.quotation_booing_confirmation ?? 30}%
+                  </span>
+                </div>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    name="quotation_booing_confirmation"
+                    data-error-field="quotation_booing_confirmation"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={formData.quotation_booing_confirmation ?? ""}
+                    onChange={handleInputChange}
+                    className={`pr-8 bg-white dark:bg-slate-900 ${
+                      errors.quotation_booing_confirmation
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : "border-slate-200 dark:border-slate-800"
+                    }`}
+                    placeholder="30"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">
+                    %
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                  Upon booking confirmation
+                </p>
+                {totalAmount > 0 && (
+                  <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
+                    ≈ ₹{milestoneAmounts[0].toLocaleString("en-IN")}
+                  </div>
+                )}
+              </div>
+
+              {/* Milestone 2 */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    2. Hardware Dispatch
+                  </Label>
+                  <span className="text-xs font-bold text-primary">
+                    {formData.quotation_hardware ?? 60}%
+                  </span>
+                </div>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    name="quotation_hardware"
+                    data-error-field="quotation_hardware"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={formData.quotation_hardware ?? ""}
+                    onChange={handleInputChange}
+                    className={`pr-8 bg-white dark:bg-slate-900 ${
+                      errors.quotation_booing_confirmation
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : "border-slate-200 dark:border-slate-800"
+                    }`}
+                    placeholder="60"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">
+                    %
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                  Upon hardware ordering & dispatch
+                </p>
+                {totalAmount > 0 && (
+                  <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
+                    ≈ ₹{milestoneAmounts[1].toLocaleString("en-IN")}
+                  </div>
+                )}
+              </div>
+
+              {/* Milestone 3 */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    3. Installation & Handover
+                  </Label>
+                  <span className="text-xs font-bold text-primary">
+                    {formData.quotation_installation ?? 10}%
+                  </span>
+                </div>
+                <div className="relative">
+                  <Input
+                    type="number"
+                    name="quotation_installation"
+                    data-error-field="quotation_installation"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={formData.quotation_installation ?? ""}
+                    onChange={handleInputChange}
+                    className={`pr-8 bg-white dark:bg-slate-900 ${
+                      errors.quotation_booing_confirmation
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : "border-slate-200 dark:border-slate-800"
+                    }`}
+                    placeholder="10"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">
+                    %
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                  Upon installation & pre-commissioning
+                </p>
+                {totalAmount > 0 && (
+                  <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
+                    ≈ ₹{milestoneAmounts[2].toLocaleString("en-IN")}
+                  </div>
+                )}
+              </div>
+            </div>
+            {errors.quotation_booing_confirmation && (
+              <p className="text-xs text-red-500 font-medium mt-3 flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5" />
+                {errors.quotation_booing_confirmation}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+
               {/* Summary Row */}
               <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-900/60 p-4 rounded-xl font-bold border dark:border-slate-800 mt-6">
                 <div className="text-sm text-slate-700 dark:text-slate-300">Total Items Quantity: <span className="text-slate-900 dark:text-slate-100">{totalQty}</span></div>
                 <div className="text-base text-slate-800 dark:text-slate-200">
-                  Grand Total Amount: <span className="text-green-600 dark:text-green-400">₹{totalAmount.toLocaleString("en-IN")}</span>
+                  Grand Total Amount: <span className="text-green-600 dark:text-green-400">₹{totalWithFixedItems.toLocaleString("en-IN")}</span>
                 </div>
               </div>
           </CardContent>
         </Card>
 
+   
         {/* Action Buttons */}
         <div className="flex justify-end gap-2 mt-4 pt-4 border-t dark:border-slate-800">
           <Button

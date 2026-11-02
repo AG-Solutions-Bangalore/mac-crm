@@ -187,12 +187,14 @@ export default function QuotationReportPage() {
 
   useEffect(() => {
     if (!quotationDetail) return;
-    setConsultancyPct((prev) =>
-      prev === 5 ? Number(quotationDetail.quotation_booing_confirmation) || 5 : prev
-    );
-    setInstallPct((prev) =>
-      prev === 5 ? Number(quotationDetail.quotation_installation) || 5 : prev
-    );
+    // Always sync the fee percentages to the current quotation record.
+    // Removing the `prev === 5` guard: React Router reuses this component
+    // instance across quotation/:id changes (re-render, not remount), so the
+    // guard left stale percentages from a previously-viewed quotation applied
+    // to the new grand total — producing the wrong Consultancy / Installation
+    // / Net Project Value the client flagged.
+    setConsultancyPct(Number(quotationDetail.quotation_booing_confirmation) || 5);
+    setInstallPct(Number(quotationDetail.quotation_installation) || 5);
 
     // Auto-select Prepared By from the quotation record.
     // Prefer quotation_prepared_id; else fall back to matching prepared_name /
