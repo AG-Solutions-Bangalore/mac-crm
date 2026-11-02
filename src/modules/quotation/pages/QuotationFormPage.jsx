@@ -556,11 +556,18 @@ const QuotationFormPage = () => {
 
   const handleFeeBlur = (field) => {
     setFormData((prev) => {
-      const val = Number(prev[field]);
-      if (!Number.isFinite(val) || val <= 0) {
+      const raw = prev[field];
+      const val = Number(raw);
+      if (raw === "" || raw === null || raw === undefined || !Number.isFinite(val)) {
         return {
           ...prev,
           [field]: field === "quotation_consultancy_design_pct" ? 5 : 10,
+        };
+      }
+      if (val < 0) {
+        return {
+          ...prev,
+          [field]: 0,
         };
       }
       return prev;
@@ -1074,15 +1081,13 @@ const QuotationFormPage = () => {
     const hardwarePct = Number(formData.quotation_hardware ?? 60);
     const installationPct = Number(formData.quotation_installation ?? 10);
     const rawFeeConsultancyPct = Number(formData.quotation_consultancy_design_pct);
-    const feeConsultancyPct =
-      !Number.isFinite(rawFeeConsultancyPct) || rawFeeConsultancyPct <= 0
-        ? 5
-        : rawFeeConsultancyPct;
+    const feeConsultancyPct = Number.isFinite(rawFeeConsultancyPct)
+      ? Math.max(rawFeeConsultancyPct, 0)
+      : 5;
     const rawFeeInstallationPct = Number(formData.quotation_installation_pct);
-    const feeInstallationPct =
-      !Number.isFinite(rawFeeInstallationPct) || rawFeeInstallationPct <= 0
-        ? 10
-        : rawFeeInstallationPct;
+    const feeInstallationPct = Number.isFinite(rawFeeInstallationPct)
+      ? Math.max(rawFeeInstallationPct, 0)
+      : 10;
     const consultancyDesignAmount = calculatePercentageAmount(
       subtotal,
       feeConsultancyPct
@@ -1805,17 +1810,15 @@ const QuotationFormPage = () => {
   const rawConsultancyDesignPct = Number(
     formData.quotation_consultancy_design_pct
   );
-  const consultancyDesignPct =
-    !Number.isFinite(rawConsultancyDesignPct) || rawConsultancyDesignPct <= 0
-      ? 5
-      : rawConsultancyDesignPct;
+  const consultancyDesignPct = Number.isFinite(rawConsultancyDesignPct)
+    ? Math.max(rawConsultancyDesignPct, 0)
+    : 5;
   const rawInstallationPct = Number(
     formData.quotation_installation_pct
   );
-  const installationPct =
-    !Number.isFinite(rawInstallationPct) || rawInstallationPct <= 0
-      ? 10
-      : rawInstallationPct;
+  const installationPct = Number.isFinite(rawInstallationPct)
+    ? Math.max(rawInstallationPct, 0)
+    : 10;
   const consultancyDesignAmount = calculatePercentageAmount(
     totalAmount,
     consultancyDesignPct
