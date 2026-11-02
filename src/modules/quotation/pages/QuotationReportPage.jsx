@@ -413,8 +413,8 @@ export default function QuotationReportPage() {
   });
 
   // Totals — taxes are inclusive, so Net = Grand + Consultancy + Installation.
-  // Use the saved amounts from the quotation/revised/project record; fall back
-  // to the legacy fields and then to the default 5% / 10% rates for old records.
+  // Display only the values saved by the backend; never apply client-side
+  // defaults when the API explicitly returns 0.
   const legacyConsultancyDesign =
     (Number(quotationDetail.quotation_design_amount) || 0) +
     (Number(quotationDetail.quotation_consultation_amount) || 0);
@@ -425,18 +425,10 @@ export default function QuotationReportPage() {
     toOptionalAmount(quotationDetail.quotation_installation_amount) ??
     toOptionalAmount(quotationDetail.project_installation_amount);
 
-  // Old records have 0/missing fee fields — fall back to the legacy values,
-  // then to the default 5% / 10% rates.
   const consultancyFee =
-    storedConsultancyDesign !== null && storedConsultancyDesign > 0
-      ? storedConsultancyDesign
-      : legacyConsultancyDesign > 0
-        ? legacyConsultancyDesign
-        : Math.round(grandTotal * 0.05);
-  const installationFee =
-    storedInstallationAmount !== null && storedInstallationAmount > 0
-      ? storedInstallationAmount
-      : Math.round(grandTotal * 0.1);
+    storedConsultancyDesign ??
+    (legacyConsultancyDesign > 0 ? legacyConsultancyDesign : 0);
+  const installationFee = storedInstallationAmount ?? 0;
 
   const netTotal = grandTotal + consultancyFee + installationFee;
 

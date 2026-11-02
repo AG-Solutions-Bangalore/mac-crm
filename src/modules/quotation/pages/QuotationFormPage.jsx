@@ -48,7 +48,11 @@ import {
 } from "../utils/quotationPendingServices";
 import { QuickNameDialog, ProductQuickAddDialog, ServiceQuickAddDialog } from "../components/MasterQuickAddDialogs";
 import { useCreateBuyerMutation } from "../../buyer/hooks/useBuyer";
-import { calculateMilestoneAmounts } from "@/utils/milestoneUtils";
+import {
+  calculateMilestoneAmounts,
+  calculatePercentageAmount,
+  deriveFeePercentage,
+} from "@/utils/milestoneUtils";
 import { buildProductOptions, filterProductOption } from "@/utils/productSelectUtils";
 import {
   Dialog,
@@ -247,9 +251,11 @@ const QuotationFormPage = () => {
     quotation_hardware: 60,
     quotation_installation: 10,
     quotation_consultancy_design: 0,
+    quotation_consultancy_design_pct: 5,
     quotation_design_amount: 0,
     quotation_consultation_amount: 0,
     quotation_installation_amount: 0,
+    quotation_installation_pct: 10,
   });
 
   const [servicesState, setServicesState] = useState([
@@ -287,8 +293,6 @@ const QuotationFormPage = () => {
     JSON.stringify({ formData, servicesState })
   );
   const defaultsAppliedRef = useRef(false);
-  const consultancyDesignTouchedRef = useRef(false);
-  const installationAmountTouchedRef = useRef(false);
 
   // Buyer quick-add (single reusable SelectWithAdd + inline dialog)
   const [buyerDialogOpen, setBuyerDialogOpen] = useState(false);
@@ -404,12 +408,6 @@ const QuotationFormPage = () => {
         storedInstallationAmount !== undefined &&
         storedInstallationAmount !== "";
 
-      consultancyDesignTouchedRef.current =
-        (hasStoredConsultancyDesign && Number(storedConsultancyDesign) > 0) ||
-        legacyConsultancyDesign > 0;
-      installationAmountTouchedRef.current =
-        hasStoredInstallationAmount && Number(storedInstallationAmount) > 0;
-
       const nextForm = {
         quotation_date: data.quotation_date || "",
         quotation_validity_date: data.quotation_validity_date || "",
@@ -461,6 +459,18 @@ const QuotationFormPage = () => {
           ].join(",");
         }
       }
+      const feeSubtotal = calculateServicesTotal(nextServices || []);
+      nextForm.quotation_consultancy_design_pct = deriveFeePercentage(
+        nextForm.quotation_consultancy_design,
+        feeSubtotal,
+        5
+      );
+      nextForm.quotation_installation_pct = deriveFeePercentage(
+        nextForm.quotation_installation_amount,
+        feeSubtotal,
+        10
+      );
+
       setFormData(nextForm);
       if (nextServices) setServicesState(nextServices);
       // pristine snapshot taaki bina change ke bahar jane par popup na aaye
@@ -487,39 +497,6 @@ const QuotationFormPage = () => {
       setInitialSnapshot(JSON.stringify({ formData: nextForm, servicesState: snapshotServices }));
     }
   }, [isEdit, fetchedData]);
-
-  // Auto-fill the fee amounts until the user edits them manually.
-  useEffect(() => {
-    const subtotal = calculateServicesTotal(servicesState);
-    const autoConsultancyDesign = Math.round(subtotal * 0.05);
-    const autoInstallation = Math.round(subtotal * 0.1);
-    setFormData((prev) => {
-      const next = { ...prev };
-      let changed = false;
-      if (
-        !consultancyDesignTouchedRef.current &&
-        Number(prev.quotation_consultancy_design) !== autoConsultancyDesign
-      ) {
-        next.quotation_consultancy_design = autoConsultancyDesign;
-        changed = true;
-      }
-      if (
-        !installationAmountTouchedRef.current &&
-        Number(prev.quotation_installation_amount) !== autoInstallation
-      ) {
-        next.quotation_installation_amount = autoInstallation;
-        changed = true;
-      }
-      return changed ? next : prev;
-    });
-  }, [servicesState]);
-
-  useEffect(() => {
-    if (!isEdit) {
-      consultancyDesignTouchedRef.current = false;
-      installationAmountTouchedRef.current = false;
-    }
-  }, [isEdit]);
 
   const snapshotKey = useMemo(
     () => JSON.stringify({ formData, servicesState }),
@@ -551,18 +528,25 @@ const QuotationFormPage = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name === "quotation_consultancy_design") {
-      consultancyDesignTouchedRef.current = true;
-    }
-    if (name === "quotation_installation_amount") {
-      installationAmountTouchedRef.current = true;
-    }
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({
       ...prev,
       [name]: "",
       quotation_booing_confirmation: "",
     }));
+  };
+
+  const handleFeeBlur = (field) => {
+    setFormData((prev) => {
+      const val = Number(prev[field]);
+      if (!Number.isFinite(val) || val <= 0) {
+        return {
+          ...prev,
+          [field]: field === "quotation_consultancy_design_pct" ? 5 : 10,
+        };
+      }
+      return prev;
+    });
   };
 
   // Category Checkbox Handlers
@@ -1046,17 +1030,44 @@ const QuotationFormPage = () => {
   // Shared payload builder (create + overwrite + save-as-new sab yahi use karte hai)
   const buildPayload = (overrides = {}, servicesList = servicesState) => {
     const flattenedSubs = flattenServicesToSubs(servicesList);
+    const subtotal = calculateServicesTotal(servicesList);
     const bookingPct = Number(formData.quotation_booing_confirmation ?? 30);
     const hardwarePct = Number(formData.quotation_hardware ?? 60);
     const installationPct = Number(formData.quotation_installation ?? 10);
+    const rawFeeConsultancyPct = Number(formData.quotation_consultancy_design_pct);
+    const feeConsultancyPct =
+      !Number.isFinite(rawFeeConsultancyPct) || rawFeeConsultancyPct <= 0
+        ? 5
+        : rawFeeConsultancyPct;
+    const rawFeeInstallationPct = Number(formData.quotation_installation_pct);
+    const feeInstallationPct =
+      !Number.isFinite(rawFeeInstallationPct) || rawFeeInstallationPct <= 0
+        ? 10
+        : rawFeeInstallationPct;
+    const consultancyDesignAmount = calculatePercentageAmount(
+      subtotal,
+      feeConsultancyPct
+    );
+    const installationAmount = calculatePercentageAmount(
+      subtotal,
+      feeInstallationPct
+    );
+    const payloadForm = { ...formData };
+    delete payloadForm.quotation_consultancy_design_pct;
+    delete payloadForm.quotation_installation_pct;
+
     return {
-      ...formData,
+      ...payloadForm,
       ...overrides,
       quotation_buyer_id: Number(formData.quotation_buyer_id),
       quotation_property_id: Number(formData.quotation_property_id),
       quotation_booing_confirmation: bookingPct,
       quotation_hardware: hardwarePct,
       quotation_installation: installationPct,
+      quotation_consultancy_design: consultancyDesignAmount,
+      quotation_design_amount: 0,
+      quotation_consultation_amount: 0,
+      quotation_installation_amount: installationAmount,
       quotation_prepared_id: formData.quotation_prepared_id ? Number(formData.quotation_prepared_id) : null,
       subs: flattenedSubs,
     };
@@ -1745,21 +1756,37 @@ const QuotationFormPage = () => {
     );
   }, 0);
 
-  const consultancyDesignAmount =
-    Number(formData.quotation_consultancy_design) || 0;
-  const installationAmount = Number(formData.quotation_installation_amount) || 0;
+  const rawConsultancyDesignPct = Number(
+    formData.quotation_consultancy_design_pct
+  );
+  const consultancyDesignPct =
+    !Number.isFinite(rawConsultancyDesignPct) || rawConsultancyDesignPct <= 0
+      ? 5
+      : rawConsultancyDesignPct;
+  const rawInstallationPct = Number(
+    formData.quotation_installation_pct
+  );
+  const installationPct =
+    !Number.isFinite(rawInstallationPct) || rawInstallationPct <= 0
+      ? 10
+      : rawInstallationPct;
+  const consultancyDesignAmount = calculatePercentageAmount(
+    totalAmount,
+    consultancyDesignPct
+  );
+  const installationAmount = calculatePercentageAmount(
+    totalAmount,
+    installationPct
+  );
 
   const totalWithFixedItems =
     totalAmount + consultancyDesignAmount + installationAmount;
 
   const resetFeeAmounts = () => {
-    consultancyDesignTouchedRef.current = false;
-    installationAmountTouchedRef.current = false;
-    const subtotal = calculateServicesTotal(servicesState);
     setFormData((prev) => ({
       ...prev,
-      quotation_consultancy_design: Math.round(subtotal * 0.05),
-      quotation_installation_amount: Math.round(subtotal * 0.1),
+      quotation_consultancy_design_pct: 5,
+      quotation_installation_pct: 10,
     }));
   };
 
@@ -2518,77 +2545,101 @@ const QuotationFormPage = () => {
                       <div>
                         <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
                           <CreditCard className="w-5 h-5 text-primary" />
-                          Consultancy & Installation Charges
+                          Consultancy & Installation Charges (%)
                         </h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                          Auto-calculated on the line-item total. You can edit the amounts.
+                          Set charges percentage distribution on line-item total (amount calculated below)
                         </p>
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
-                        onClick={resetFeeAmounts}
-                      >
-                        <RotateCcw className="w-3 h-3 mr-1" />
-                        Reset (5% / 10%)
-                      </Button>
+                      {(consultancyDesignPct !== 5 || installationPct !== 10) && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                          onClick={resetFeeAmounts}
+                        >
+                          <RotateCcw className="w-3 h-3 mr-1" />
+                          Reset (5% / 10%)
+                        </Button>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Consultancy & Design */}
                       <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
                         <div className="flex items-center justify-between">
                           <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                            Consultancy & Design Amount
+                            Consultancy & Design
                           </Label>
-                          <span className="text-xs font-bold text-primary">5%</span>
+                          <span className="text-xs font-bold text-primary">
+                            {consultancyDesignPct}%
+                          </span>
                         </div>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">
-                            ₹
-                          </span>
                           <Input
                             type="number"
-                            name="quotation_consultancy_design"
+                            name="quotation_consultancy_design_pct"
+                            data-error-field="quotation_consultancy_design_pct"
                             min="0"
-                            step="1"
-                            value={formData.quotation_consultancy_design ?? ""}
+                            max="100"
+                            step="any"
+                            value={formData.quotation_consultancy_design_pct ?? ""}
                             onChange={handleInputChange}
-                            className="pl-7 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
-                            placeholder="Auto 5%"
+                            onBlur={() => handleFeeBlur("quotation_consultancy_design_pct")}
+                            className="pr-8 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                            placeholder="5"
                           />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">
+                            %
+                          </span>
                         </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                          Auto 5% ≈ ₹{Math.round(totalAmount * 0.05).toLocaleString("en-IN")}
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                          Consultancy, engineering & system design
                         </p>
+                        {totalAmount > 0 && (
+                          <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
+                            ≈ ₹{consultancyDesignAmount.toLocaleString("en-IN")}
+                          </div>
+                        )}
                       </div>
 
+                      {/* Installation */}
                       <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 space-y-2">
                         <div className="flex items-center justify-between">
                           <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                            Installation Amount
+                            Installation
                           </Label>
-                          <span className="text-xs font-bold text-primary">10%</span>
+                          <span className="text-xs font-bold text-primary">
+                            {installationPct}%
+                          </span>
                         </div>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">
-                            ₹
-                          </span>
                           <Input
                             type="number"
-                            name="quotation_installation_amount"
+                            name="quotation_installation_pct"
+                            data-error-field="quotation_installation_pct"
                             min="0"
-                            step="1"
-                            value={formData.quotation_installation_amount ?? ""}
+                            max="100"
+                            step="any"
+                            value={formData.quotation_installation_pct ?? ""}
                             onChange={handleInputChange}
-                            className="pl-7 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
-                            placeholder="Auto 10%"
+                            onBlur={() => handleFeeBlur("quotation_installation_pct")}
+                            className="pr-8 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                            placeholder="10"
                           />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">
+                            %
+                          </span>
                         </div>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                          Auto 10% ≈ ₹{Math.round(totalAmount * 0.1).toLocaleString("en-IN")}
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                          Testing, installation & commissioning
                         </p>
+                        {totalAmount > 0 && (
+                          <div className="text-xs font-medium text-emerald-600 dark:text-emerald-400 pt-1 border-t dark:border-slate-800/80">
+                            ≈ ₹{installationAmount.toLocaleString("en-IN")}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>
