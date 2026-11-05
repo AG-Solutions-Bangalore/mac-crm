@@ -40,7 +40,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   LabelList,
 } from "recharts";
@@ -143,6 +142,7 @@ const Dashboard = () => {
       year: item.year,
       "Pending Quotations": Number(item.pending_count || 0),
       "Approved Quotations": Number(item.approved_count || 0),
+      "Cancelled Quotations": Number(item.cancel_count || 0),
       "Running Projects": Number(item.running_project_count || 0),
       "Finished Projects": Number(item.finish_project_count || 0),
     }));
@@ -512,7 +512,7 @@ const Dashboard = () => {
 
             {/* 3. YEAR-WISE COMPARISON GRAPH (Strictly from API graph1, ONLY YEARS on X-Axis) */}
             <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
-              <div className="pb-4 border-b border-border">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <div className="p-1.5 rounded-md bg-primary/10 text-primary">
@@ -526,6 +526,30 @@ const Dashboard = () => {
                     
                   </p>
                 </div>
+
+                {/* Legend placed above the divider line */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#F59E0B]" />
+                    <span className="text-muted-foreground font-medium">Pending Quotations</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#10B981]" />
+                    <span className="text-muted-foreground font-medium">Approved Quotations</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#EF4444]" />
+                    <span className="text-muted-foreground font-medium">Cancelled Quotations</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#3B82F6]" />
+                    <span className="text-muted-foreground font-medium">Running Projects</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#8B5CF6]" />
+                    <span className="text-muted-foreground font-medium">Finished Projects</span>
+                  </div>
+                </div>
               </div>
 
 
@@ -535,7 +559,7 @@ const Dashboard = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={yearWiseChartData}
-                    margin={{ top: 22, right: 20, left: -15, bottom: 5 }}
+                    margin={{ top: 25, right: 20, left: -15, bottom: 5 }}
                     barGap={8}
                   >
                     <CartesianGrid
@@ -562,19 +586,11 @@ const Dashboard = () => {
                       domain={[0, (dataMax) => (dataMax ? Math.max(4, dataMax + 1) : 4)]}
                     />
                     <Tooltip content={<YearWiseTooltip />} />
-                    <Legend
-                      verticalAlign="top"
-                      align="right"
-                      height={40}
-                      iconType="circle"
-                      iconSize={8}
-                      wrapperStyle={{ fontSize: 12, paddingBottom: 12 }}
-                    />
                     <Bar
                       dataKey="Pending Quotations"
                       fill="#F59E0B"
                       radius={[6, 6, 0, 0]}
-                      maxBarSize={48}
+                      maxBarSize={44}
                     >
                       <LabelList
                         dataKey="Pending Quotations"
@@ -591,7 +607,7 @@ const Dashboard = () => {
                       dataKey="Approved Quotations"
                       fill="#10B981"
                       radius={[6, 6, 0, 0]}
-                      maxBarSize={48}
+                      maxBarSize={44}
                     >
                       <LabelList
                         dataKey="Approved Quotations"
@@ -605,10 +621,27 @@ const Dashboard = () => {
                       />
                     </Bar>
                     <Bar
+                      dataKey="Cancelled Quotations"
+                      fill="#EF4444"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={44}
+                    >
+                      <LabelList
+                        dataKey="Cancelled Quotations"
+                        position="top"
+                        offset={8}
+                        formatter={(val) => (Number(val) > 0 ? val : "")}
+                        fill="var(--color-foreground, #0f172a)"
+                        fontSize={12}
+                        fontWeight={700}
+                        className="font-mono font-bold"
+                      />
+                    </Bar>
+                    <Bar
                       dataKey="Running Projects"
                       fill="#3B82F6"
                       radius={[6, 6, 0, 0]}
-                      maxBarSize={48}
+                      maxBarSize={44}
                     >
                       <LabelList
                         dataKey="Running Projects"
@@ -625,7 +658,7 @@ const Dashboard = () => {
                       dataKey="Finished Projects"
                       fill="#8B5CF6"
                       radius={[6, 6, 0, 0]}
-                      maxBarSize={48}
+                      maxBarSize={44}
                     >
                       <LabelList
                         dataKey="Finished Projects"
