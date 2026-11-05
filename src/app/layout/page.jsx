@@ -10,10 +10,13 @@ import { useNavigate } from "react-router-dom";
 import { Sun, Moon } from "lucide-react";
 import { useTheme } from "@/lib/theme-context";
 import { Breadcrumbs } from "@/components/new/breadcrumbs";
+import { useSelector } from "react-redux";
 
 export default function Page({ children }) {
   const navigate = useNavigate();
   const { themeMode, setThemeMode } = useTheme();
+  const currentYear = useSelector((state) => state.auth?.currentYear);
+  const displayYear = currentYear || "2026-27";
 
   const handleBackClick = (e) => {
     e.preventDefault();
@@ -59,7 +62,7 @@ export default function Page({ children }) {
         </main>
         <footer className="hidden sm:block sticky bottom-0 z-10 h-8 shrink-0 items-center bg-[var(--base)]/95 dark:bg-[var(--base)]/95 backdrop-blur px-6">
           <div className="flex items-center justify-between gap-2 py-2 text-xs border-t border-[var(--line)] text-[var(--ink-soft)]">
-            <span>© 2025-26 All Rights Reserved</span>
+            <span>© {displayYear} All Rights Reserved</span>
             <span>Crafted with ❤️ by AG Solutions</span>
           </div>
         </footer>

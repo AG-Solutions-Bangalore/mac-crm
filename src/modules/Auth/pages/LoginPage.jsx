@@ -98,7 +98,7 @@ export default function LoginPage() {
       });
 
       if (res?.code === 200 || res?.code === 201) {
-        const { UserInfo, version, year } = res;
+        const { UserInfo, version, year, currentYera } = res;
 
         if (res.company_detils) {
           dispatch(setCompanyDetails(res.company_detils));
@@ -113,7 +113,7 @@ export default function LoginPage() {
             token: UserInfo.token,
             user: UserInfo.user,
             version: version?.version_panel,
-            currentYear: year?.current_year,
+            currentYear: currentYera?.current_year || year?.current_year,
             tokenExpireAt: UserInfo.token_expires_at,
           }),
         );

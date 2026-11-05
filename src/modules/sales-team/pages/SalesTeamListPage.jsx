@@ -89,6 +89,31 @@ const SalesTeamListPage = () => {
       cell: ({ row }) => row.original.mobile || "-",
     },
     {
+      header: "Access Level",
+      accessorKey: "role",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const member = row.original;
+        const id = getSalesTeamMemberId(member);
+        const role =
+          member.role ||
+          member.access_role ||
+          (typeof window !== "undefined" && localStorage.getItem(`user_role_${id}`)) ||
+          "editor";
+        return (
+          <span
+            className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold capitalize ${
+              role === "viewer"
+                ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                : "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200/50"
+            }`}
+          >
+            {role}
+          </span>
+        );
+      },
+    },
+    {
       header: "Status",
       accessorKey: "status",
       cell: ({ row }) => {

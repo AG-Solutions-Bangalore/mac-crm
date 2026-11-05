@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { usePersistedSearch } from "@/hooks/usePersistedSearch";
 import { Edit, FileText, MoreHorizontal, FolderKanban, CheckCircle, XCircle, RotateCcw } from "lucide-react";
@@ -25,23 +26,35 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useProjectsQuery, useUpdateProjectStatusMutation } from "../hooks/useProject";
+import { useCyearQuery } from "../../quotation/hooks/useQuotation";
+import { isViewerUser } from "@/utils/permissions";
 import moment from "moment";
 
 const ProjectListPage = () => {
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
+  const isRestrictedUser = Number(user?.user_type) === 4;
+  const isViewer = isViewerUser(user);
   const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = usePersistedSearch();
   const [statusFilter, setStatusFilter] = useState("all");
+  const [yearFilter, setYearFilter] = useState("all");
+  const { data: cyearData } = useCyearQuery();
+  const cyearList = cyearData?.data || [];
 
   const { data: responseData, isLoading, isFetching, isError, refetch } = useProjectsQuery(
     page,
     searchTerm,
-    statusFilter
+    statusFilter,
+    yearFilter
   );
   const updateStatusMutation = useUpdateProjectStatusMutation();
 
   const paginationData = responseData?.data;
-  const projectList = paginationData?.data || [];
+  const rawProjectList = paginationData?.data || [];
+  const projectList = yearFilter && yearFilter !== "all"
+    ? rawProjectList.filter((item) => String(item.year || "").trim() === String(yearFilter).trim())
+    : rawProjectList;
 
   const columns = [
     {
@@ -185,20 +198,22 @@ const ProjectListPage = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[12rem]">
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => navigate(`/project-list/edit/${p.id}`)}
-              >
-                <Edit className="h-4 w-4 mr-2" /> Edit Project
-              </DropdownMenuItem>
+              {!isViewer && (
+                <DropdownMenuItem
+                  className="cursor-pointer"
+                  onClick={() => navigate(`/project-list/edit/${p.id}`)}
+                >
+                  <Edit className="h-4 w-4 mr-2" /> Edit Project
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 className="cursor-pointer"
                 onClick={() => navigate(`/quotation-report/${p.id}?type=project`)}
               >
                 <FileText className="h-4 w-4 mr-2" /> View Report
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {status !== "Approved" && (
+              {!isRestrictedUser && <DropdownMenuSeparator />}
+              {!isRestrictedUser && status !== "Approved" && (
                 <DropdownMenuItem
                   className="cursor-pointer text-emerald-600 dark:text-emerald-400 font-medium"
                   onClick={async () => {
@@ -214,7 +229,7 @@ const ProjectListPage = () => {
                   <CheckCircle className="h-4 w-4 mr-2" /> Mark as Approved
                 </DropdownMenuItem>
               )}
-              {status !== "Project" && (
+              {!isRestrictedUser && status !== "Project" && (
                 <DropdownMenuItem
                   className="cursor-pointer text-blue-600 dark:text-blue-400 font-medium"
                   onClick={async () => {
@@ -230,7 +245,7 @@ const ProjectListPage = () => {
                   <RotateCcw className="h-4 w-4 mr-2" /> Set as Project
                 </DropdownMenuItem>
               )}
-              {status !== "Cancel" && (
+              {!isRestrictedUser && status !== "Cancel" && (
                 <DropdownMenuItem
                   className="cursor-pointer text-rose-600 dark:text-rose-400 font-medium"
                   onClick={async () => {
@@ -265,25 +280,47 @@ const ProjectListPage = () => {
       <DataTable
         isLoading={isLoading || isFetching}
         extraButton={
-          <Select
-            value={statusFilter}
-            onValueChange={(val) => {
-              setStatusFilter(val);
-              setPage(1);
-            }}
-          >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Select Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="Project">Project</SelectItem>
-              <SelectItem value="Pending">Pending</SelectItem>
-              <SelectItem value="Approved">Approved</SelectItem>
-              <SelectItem value="Cancel">Cancel</SelectItem>
-              <SelectItem value="Closed">Closed</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <Select
+              value={yearFilter}
+              onValueChange={(val) => {
+                setYearFilter(val);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[125px]">
+                <SelectValue placeholder="All Years" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Years</SelectItem>
+                {cyearList.map((c) => (
+                  <SelectItem key={c.cyear} value={c.cyear}>
+                    {c.cyear}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={statusFilter}
+              onValueChange={(val) => {
+                setStatusFilter(val);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Select Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="Project">Project</SelectItem>
+                <SelectItem value="Pending">Pending</SelectItem>
+                <SelectItem value="Approved">Approved</SelectItem>
+                <SelectItem value="Cancel">Cancel</SelectItem>
+                <SelectItem value="Closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         }
         data={projectList}
         columns={columns}
@@ -294,10 +331,14 @@ const ProjectListPage = () => {
           setSearchTerm(val);
           setPage(1);
         }}
-        addButton={{
-          onClick: () => navigate("/project-list/create"),
-          label: "Add Project",
-        }}
+        addButton={
+          isViewer
+            ? undefined
+            : {
+                onClick: () => navigate("/project-list/create"),
+                label: "Add Project",
+              }
+        }
         backendPagination={true}
         page={paginationData?.current_page || 1}
         totalPages={paginationData?.last_page || 1}

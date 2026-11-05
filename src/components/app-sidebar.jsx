@@ -259,7 +259,6 @@ const USER_ROLE_PERMISSIONS = {
       "BRAND",
       "CATEGORY",
       "PRODUCT",
-      "SALES_TEAM",
       "QUOTATION",
       "PROJECT",
       "SERVICEREQUEST",

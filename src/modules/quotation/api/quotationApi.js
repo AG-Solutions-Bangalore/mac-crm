@@ -1,6 +1,11 @@
 import apiClient from "@/api/apiClient";
 
 export const quotationApi = {
+  // Fetch financial years for dropdown filter
+  fetchCyear: async () => {
+    const response = await apiClient.get("/panel-fetch-cyear");
+    return response.data;
+  },
   // Fetch products by categories and services (Form-Data)
   getProductsForQuotation: async (categoryIds, serviceIds) => {
     // Normalise inputs to clean comma-separated strings
@@ -50,10 +55,13 @@ export const quotationApi = {
   },
 
   // Quotation CRUD
-  getQuotations: async (page = 1, search = "", status = "") => {
+  getQuotations: async (page = 1, search = "", status = "", year = "") => {
     let url = `/quotation?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
     if (status && status !== "all") {
       url += `&filter=${encodeURIComponent(status)}`;
+    }
+    if (year && year !== "all") {
+      url += `&year=${encodeURIComponent(year)}`;
     }
     url += `&sort=id&order=desc`;
     const response = await apiClient.get(url);
@@ -83,8 +91,11 @@ export const quotationApi = {
   },
 
   // Revised Quotation CRUD
-  getRevQuotations: async (quotationId, page = 1, search = "") => {
-    const url = `/rev-quotation?id=${quotationId}&page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
+  getRevQuotations: async (quotationId, page = 1, search = "", year = "") => {
+    let url = `/rev-quotation?id=${quotationId}&page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
+    if (year && year !== "all") {
+      url += `&year=${encodeURIComponent(year)}`;
+    }
     const response = await apiClient.get(url);
     return response.data;
   },

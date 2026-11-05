@@ -1,6 +1,15 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { quotationApi } from "../api/quotationApi";
 
+export function useCyearQuery() {
+  return useQuery({
+    queryKey: ["cyear-list"],
+    queryFn: quotationApi.fetchCyear,
+    staleTime: 1000 * 60 * 30, // 30 mins
+    refetchOnWindowFocus: false,
+  });
+}
+
 export function useGetProductsForQuotationQuery(categoryIds, serviceIds, enabled = true) {
   return useQuery({
     queryKey: ["products-for-quotation", categoryIds, serviceIds],
@@ -12,10 +21,10 @@ export function useGetProductsForQuotationQuery(categoryIds, serviceIds, enabled
   });
 }
 
-export function useQuotationsQuery(page = 1, search = "", status = "all") {
+export function useQuotationsQuery(page = 1, search = "", status = "all", year = "all") {
   return useQuery({
-    queryKey: ["quotations", page, search, status],
-    queryFn: () => quotationApi.getQuotations(page, search, status),
+    queryKey: ["quotations", page, search, status, year],
+    queryFn: () => quotationApi.getQuotations(page, search, status, year),
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
@@ -100,11 +109,11 @@ export function useDeleteQuotationSubMutation() {
   });
 }
 
-export function useRevQuotationsQuery(quotationId, page = 1, search = "", enabled = true) {
+export function useRevQuotationsQuery(quotationId, page = 1, search = "", year = "all", enabled = true) {
   const normalizedId = quotationId?.toString() || "";
   return useQuery({
-    queryKey: ["rev-quotations", normalizedId, page, search],
-    queryFn: () => quotationApi.getRevQuotations(quotationId, page, search),
+    queryKey: ["rev-quotations", normalizedId, page, search, year],
+    queryFn: () => quotationApi.getRevQuotations(quotationId, page, search, year),
     enabled: !!quotationId && enabled,
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,

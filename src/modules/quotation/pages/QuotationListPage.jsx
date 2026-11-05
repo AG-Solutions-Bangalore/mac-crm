@@ -30,17 +30,27 @@ import {
   useUpdateQuotationFinishWorkDateMutation,
   useUpdateQuotationStatusMutation,
   useUpdateQuotationValidateDateMutation,
+  useCyearQuery,
 } from "../hooks/useQuotation";
 import { quotationApi } from "../api/quotationApi";
 import { projectApi } from "../../project/api/projectApi";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSelector } from "react-redux";
+import { toast } from "sonner";
 import moment from "moment";
+import { isQuotationOwnedByUser, isViewerUser } from "@/utils/permissions";
 
 const QuotationListPage = () => {
   const navigate = useNavigate();
+  const user = useSelector((state) => state.auth?.user);
+  const isRestrictedUser = Number(user?.user_type) === 4;
+  const isViewer = isViewerUser(user);
   const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = usePersistedSearch();
   const [statusFilter, setStatusFilter] = useState("all");
+  const [yearFilter, setYearFilter] = useState("all");
+  const { data: cyearData } = useCyearQuery();
+  const cyearList = cyearData?.data || [];
   // Estimates-only view: converted (Project) quotes hidden by default (client-side,
   // backend has no hide-converted filter yet). Specific status selection overrides it.
   const [hideConverted, setHideConverted] = useState(true);
@@ -52,7 +62,7 @@ const QuotationListPage = () => {
   const [convertingQuotation, setConvertingQuotation] = useState(null);
 
   const queryClient = useQueryClient();
-  const { data: responseData, isLoading, isFetching, isError, refetch } = useQuotationsQuery(page, searchTerm, statusFilter);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useQuotationsQuery(page, searchTerm, statusFilter, yearFilter);
   const updateFinishWorkDateMutation = useUpdateQuotationFinishWorkDateMutation();
   const updateStatusMutation = useUpdateQuotationStatusMutation();
   const updateValidateDateMutation = useUpdateQuotationValidateDateMutation();
@@ -215,12 +225,21 @@ const QuotationListPage = () => {
   const paginationData = responseData?.data;
   const rawQuotationList = paginationData?.data || [];
 
+  // Enforce quote isolation: user_type 4 can only view their own quotes
+  const userScopedList = isRestrictedUser
+    ? rawQuotationList.filter((item) => isQuotationOwnedByUser(item, user))
+    : rawQuotationList;
+
+  const yearScopedList = yearFilter && yearFilter !== "all"
+    ? userScopedList.filter((item) => String(item.year || "").trim() === String(yearFilter).trim())
+    : userScopedList;
+
   const quotationList =
     statusFilter === "all" && hideConverted
-      ? rawQuotationList.filter(
+      ? yearScopedList.filter(
           (item) => item.quotation_status?.toLowerCase() !== "project"
         )
-      : rawQuotationList;
+      : yearScopedList;
 
   quotationList.sort(
     (a, b) =>
@@ -275,7 +294,7 @@ const QuotationListPage = () => {
         onClick: () => navigate(`/quotation-report/${q.id}`),
         extra: "text-slate-600 hover:text-slate-800",
       },
-      ...(canFinishDate
+      ...(canFinishDate && !isRestrictedUser
         ? [
             {
               label: "Finish Date",
@@ -287,15 +306,19 @@ const QuotationListPage = () => {
             },
           ]
         : []),
-      {
-        label: "Validity Date",
-        title: "Update Validity Date",
-        icon: CalendarDays,
-        onClick: () => handleOpenValidateDateDialog(q),
-        extra:
-          "text-sky-600 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/30",
-      },
-      ...(showConvertButton
+      ...(!isRestrictedUser
+        ? [
+            {
+              label: "Validity Date",
+              title: "Update Validity Date",
+              icon: CalendarDays,
+              onClick: () => handleOpenValidateDateDialog(q),
+              extra:
+                "text-sky-600 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/30",
+            },
+          ]
+        : []),
+      ...(showConvertButton && !isRestrictedUser
         ? [
             {
               label: "Convert",
@@ -546,13 +569,33 @@ const QuotationListPage = () => {
               Estimates only
             </label>
             <Select
+              value={yearFilter}
+              onValueChange={(val) => {
+                setYearFilter(val);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[125px]">
+                <SelectValue placeholder="All Years" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Years</SelectItem>
+                {cyearList.map((c) => (
+                  <SelectItem key={c.cyear} value={c.cyear}>
+                    {c.cyear}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
               value={statusFilter}
               onValueChange={(val) => {
                 setStatusFilter(val);
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[130px]">
                 <SelectValue placeholder="Select Status" />
               </SelectTrigger>
               <SelectContent>
@@ -574,10 +617,14 @@ const QuotationListPage = () => {
           setSearchTerm(val);
           setPage(1);
         }}
-        addButton={{
-          onClick: () => navigate("/quotation-list/create"),
-          label: "Add Quotation",
-        }}
+        addButton={
+          isViewer
+            ? undefined
+            : {
+                onClick: () => navigate("/quotation-list/create"),
+                label: "Add Quotation",
+              }
+        }
         backendPagination={true}
         page={paginationData?.current_page || 1}
         totalPages={paginationData?.last_page || 1}
