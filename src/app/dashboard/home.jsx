@@ -42,6 +42,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  LabelList,
 } from "recharts";
 
 const getInitials = (name) => {
@@ -624,7 +625,7 @@ const Dashboard = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={yearWiseChartData}
-                    margin={{ top: 15, right: 20, left: -15, bottom: 5 }}
+                    margin={{ top: 22, right: 20, left: -15, bottom: 5 }}
                     barGap={8}
                   >
                     <CartesianGrid
@@ -648,6 +649,7 @@ const Dashboard = () => {
                       tickLine={false}
                       axisLine={false}
                       allowDecimals={false}
+                      domain={[0, (dataMax) => (dataMax ? Math.max(4, dataMax + 1) : 4)]}
                     />
                     <Tooltip content={<YearWiseTooltip />} />
                     <Legend
@@ -663,25 +665,69 @@ const Dashboard = () => {
                       fill="#F59E0B"
                       radius={[6, 6, 0, 0]}
                       maxBarSize={48}
-                    />
+                    >
+                      <LabelList
+                        dataKey="Pending Quotations"
+                        position="top"
+                        offset={8}
+                        formatter={(val) => (Number(val) > 0 ? val : "")}
+                        fill="var(--color-foreground, #0f172a)"
+                        fontSize={12}
+                        fontWeight={700}
+                        className="font-mono font-bold"
+                      />
+                    </Bar>
                     <Bar
                       dataKey="Approved Quotations"
                       fill="#10B981"
                       radius={[6, 6, 0, 0]}
                       maxBarSize={48}
-                    />
+                    >
+                      <LabelList
+                        dataKey="Approved Quotations"
+                        position="top"
+                        offset={8}
+                        formatter={(val) => (Number(val) > 0 ? val : "")}
+                        fill="var(--color-foreground, #0f172a)"
+                        fontSize={12}
+                        fontWeight={700}
+                        className="font-mono font-bold"
+                      />
+                    </Bar>
                     <Bar
                       dataKey="Running Projects"
                       fill="#3B82F6"
                       radius={[6, 6, 0, 0]}
                       maxBarSize={48}
-                    />
+                    >
+                      <LabelList
+                        dataKey="Running Projects"
+                        position="top"
+                        offset={8}
+                        formatter={(val) => (Number(val) > 0 ? val : "")}
+                        fill="var(--color-foreground, #0f172a)"
+                        fontSize={12}
+                        fontWeight={700}
+                        className="font-mono font-bold"
+                      />
+                    </Bar>
                     <Bar
                       dataKey="Finished Projects"
                       fill="#8B5CF6"
                       radius={[6, 6, 0, 0]}
                       maxBarSize={48}
-                    />
+                    >
+                      <LabelList
+                        dataKey="Finished Projects"
+                        position="top"
+                        offset={8}
+                        formatter={(val) => (Number(val) > 0 ? val : "")}
+                        fill="var(--color-foreground, #0f172a)"
+                        fontSize={12}
+                        fontWeight={700}
+                        className="font-mono font-bold"
+                      />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
