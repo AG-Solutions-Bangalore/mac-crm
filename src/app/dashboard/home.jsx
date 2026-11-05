@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import Page from "../layout/page";
 import { useGetApiMutation } from "@/hooks/useGetApiMutation";
 import { DASHBOARD_API } from "@/constants/apiConstants";
@@ -26,20 +26,12 @@ import {
   Filter,
   BarChart3,
   Inbox,
-  ArrowLeftRight,
   TrendingUp,
   TrendingDown,
   Minus,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   BarChart,
@@ -104,59 +96,8 @@ const getPreviousYearStr = (yearStr) => {
   return "2025-26";
 };
 
-// Tooltip for Side-by-Side YoY Comparison
-const YoYComparisonTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    const item1 = payload[0];
-    const item2 = payload[1];
-    const diff = (item1?.value || 0) - (item2?.value || 0);
-
-    return (
-      <div className="rounded-xl border border-border bg-card p-3.5 shadow-xl text-xs text-foreground min-w-[220px] backdrop-blur-md">
-        <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2.5 pb-1.5 border-b border-border flex items-center justify-between">
-          <span>{label}</span>
-        </div>
-        <div className="space-y-2">
-          {payload.map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between gap-4">
-              <span className="flex items-center gap-2 text-muted-foreground font-medium">
-                <span
-                  className="inline-block h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: item.color || item.fill }}
-                />
-                {item.name}:
-              </span>
-              <span className="font-bold text-foreground font-mono text-xs">
-                {item.value}
-              </span>
-            </div>
-          ))}
-
-          {payload.length >= 2 && (
-            <div className="pt-2 border-t border-border flex items-center justify-between text-[11px]">
-              <span className="text-muted-foreground font-semibold">Change (YoY):</span>
-              <span
-                className={`font-mono font-bold ${
-                  diff > 0
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : diff < 0
-                    ? "text-rose-600 dark:text-rose-400"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {diff > 0 ? `+${diff}` : diff}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-  return null;
-};
-
-// Tooltip for Timeline view
-const TimelineTooltip = ({ active, payload, label }) => {
+// Tooltip for Year-Wise Comparison
+const YearWiseTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-xl border border-border bg-card p-3.5 shadow-xl text-xs text-foreground min-w-[210px] backdrop-blur-md">
@@ -199,7 +140,6 @@ const Dashboard = () => {
   const [serviceSearchTerm, setServiceSearchTerm] = useState("");
   const [onlyWithClients, setOnlyWithClients] = useState(false);
   const [requestFilter, setRequestFilter] = useState("all");
-  const [comparisonView, setComparisonView] = useState("sideBySide"); // "sideBySide" | "timeline"
 
   const {
     data: DData,
@@ -216,8 +156,8 @@ const Dashboard = () => {
   const dashboardData = DData?.data || {};
   const graph1List = dashboardData?.graph1 || [];
 
-  // Determine This Year from API data (or fallback)
-  const defaultThisYear = useMemo(() => {
+  // Determine current year and previous year purely as year numbers/strings
+  const currentYearStr = useMemo(() => {
     if (graph1List.length > 0 && graph1List[0].year) {
       return graph1List[0].year;
     }
@@ -226,92 +166,65 @@ const Dashboard = () => {
     return `${curr}-${nextShort}`;
   }, [graph1List]);
 
-  const [selectedThisYear, setSelectedThisYear] = useState(defaultThisYear);
-  const [selectedPrevYear, setSelectedPrevYear] = useState(
-    getPreviousYearStr(defaultThisYear)
-  );
+  const prevYearStr = useMemo(() => {
+    return getPreviousYearStr(currentYearStr);
+  }, [currentYearStr]);
 
-  useEffect(() => {
-    if (defaultThisYear) {
-      setSelectedThisYear(defaultThisYear);
-      setSelectedPrevYear(getPreviousYearStr(defaultThisYear));
-    }
-  }, [defaultThisYear]);
-
-  // Data for This Year (from graph1)
-  const thisYearData = useMemo(() => {
-    const found = graph1List.find((g) => g.year === selectedThisYear);
+  // Current year data from graph1
+  const currentYearData = useMemo(() => {
+    const found = graph1List.find((g) => g.year === currentYearStr);
     return {
-      year: selectedThisYear,
+      year: currentYearStr,
       pending: Number(found?.pending_count || 0),
       approved: Number(found?.approved_count || 0),
       running: Number(found?.running_project_count || 0),
       finished: Number(found?.finish_project_count || 0),
-      isFromApi: Boolean(found),
     };
-  }, [graph1List, selectedThisYear]);
+  }, [graph1List, currentYearStr]);
 
-  // Data for Previous Year (from graph1 if present, otherwise 0s)
+  // Previous year data from graph1 if available, otherwise baseline 0
   const prevYearData = useMemo(() => {
-    const found = graph1List.find((g) => g.year === selectedPrevYear);
+    const found = graph1List.find((g) => g.year === prevYearStr);
     return {
-      year: selectedPrevYear,
+      year: prevYearStr,
       pending: Number(found?.pending_count || 0),
       approved: Number(found?.approved_count || 0),
       running: Number(found?.running_project_count || 0),
       finished: Number(found?.finish_project_count || 0),
       isFromApi: Boolean(found),
     };
-  }, [graph1List, selectedPrevYear]);
+  }, [graph1List, prevYearStr]);
 
-  // Side-by-Side YoY chart data (Metric on X-Axis, This Year vs Prev Year bars)
-  const yoyChartData = useMemo(() => {
-    const thisLabel = `This Year (${thisYearData.year})`;
-    const prevLabel = `Previous Year (${prevYearData.year})`;
+  // Chart data: ONLY the years on X-Axis (e.g. "2025-26", "2026-27")
+  const yearWiseChartData = useMemo(() => {
+    if (graph1List.length > 1) {
+      return graph1List.map((item) => ({
+        year: item.year, // ONLY YEAR
+        "Pending Quotations": Number(item.pending_count || 0),
+        "Approved Quotations": Number(item.approved_count || 0),
+        "Running Projects": Number(item.running_project_count || 0),
+        "Finished Projects": Number(item.finish_project_count || 0),
+      }));
+    }
 
+    // Default comparison between prevYear and currentYear showing ONLY year strings
     return [
       {
-        metric: "Pending Quotations",
-        [thisLabel]: thisYearData.pending,
-        [prevLabel]: prevYearData.pending,
-      },
-      {
-        metric: "Approved Quotations",
-        [thisLabel]: thisYearData.approved,
-        [prevLabel]: prevYearData.approved,
-      },
-      {
-        metric: "Running Projects",
-        [thisLabel]: thisYearData.running,
-        [prevLabel]: prevYearData.running,
-      },
-      {
-        metric: "Finished Projects",
-        [thisLabel]: thisYearData.finished,
-        [prevLabel]: prevYearData.finished,
-      },
-    ];
-  }, [thisYearData, prevYearData]);
-
-  // Timeline chart data (Years on X-Axis)
-  const timelineChartData = useMemo(() => {
-    return [
-      {
-        year: `Prev (${prevYearData.year})`,
+        year: prevYearStr, // ONLY YEAR e.g. "2025-26"
         "Pending Quotations": prevYearData.pending,
         "Approved Quotations": prevYearData.approved,
         "Running Projects": prevYearData.running,
         "Finished Projects": prevYearData.finished,
       },
       {
-        year: `This Year (${thisYearData.year})`,
-        "Pending Quotations": thisYearData.pending,
-        "Approved Quotations": thisYearData.approved,
-        "Running Projects": thisYearData.running,
-        "Finished Projects": thisYearData.finished,
+        year: currentYearStr, // ONLY YEAR e.g. "2026-27"
+        "Pending Quotations": currentYearData.pending,
+        "Approved Quotations": currentYearData.approved,
+        "Running Projects": currentYearData.running,
+        "Finished Projects": currentYearData.finished,
       },
     ];
-  }, [prevYearData, thisYearData]);
+  }, [graph1List, prevYearStr, currentYearStr, prevYearData, currentYearData]);
 
   // Image URLs resolution from image_url array
   const serviceBaseUrl = useMemo(() => {
@@ -390,7 +303,6 @@ const Dashboard = () => {
     return "Good evening";
   };
 
-  // Helper to render variance badge
   const renderVarianceBadge = (diff, prevVal) => {
     if (diff > 0) {
       return (
@@ -566,10 +478,10 @@ const Dashboard = () => {
             <div className="space-y-2.5">
               <div className="flex items-center justify-between px-1">
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                  Quotations & Projects Lifecycle
+                  
                 </span>
                 <span className="text-[11px] text-muted-foreground font-mono">
-                  5 Stage Pipeline
+                  
                 </span>
               </div>
 
@@ -676,322 +588,101 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* 3. THIS YEAR VS PREVIOUS YEAR COMPARISON (graph1) */}
+            {/* 3. YEAR-WISE COMPARISON GRAPH (Strictly from API graph1, ONLY YEARS on X-Axis) */}
             <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <div className="p-1.5 rounded-md bg-primary/10 text-primary">
                       <BarChart3 className="h-4 w-4" />
                     </div>
                     <h3 className="font-bold text-base font-display text-foreground">
-                      This Year vs Previous Year Comparison
+                      Year-Wise Comparison
                     </h3>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Side-by-side performance comparison:{" "}
-                    <span className="font-semibold text-primary font-mono">
-                      {thisYearData.year} (This Year)
-                    </span>{" "}
-                    vs{" "}
-                    <span className="font-semibold text-slate-500 dark:text-slate-400 font-mono">
-                      {prevYearData.year} (Previous Year)
-                    </span>
+                    Quotations and projects performance grouped by fiscal year
                   </p>
                 </div>
 
-                {/* Controls: Mode Switcher & Year Selectors */}
-                <div className="flex flex-wrap items-center gap-2.5">
-                  <div className="inline-flex items-center rounded-lg border border-border bg-muted/40 p-0.5 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => setComparisonView("sideBySide")}
-                      className={`px-3 py-1.5 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                        comparisonView === "sideBySide"
-                          ? "bg-background text-foreground shadow-xs font-semibold"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <ArrowLeftRight className="h-3.5 w-3.5" />
-                      <span>Side-by-Side</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setComparisonView("timeline")}
-                      className={`px-3 py-1.5 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                        comparisonView === "timeline"
-                          ? "bg-background text-foreground shadow-xs font-semibold"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <Calendar className="h-3.5 w-3.5" />
-                      <span>Timeline</span>
-                    </button>
-                  </div>
+                {/* Year indicator badges */}
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 px-3 py-1 text-xs font-semibold font-mono text-muted-foreground">
+                    {prevYearStr}
+                  </span>
+                  <span className="text-muted-foreground text-xs font-bold">vs</span>
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold font-mono text-primary">
+                    {currentYearStr}
+                  </span>
                 </div>
               </div>
 
-              {/* 4 SIDE-BY-SIDE YoY COMPARISON CARDS */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-                {/* 1. Pending Quotes YoY Card */}
-                <div className="p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-muted-foreground">
-                      Pending Quotes
-                    </span>
-                    <FileText className="h-3.5 w-3.5 text-amber-500" />
-                  </div>
-                  <div className="flex items-baseline justify-between">
-                    <div>
-                      <div className="text-2xl font-bold font-mono text-foreground">
-                        {thisYearData.pending}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground font-mono">
-                        This Year ({thisYearData.year})
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold font-mono text-muted-foreground">
-                        {prevYearData.pending}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground font-mono">
-                        Prev ({prevYearData.year})
-                      </div>
-                    </div>
-                  </div>
-                  <div className="pt-1.5 border-t border-amber-500/10 flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">Variance:</span>
-                    {renderVarianceBadge(
-                      thisYearData.pending - prevYearData.pending,
-                      prevYearData.pending
-                    )}
-                  </div>
-                </div>
 
-                {/* 2. Approved Quotes YoY Card */}
-                <div className="p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-muted-foreground">
-                      Approved Quotes
-                    </span>
-                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                  </div>
-                  <div className="flex items-baseline justify-between">
-                    <div>
-                      <div className="text-2xl font-bold font-mono text-foreground">
-                        {thisYearData.approved}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground font-mono">
-                        This Year ({thisYearData.year})
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold font-mono text-muted-foreground">
-                        {prevYearData.approved}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground font-mono">
-                        Prev ({prevYearData.year})
-                      </div>
-                    </div>
-                  </div>
-                  <div className="pt-1.5 border-t border-emerald-500/10 flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">Variance:</span>
-                    {renderVarianceBadge(
-                      thisYearData.approved - prevYearData.approved,
-                      prevYearData.approved
-                    )}
-                  </div>
-                </div>
 
-                {/* 3. Running Projects YoY Card */}
-                <div className="p-3.5 rounded-xl border border-blue-500/20 bg-blue-500/5 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-muted-foreground">
-                      Running Projects
-                    </span>
-                    <FolderKanban className="h-3.5 w-3.5 text-blue-500" />
-                  </div>
-                  <div className="flex items-baseline justify-between">
-                    <div>
-                      <div className="text-2xl font-bold font-mono text-foreground">
-                        {thisYearData.running}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground font-mono">
-                        This Year ({thisYearData.year})
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold font-mono text-muted-foreground">
-                        {prevYearData.running}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground font-mono">
-                        Prev ({prevYearData.year})
-                      </div>
-                    </div>
-                  </div>
-                  <div className="pt-1.5 border-t border-blue-500/10 flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">Variance:</span>
-                    {renderVarianceBadge(
-                      thisYearData.running - prevYearData.running,
-                      prevYearData.running
-                    )}
-                  </div>
-                </div>
-
-                {/* 4. Finished Projects YoY Card */}
-                <div className="p-3.5 rounded-xl border border-purple-500/20 bg-purple-500/5 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-muted-foreground">
-                      Finished Projects
-                    </span>
-                    <CheckCheck className="h-3.5 w-3.5 text-purple-500" />
-                  </div>
-                  <div className="flex items-baseline justify-between">
-                    <div>
-                      <div className="text-2xl font-bold font-mono text-foreground">
-                        {thisYearData.finished}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground font-mono">
-                        This Year ({thisYearData.year})
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold font-mono text-muted-foreground">
-                        {prevYearData.finished}
-                      </div>
-                      <div className="text-[10px] text-muted-foreground font-mono">
-                        Prev ({prevYearData.year})
-                      </div>
-                    </div>
-                  </div>
-                  <div className="pt-1.5 border-t border-purple-500/10 flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground">Variance:</span>
-                    {renderVarianceBadge(
-                      thisYearData.finished - prevYearData.finished,
-                      prevYearData.finished
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* THE YEAR-WISE COMPARISON GRAPH */}
+              {/* BAR CHART: ONLY YEARS ON X-AXIS */}
               <div className="h-[310px] w-full mt-6">
                 <ResponsiveContainer width="100%" height="100%">
-                  {comparisonView === "sideBySide" ? (
-                    // Side-by-Side: Metric on X-Axis, 2 Bars (This Year vs Previous Year)
-                    <BarChart
-                      data={yoyChartData}
-                      margin={{ top: 15, right: 20, left: -15, bottom: 5 }}
-                      barGap={8}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        stroke="var(--color-border)"
-                        opacity={0.7}
-                      />
-                      <XAxis
-                        dataKey="metric"
-                        stroke="var(--ink-soft)"
-                        fontSize={12}
-                        fontWeight={600}
-                        tickLine={false}
-                        axisLine={{ stroke: "var(--color-border)" }}
-                        dy={8}
-                      />
-                      <YAxis
-                        stroke="var(--ink-soft)"
-                        fontSize={12}
-                        tickLine={false}
-                        axisLine={false}
-                        allowDecimals={false}
-                      />
-                      <Tooltip content={<YoYComparisonTooltip />} />
-                      <Legend
-                        verticalAlign="top"
-                        align="right"
-                        height={40}
-                        iconType="circle"
-                        iconSize={8}
-                        wrapperStyle={{ fontSize: 12, paddingBottom: 12 }}
-                      />
-                      <Bar
-                        dataKey={`This Year (${thisYearData.year})`}
-                        fill="#3B82F6"
-                        radius={[6, 6, 0, 0]}
-                        maxBarSize={48}
-                      />
-                      <Bar
-                        dataKey={`Previous Year (${prevYearData.year})`}
-                        fill="#94A3B8"
-                        radius={[6, 6, 0, 0]}
-                        maxBarSize={48}
-                      />
-                    </BarChart>
-                  ) : (
-                    // Timeline: Years on X-Axis
-                    <BarChart
-                      data={timelineChartData}
-                      margin={{ top: 15, right: 20, left: -15, bottom: 5 }}
-                      barGap={8}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        stroke="var(--color-border)"
-                        opacity={0.7}
-                      />
-                      <XAxis
-                        dataKey="year"
-                        stroke="var(--ink-soft)"
-                        fontSize={13}
-                        fontWeight={600}
-                        tickLine={false}
-                        axisLine={{ stroke: "var(--color-border)" }}
-                        dy={8}
-                      />
-                      <YAxis
-                        stroke="var(--ink-soft)"
-                        fontSize={12}
-                        tickLine={false}
-                        axisLine={false}
-                        allowDecimals={false}
-                      />
-                      <Tooltip content={<TimelineTooltip />} />
-                      <Legend
-                        verticalAlign="top"
-                        align="right"
-                        height={40}
-                        iconType="circle"
-                        iconSize={8}
-                        wrapperStyle={{ fontSize: 12, paddingBottom: 12 }}
-                      />
-                      <Bar
-                        dataKey="Pending Quotations"
-                        fill="#F59E0B"
-                        radius={[6, 6, 0, 0]}
-                        maxBarSize={48}
-                      />
-                      <Bar
-                        dataKey="Approved Quotations"
-                        fill="#10B981"
-                        radius={[6, 6, 0, 0]}
-                        maxBarSize={48}
-                      />
-                      <Bar
-                        dataKey="Running Projects"
-                        fill="#3B82F6"
-                        radius={[6, 6, 0, 0]}
-                        maxBarSize={48}
-                      />
-                      <Bar
-                        dataKey="Finished Projects"
-                        fill="#8B5CF6"
-                        radius={[6, 6, 0, 0]}
-                        maxBarSize={48}
-                      />
-                    </BarChart>
-                  )}
+                  <BarChart
+                    data={yearWiseChartData}
+                    margin={{ top: 15, right: 20, left: -15, bottom: 5 }}
+                    barGap={8}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke="var(--color-border)"
+                      opacity={0.7}
+                    />
+                    <XAxis
+                      dataKey="year"
+                      stroke="var(--ink-soft)"
+                      fontSize={13}
+                      fontWeight={600}
+                      tickLine={false}
+                      axisLine={{ stroke: "var(--color-border)" }}
+                      dy={8}
+                    />
+                    <YAxis
+                      stroke="var(--ink-soft)"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      allowDecimals={false}
+                    />
+                    <Tooltip content={<YearWiseTooltip />} />
+                    <Legend
+                      verticalAlign="top"
+                      align="right"
+                      height={40}
+                      iconType="circle"
+                      iconSize={8}
+                      wrapperStyle={{ fontSize: 12, paddingBottom: 12 }}
+                    />
+                    <Bar
+                      dataKey="Pending Quotations"
+                      fill="#F59E0B"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={48}
+                    />
+                    <Bar
+                      dataKey="Approved Quotations"
+                      fill="#10B981"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={48}
+                    />
+                    <Bar
+                      dataKey="Running Projects"
+                      fill="#3B82F6"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={48}
+                    />
+                    <Bar
+                      dataKey="Finished Projects"
+                      fill="#8B5CF6"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={48}
+                    />
+                  </BarChart>
                 </ResponsiveContainer>
               </div>
 
@@ -999,24 +690,19 @@ const Dashboard = () => {
               <div className="overflow-x-auto mt-6 pt-4 border-t border-border">
                 <div className="flex items-center justify-between mb-2.5">
                   <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    This Year vs Previous Year Variance Table
+                    Year Comparison Variance Table
                   </span>
-                  {!prevYearData.isFromApi && (
-                    <span className="text-[11px] text-muted-foreground/80 italic">
-                      * Previous year ({prevYearData.year}) baseline: 0
-                    </span>
-                  )}
                 </div>
 
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="border-b border-border text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/30">
                       <th className="py-2.5 px-3">Metric Category</th>
-                      <th className="py-2.5 px-3 text-slate-500 dark:text-slate-400">
-                        Previous Year ({prevYearData.year})
+                      <th className="py-2.5 px-3 text-slate-500 dark:text-slate-400 font-mono">
+                        {prevYearStr}
                       </th>
-                      <th className="py-2.5 px-3 text-primary">
-                        This Year ({thisYearData.year})
+                      <th className="py-2.5 px-3 text-primary font-mono">
+                        {currentYearStr}
                       </th>
                       <th className="py-2.5 px-3">Variance (Difference)</th>
                       <th className="py-2.5 px-3 text-right">Trend</th>
@@ -1032,20 +718,20 @@ const Dashboard = () => {
                         {prevYearData.pending}
                       </td>
                       <td className="py-3 px-3 font-mono font-bold text-foreground">
-                        {thisYearData.pending}
+                        {currentYearData.pending}
                       </td>
                       <td className="py-3 px-3">
                         {renderVarianceBadge(
-                          thisYearData.pending - prevYearData.pending,
+                          currentYearData.pending - prevYearData.pending,
                           prevYearData.pending
                         )}
                       </td>
                       <td className="py-3 px-3 text-right">
-                        {thisYearData.pending > prevYearData.pending ? (
+                        {currentYearData.pending > prevYearData.pending ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                             Increased <TrendingUp className="h-3 w-3" />
                           </span>
-                        ) : thisYearData.pending < prevYearData.pending ? (
+                        ) : currentYearData.pending < prevYearData.pending ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
                             Decreased <TrendingDown className="h-3 w-3" />
                           </span>
@@ -1066,20 +752,20 @@ const Dashboard = () => {
                         {prevYearData.approved}
                       </td>
                       <td className="py-3 px-3 font-mono font-bold text-foreground">
-                        {thisYearData.approved}
+                        {currentYearData.approved}
                       </td>
                       <td className="py-3 px-3">
                         {renderVarianceBadge(
-                          thisYearData.approved - prevYearData.approved,
+                          currentYearData.approved - prevYearData.approved,
                           prevYearData.approved
                         )}
                       </td>
                       <td className="py-3 px-3 text-right">
-                        {thisYearData.approved > prevYearData.approved ? (
+                        {currentYearData.approved > prevYearData.approved ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                             Increased <TrendingUp className="h-3 w-3" />
                           </span>
-                        ) : thisYearData.approved < prevYearData.approved ? (
+                        ) : currentYearData.approved < prevYearData.approved ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
                             Decreased <TrendingDown className="h-3 w-3" />
                           </span>
@@ -1100,20 +786,20 @@ const Dashboard = () => {
                         {prevYearData.running}
                       </td>
                       <td className="py-3 px-3 font-mono font-bold text-foreground">
-                        {thisYearData.running}
+                        {currentYearData.running}
                       </td>
                       <td className="py-3 px-3">
                         {renderVarianceBadge(
-                          thisYearData.running - prevYearData.running,
+                          currentYearData.running - prevYearData.running,
                           prevYearData.running
                         )}
                       </td>
                       <td className="py-3 px-3 text-right">
-                        {thisYearData.running > prevYearData.running ? (
+                        {currentYearData.running > prevYearData.running ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                             Increased <TrendingUp className="h-3 w-3" />
                           </span>
-                        ) : thisYearData.running < prevYearData.running ? (
+                        ) : currentYearData.running < prevYearData.running ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
                             Decreased <TrendingDown className="h-3 w-3" />
                           </span>
@@ -1134,20 +820,20 @@ const Dashboard = () => {
                         {prevYearData.finished}
                       </td>
                       <td className="py-3 px-3 font-mono font-bold text-foreground">
-                        {thisYearData.finished}
+                        {currentYearData.finished}
                       </td>
                       <td className="py-3 px-3">
                         {renderVarianceBadge(
-                          thisYearData.finished - prevYearData.finished,
+                          currentYearData.finished - prevYearData.finished,
                           prevYearData.finished
                         )}
                       </td>
                       <td className="py-3 px-3 text-right">
-                        {thisYearData.finished > prevYearData.finished ? (
+                        {currentYearData.finished > prevYearData.finished ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                             Increased <TrendingUp className="h-3 w-3" />
                           </span>
-                        ) : thisYearData.finished < prevYearData.finished ? (
+                        ) : currentYearData.finished < prevYearData.finished ? (
                           <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
                             Decreased <TrendingDown className="h-3 w-3" />
                           </span>
@@ -1171,17 +857,17 @@ const Dashboard = () => {
                           prevYearData.finished}
                       </td>
                       <td className="py-3 px-3 font-mono text-foreground">
-                        {thisYearData.pending +
-                          thisYearData.approved +
-                          thisYearData.running +
-                          thisYearData.finished}
+                        {currentYearData.pending +
+                          currentYearData.approved +
+                          currentYearData.running +
+                          currentYearData.finished}
                       </td>
                       <td className="py-3 px-3">
                         {renderVarianceBadge(
-                          thisYearData.pending +
-                            thisYearData.approved +
-                            thisYearData.running +
-                            thisYearData.finished -
+                          currentYearData.pending +
+                            currentYearData.approved +
+                            currentYearData.running +
+                            currentYearData.finished -
                             (prevYearData.pending +
                               prevYearData.approved +
                               prevYearData.running +
