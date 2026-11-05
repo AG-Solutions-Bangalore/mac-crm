@@ -59,6 +59,9 @@ const DataTable = ({
   searchPlaceholder = "Search...",
   addButton,
   extraButton,
+  // When true, filters stack full-width below the Columns button on mobile
+  // (useful for lists with multiple filters). Desktop is unaffected.
+  extraButtonFullWidthOnMobile = false,
 
   // backend pagination props
   backendPagination = false,
@@ -214,8 +217,8 @@ const DataTable = ({
   return (
     <div className="space-y-3">
       {/* HEADER */}
-      <div className="flex flex-col gap-3 py-1 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full sm:w-64">
+      <div className="flex flex-col gap-3 py-1 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="relative w-full sm:w-80 sm:shrink-0">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 pointer-events-none" />
           <Input
             value={internalSearch ?? ""}
@@ -236,54 +239,82 @@ const DataTable = ({
           ) : null}
         </div>
 
-        <div className="flex flex-col sm:flex-row flex-wrap sm:items-center gap-2 w-full sm:w-auto sm:ml-auto">
-          {/* COLUMN TOGGLE (desktop table only) */}
-          <div className={mobileCard ? "hidden xl:block" : "contents"}>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-9">
-                Columns <ChevronDown className="ml-2 h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
+        {/* Controls + Add: mobile -> Columns + filters on one row, Add below
+            full width; desktop -> grouped together at the right of search */}
+        <div className="flex flex-col gap-3 sm:ml-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
+          <div
+            className={`gap-2 sm:contents ${
+              extraButtonFullWidthOnMobile
+                ? "flex flex-col"
+                : "flex items-start"
+            }`}
+          >
+            {/* COLUMN TOGGLE (desktop table only) */}
+            <div
+              className={`shrink-0 sm:flex-none ${
+                mobileCard
+                  ? "hidden xl:block"
+                  : extraButtonFullWidthOnMobile
+                    ? "w-full sm:w-auto"
+                    : "flex-1"
+              }`}
+            >
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9 w-full sm:w-auto">
+                    Columns <ChevronDown className="ml-2 h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
 
-            <DropdownMenuContent align="end" className="w-40">
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => {
-                  const columnDef = effectiveColumns.find(
-                    (col) =>
-                      col.accessorKey === column.id || col.id === column.id,
-                  );
+                <DropdownMenuContent align="end" className="w-40">
+                  {table
+                    .getAllColumns()
+                    .filter((column) => column.getCanHide())
+                    .map((column) => {
+                      const columnDef = effectiveColumns.find(
+                        (col) =>
+                          col.accessorKey === column.id || col.id === column.id,
+                      );
 
-                  return (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      checked={column.getIsVisible()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(!!value)
-                      }
-                      className="text-xs capitalize"
-                    >
-                      {columnDef?.header || column.id}
-                    </DropdownMenuCheckboxItem>
-                  );
-                })}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                      return (
+                        <DropdownMenuCheckboxItem
+                          key={column.id}
+                          checked={column.getIsVisible()}
+                          onCheckedChange={(value) =>
+                            column.toggleVisibility(!!value)
+                          }
+                          className="text-xs capitalize"
+                        >
+                          {columnDef?.header || column.id}
+                        </DropdownMenuCheckboxItem>
+                      );
+                    })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {extraButton && (
+              <div
+                className={`min-w-0 sm:flex-none ${
+                  extraButtonFullWidthOnMobile ? "w-full sm:w-auto" : "flex-1"
+                }`}
+              >
+                {extraButton}
+              </div>
+            )}
           </div>
-          {extraButton}
-          {/* ADD BUTTON */}
+
+          {/* ADD BUTTON: mobile full width, desktop inline */}
           {effectiveAddButton &&
             (effectiveAddButton.to ? (
-              <Link to={effectiveAddButton.to}>
-                <Button size="sm" className="h-9">
+              <Link to={effectiveAddButton.to} className="block sm:inline-block">
+                <Button size="sm" className="h-9 w-full sm:w-auto">
                   <SquarePlus className="h-3 w-3 mr-2" />
                   {effectiveAddButton.label}
                 </Button>
               </Link>
             ) : (
-              <Button size="sm" className="h-9" onClick={effectiveAddButton.onClick}>
+              <Button size="sm" className="h-9 w-full sm:w-auto" onClick={effectiveAddButton.onClick}>
                 <SquarePlus className="h-3 w-3 mr-2" />
                 {effectiveAddButton.label}
               </Button>

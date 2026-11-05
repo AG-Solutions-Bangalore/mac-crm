@@ -272,6 +272,7 @@ const ProjectListPage = () => {
       />
       <DataTable
         isLoading={isLoading || isFetching}
+        extraButtonFullWidthOnMobile
         extraButton={
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <Select
@@ -281,7 +282,7 @@ const ProjectListPage = () => {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-[125px]">
+              <SelectTrigger className="w-full sm:w-[125px]">
                 <SelectValue placeholder="All Years" />
               </SelectTrigger>
               <SelectContent>
@@ -301,7 +302,7 @@ const ProjectListPage = () => {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-full sm:w-[140px]">
                 <SelectValue placeholder="Select Status" />
               </SelectTrigger>
               <SelectContent>
