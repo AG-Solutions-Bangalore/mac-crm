@@ -54,7 +54,9 @@ const formatMoney = (value) => {
   const number = Number(value);
   if (Number.isNaN(number)) return value;
   const hasDecimals = Math.abs(number % 1) > 0.001;
-  return `₹ ${number.toLocaleString("en-IN", {
+  // Non-breaking space keeps the ₹ symbol and amount on one line, so totals
+  // align consistently even in narrow price columns.
+  return `₹\u00A0${number.toLocaleString("en-IN", {
     minimumFractionDigits: hasDecimals ? 2 : 0,
     maximumFractionDigits: 2,
   })}`;
