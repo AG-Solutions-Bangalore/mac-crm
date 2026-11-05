@@ -22,10 +22,13 @@ const ToggleStatus = ({
   const queryClient = useQueryClient();
   const user = useSelector((state) => state.auth?.user);
   const isRestrictedUser = Number(user?.user_type) === 4;
+  // Quotation / revised quotation / project status toggles are available to
+  // every role. Other modules keep their existing role restrictions.
+  const isQuotationProjectEndpoint = /\/(quotations|rev-quotations|projects)\//.test(
+    apiUrl || ""
+  );
   const canToggleStatus =
-    !isRestrictedUser ||
-    (!isViewerUser(user) &&
-      /\/(quotations|rev-quotations|projects)\//.test(apiUrl || ""));
+    isQuotationProjectEndpoint || (!isRestrictedUser && !isViewerUser(user));
 
   useEffect(() => {
     setStatus(initialStatus);
