@@ -7,6 +7,7 @@ const initialState = {
   userDetails: null,
   userImage: null,
   version: null,
+  currentYear: null,
 };
 
 const authSlice = createSlice({
@@ -14,7 +15,7 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setCredentials: (state, action) => {
-      const { token, tokenExpireAt, user, userDetails, userImage, version } =
+      const { token, tokenExpireAt, user, userDetails, userImage, version, currentYear } =
         action.payload;
       state.token = token ?? state.token;
       state.tokenExpireAt = tokenExpireAt ?? state.tokenExpireAt;
@@ -22,6 +23,7 @@ const authSlice = createSlice({
       state.userDetails = userDetails ?? state.userDetails;
       state.userImage = userImage ?? state.userImage;
       state.version = version ?? state.version;
+      state.currentYear = currentYear ?? state.currentYear;
     },
     setToken: (state, action) => {
       state.token = action.payload;

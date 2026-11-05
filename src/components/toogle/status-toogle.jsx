@@ -1,9 +1,11 @@
+import { useSelector } from "react-redux";
 import { useApiMutation } from "@/hooks/useApiMutation";
 import { useQueryClient } from "@tanstack/react-query";
 import { RefreshCcw } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
+import { isViewerUser } from "@/utils/permissions";
 
 const ToggleStatus = ({
   initialStatus,
@@ -18,10 +20,30 @@ const ToggleStatus = ({
   const [status, setStatus] = useState(initialStatus);
   const { trigger, loading } = useApiMutation();
   const queryClient = useQueryClient();
+  const user = useSelector((state) => state.auth?.user);
+  const isRestrictedUser = Number(user?.user_type) === 4;
+  const canToggleStatus =
+    !isRestrictedUser ||
+    (!isViewerUser(user) &&
+      /\/(quotations|rev-quotations|projects)\//.test(apiUrl || ""));
 
   useEffect(() => {
     setStatus(initialStatus);
   }, [initialStatus]);
+
+  if (!canToggleStatus) {
+    return (
+      <span
+        className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+          status === activeValue
+            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300"
+            : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+        }`}
+      >
+        {status || activeValue}
+      </span>
+    );
+  }
 
   const handleToggle = async () => {
     const newStatus = status === activeValue ? inactiveValue : activeValue;

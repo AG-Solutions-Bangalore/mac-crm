@@ -1,3 +1,4 @@
+import { useSelector } from "react-redux";
 import {
   flexRender,
   getCoreRowModel,
@@ -34,9 +35,22 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+
+const SALES_RESTRICTED_MASTER_PATHS = [
+  "/service-list",
+  "/client-list",
+  "/buyer-list",
+  "/property-list",
+  "/floor-list",
+  "/area-list",
+  "/brand-list",
+  "/category-list",
+  "/product-list",
+  "/sales-team-list",
+];
 
 const DataTable = ({
   data = [],
@@ -63,6 +77,29 @@ const DataTable = ({
   fitWidth = false,
   mobileCard = null,
 }) => {
+  const authUser = useSelector((state) => state.auth?.user);
+  const location = useLocation();
+  const isRestrictedUser = Number(authUser?.user_type) === 4;
+
+  // User Type 4 (Sales) gets read-only master lists: no Add button and no
+  // Actions / Edit column. Quotation, revised quotation and project lists keep
+  // their actions so sales can create/edit/report.
+  const isRestrictedMasterPage =
+    isRestrictedUser &&
+    SALES_RESTRICTED_MASTER_PATHS.some((path) =>
+      location.pathname.startsWith(path),
+    );
+
+  const effectiveColumns = isRestrictedMasterPage
+    ? columns.filter((col) => {
+        const h = String(col.header || "").toLowerCase();
+        const k = String(col.accessorKey || col.id || "").toLowerCase();
+        return h !== "actions" && k !== "actions";
+      })
+    : columns;
+
+  const effectiveAddButton = isRestrictedMasterPage ? undefined : addButton;
+
   const [internalSearch, setInternalSearch] = useState(searchValue ?? "");
   const prevSearchValueRef = useRef(searchValue);
   const [sorting, setSorting] = useState([]);
@@ -120,7 +157,7 @@ const DataTable = ({
 
   const table = useReactTable({
     data,
-    columns,
+    columns: effectiveColumns,
     state: {
       sorting,
       globalFilter: onSearchChange ? "" : globalFilter,
@@ -214,7 +251,7 @@ const DataTable = ({
                 .getAllColumns()
                 .filter((column) => column.getCanHide())
                 .map((column) => {
-                  const columnDef = columns.find(
+                  const columnDef = effectiveColumns.find(
                     (col) =>
                       col.accessorKey === column.id || col.id === column.id,
                   );
@@ -237,18 +274,18 @@ const DataTable = ({
           </div>
           {extraButton}
           {/* ADD BUTTON */}
-          {addButton &&
-            (addButton.to ? (
-              <Link to={addButton.to}>
+          {effectiveAddButton &&
+            (effectiveAddButton.to ? (
+              <Link to={effectiveAddButton.to}>
                 <Button size="sm" className="h-9">
                   <SquarePlus className="h-3 w-3 mr-2" />
-                  {addButton.label}
+                  {effectiveAddButton.label}
                 </Button>
               </Link>
             ) : (
-              <Button size="sm" className="h-9" onClick={addButton.onClick}>
+              <Button size="sm" className="h-9" onClick={effectiveAddButton.onClick}>
                 <SquarePlus className="h-3 w-3 mr-2" />
-                {addButton.label}
+                {effectiveAddButton.label}
               </Button>
             ))}
         </div>
@@ -317,7 +354,7 @@ const DataTable = ({
             {isLoading ? (
               Array.from({ length: 8 }).map((_, rIdx) => (
                 <TableRow key={`skeleton-row-${rIdx}`} className="border-b">
-                  {columns.map((col, cIdx) => (
+                  {effectiveColumns.map((col, cIdx) => (
                     <TableCell key={`skeleton-col-${cIdx}`} className="py-3.5 px-4">
                       <Skeleton
                         className={`h-4 ${
@@ -325,7 +362,7 @@ const DataTable = ({
                             ? "w-8"
                             : cIdx === 1
                             ? "w-32"
-                            : cIdx === columns.length - 1
+                            : cIdx === effectiveColumns.length - 1
                             ? "w-16"
                             : "w-24"
                         }`}
@@ -361,7 +398,7 @@ const DataTable = ({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={effectiveColumns.length} className="text-center py-8 text-muted-foreground">
                   No data found
                 </TableCell>
               </TableRow>

@@ -30,6 +30,7 @@ import { getSalesTeamMemberId } from "../../sales-team/api/salesTeamApi";
 import PreparedByPicker from "../components/report/PreparedByPicker";
 import { useCreateProductMutation } from "../../product/hooks/useProduct";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSelector } from "react-redux";
 import MemoizedSelect from "@/components/common/memoized-select";
 import SelectWithAdd from "@/components/common/select-with-add";
 import ConfirmDialog from "@/components/common/confirm-dialog";
@@ -61,6 +62,7 @@ import {
   normalizeDiscountPct,
 } from "@/utils/discountUtils";
 import { buildProductOptions, filterProductOption } from "@/utils/productSelectUtils";
+import { isQuotationOwnedByUser } from "@/utils/permissions";
 import {
   Dialog,
   DialogContent,
@@ -242,6 +244,8 @@ const QuotationFormPage = () => {
   const { id } = useParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
+  const user = useSelector((state) => state.auth?.user);
+  const isRestrictedUser = Number(user?.user_type) === 4;
 
   const [formData, setFormData] = useState({
     quotation_date: new Date().toISOString().split("T")[0],
@@ -399,6 +403,14 @@ const QuotationFormPage = () => {
     updateQuotationFinishWorkDateMutation.isPending;
 
   const hasFinishWorkDate = Boolean(isEdit && fetchedData?.data?.quotation_finish_work_date);
+
+  useEffect(() => {
+    if (!isEdit || !isRestrictedUser || !fetchedData?.data) return;
+    if (!isQuotationOwnedByUser(fetchedData.data, user)) {
+      toast.error("You can only edit your own quotations");
+      navigate("/quotation-list", { replace: true });
+    }
+  }, [isEdit, isRestrictedUser, fetchedData, user, navigate]);
 
   useEffect(() => {
     if (isEdit && fetchedData?.data) {
@@ -1552,8 +1564,13 @@ const QuotationFormPage = () => {
   });
   const [extraProducts, setExtraProducts] = useState([]);
 
-  const openQuickName = (type, target, typed) =>
+  const openQuickName = (type, target, typed) => {
+    if (isRestrictedUser) {
+      toast.error("You do not have permission to add new items.");
+      return;
+    }
     setQuickName({ open: true, type, target, name: (typed || "").trim(), saving: false });
+  };
 
   const matchByName = (list, name, key) =>
     (list || []).find(
@@ -1953,13 +1970,16 @@ const QuotationFormPage = () => {
                   // Bahar chahiye to: menuPosition="fixed" menuPortalTarget={document.body}
                   placement="bottom-left"
                   menuPosition="absolute"
-                  addLabel="Add New Lead"
-                  renderAddLabel={(typed) =>
-                    typed?.trim()
-                      ? `Add "${typed.trim()}" as New Lead`
-                      : "Add New Lead"
+                  addLabel={isRestrictedUser ? undefined : "Add New Lead"}
+                  renderAddLabel={
+                    isRestrictedUser
+                      ? undefined
+                      : (typed) =>
+                          typed?.trim()
+                            ? `Add "${typed.trim()}" as New Lead`
+                            : "Add New Lead"
                   }
-                  onAdd={handleBuyerAdd}
+                  onAdd={isRestrictedUser ? undefined : handleBuyerAdd}
                   menuIsOpen={buyerDialogOpen ? false : buyerMenuOpen}
                   onMenuOpen={() => setBuyerMenuOpen(true)}
                   onMenuClose={() => setBuyerMenuOpen(false)}
@@ -2194,13 +2214,13 @@ const QuotationFormPage = () => {
                           }
                           placeholder="Select Service"
                           isLoading={servicesLoading}
-                          addLabel="Add New Service"
-                          renderAddLabel={(typed) =>
+                          addLabel={isRestrictedUser ? undefined : "Add New Service"}
+                          renderAddLabel={isRestrictedUser ? undefined : (typed) =>
                             typed?.trim()
                               ? `Add "${typed.trim()}" as New Service`
                               : "Add New Service"
                           }
-                          onAdd={(typed) =>
+                          onAdd={isRestrictedUser ? undefined : (typed) =>
                             openServiceQA(
                               { serviceIndex },
                               typed,
@@ -2256,13 +2276,13 @@ const QuotationFormPage = () => {
                                 }
                                 placeholder="Select Floor"
                                 isLoading={floorsLoading}
-                                addLabel="Add New Floor"
-                                renderAddLabel={(typed) =>
+                                addLabel={isRestrictedUser ? undefined : "Add New Floor"}
+                                renderAddLabel={isRestrictedUser ? undefined : (typed) =>
                                   typed?.trim()
                                     ? `Add "${typed.trim()}" as New Floor`
                                     : "Add New Floor"
                                 }
-                                onAdd={(typed) =>
+                                onAdd={isRestrictedUser ? undefined : (typed) =>
                                   openQuickName(
                                     "floor",
                                     { serviceIndex, floorIndex },
@@ -2321,13 +2341,13 @@ const QuotationFormPage = () => {
                                       }
                                       placeholder="Select Area"
                                       isLoading={areasLoading}
-                                      addLabel="Add New Area"
-                                      renderAddLabel={(typed) =>
+                                      addLabel={isRestrictedUser ? undefined : "Add New Area"}
+                                      renderAddLabel={isRestrictedUser ? undefined : (typed) =>
                                         typed?.trim()
                                           ? `Add "${typed.trim()}" as New Area`
                                           : "Add New Area"
                                       }
-                                      onAdd={(typed) =>
+                                      onAdd={isRestrictedUser ? undefined : (typed) =>
                                         openQuickName(
                                           "area",
                                           { serviceIndex, floorIndex, areaIndex },
@@ -2414,13 +2434,13 @@ const QuotationFormPage = () => {
                                             isDisabled={
                                               !srv.serviceId || productsLoading
                                             }
-                                            addLabel="Add New Product"
-                                            renderAddLabel={(typed) =>
+                                            addLabel={isRestrictedUser ? undefined : "Add New Product"}
+                                            renderAddLabel={isRestrictedUser ? undefined : (typed) =>
                                               typed?.trim()
                                                 ? `Add "${typed.trim()}" as New Product`
                                                 : "Add New Product"
                                             }
-                                            onAdd={(typed) =>
+                                            onAdd={isRestrictedUser ? undefined : (typed) =>
                                               openProductQA(
                                                 {
                                                   serviceIndex,
@@ -2443,7 +2463,10 @@ const QuotationFormPage = () => {
                                           <Input
                                             type="number"
                                             value={prod.price}
+                                            readOnly={isRestrictedUser}
+                                            disabled={isRestrictedUser}
                                             onChange={(e) =>
+                                              !isRestrictedUser &&
                                               handleNestedFieldChange(
                                                 serviceIndex,
                                                 floorIndex,
@@ -2453,7 +2476,9 @@ const QuotationFormPage = () => {
                                                 e.target.value,
                                               )
                                             }
-                                            className="h-8 text-xs bg-transparent border-slate-200 dark:border-slate-800"
+                                            className={`h-8 text-xs bg-transparent border-slate-200 dark:border-slate-800 ${
+                                              isRestrictedUser ? "opacity-75 cursor-not-allowed bg-slate-50 dark:bg-slate-900" : ""
+                                            }`}
                                             placeholder="Price"
                                           />
                                         </div>

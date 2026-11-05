@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   Check,
   ChevronDown,
@@ -39,6 +40,8 @@ export default function PreparedByPicker({
   onChange,
 }) {
   const navigate = useNavigate();
+  const user = useSelector((state) => state.auth?.user);
+  const isRestrictedUser = Number(user?.user_type) === 4;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [dialogMode, setDialogMode] = useState(null); // 'add' | 'edit'
@@ -228,7 +231,7 @@ export default function PreparedByPicker({
                       </div>
                     </div>
 
-                    {canEdit && (
+                    {canEdit && !isRestrictedUser && (
                       <button
                         type="button"
                         title={`Edit ${p.name}`}
@@ -248,27 +251,29 @@ export default function PreparedByPicker({
           </div>
 
           {/* Quick actions */}
-          <div className="border-t p-1">
-            <button
-              type="button"
-              onClick={openAdd}
-              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs font-semibold text-foreground hover:bg-muted"
-            >
-              <Plus className="h-3.5 w-3.5 text-sky-600" />
-              Add member
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                navigate("/sales-team-list");
-              }}
-              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs font-semibold text-foreground hover:bg-muted"
-            >
-              <Users className="h-3.5 w-3.5 text-sky-600" />
-              Manage sales team
-            </button>
-          </div>
+          {!isRestrictedUser && (
+            <div className="border-t p-1">
+              <button
+                type="button"
+                onClick={openAdd}
+                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs font-semibold text-foreground hover:bg-muted"
+              >
+                <Plus className="h-3.5 w-3.5 text-sky-600" />
+                Add member
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  navigate("/sales-team-list");
+                }}
+                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs font-semibold text-foreground hover:bg-muted"
+              >
+                <Users className="h-3.5 w-3.5 text-sky-600" />
+                Manage sales team
+              </button>
+            </div>
+          )}
         </PopoverContent>
       </Popover>
 

@@ -11,9 +11,11 @@ import PageHeader from "@/components/common/page-header";
 import RedStar from "@/components/RedStar";
 import LoadingBar from "@/components/loader/loading-bar";
 import { toast } from "sonner";
+import { useSelector } from "react-redux";
 import {
   useQuotationQuery,
   useRevQuotationQuery,
+  useRevQuotationsQuery,
   useCreateRevQuotationMutation,
   useUpdateRevQuotationMutation,
   useGetProductsForQuotationQuery,
@@ -61,6 +63,7 @@ import {
   normalizeDiscountPct,
 } from "@/utils/discountUtils";
 import { buildProductOptions, filterProductOption } from "@/utils/productSelectUtils";
+import { isQuotationOwnedByUser } from "@/utils/permissions";
 
 let uidSeed = 0;
 const createUid = (prefix = "item") =>
@@ -253,6 +256,8 @@ const RevQuotationFormPage = () => {
   const { id: parentId, revId } = useParams();
   const isEdit = Boolean(revId);
   const navigate = useNavigate();
+  const user = useSelector((state) => state.auth?.user);
+  const isRestrictedUser = Number(user?.user_type) === 4;
 
   const [formData, setFormData] = useState({
     quotation_id: parentId,
@@ -365,6 +370,36 @@ const RevQuotationFormPage = () => {
 
   // Fetch revised quotation on EDIT mode
   const { data: revQuotationData, isLoading: revLoading, isError, refetch } = useRevQuotationQuery(revId, isEdit);
+  const { data: restrictedRevListData } = useRevQuotationsQuery(
+    parentId,
+    1,
+    "",
+    "all",
+    isEdit && isRestrictedUser,
+  );
+
+  useEffect(() => {
+    if (!isRestrictedUser || !parentQuotationData?.data) return;
+    if (!isQuotationOwnedByUser(parentQuotationData.data, user)) {
+      toast.error("You can only edit your own quotations");
+      navigate("/quotation-list", { replace: true });
+    }
+  }, [isRestrictedUser, parentQuotationData, user, navigate]);
+
+  useEffect(() => {
+    if (!isRestrictedUser || !isEdit) return;
+    const revisions = restrictedRevListData?.data?.data;
+    if (!Array.isArray(revisions) || revisions.length === 0) return;
+    const latestRevId = revisions.reduce((latestId, rev) => {
+      const id = Number(rev.id);
+      if (Number.isNaN(id)) return latestId;
+      return latestId === null || id > latestId ? id : latestId;
+    }, null);
+    if (latestRevId !== null && Number(revId) !== latestRevId) {
+      toast.error("Only the latest revision can be edited");
+      navigate(`/quotation-list/revised/${parentId}`, { replace: true });
+    }
+  }, [isRestrictedUser, isEdit, restrictedRevListData, revId, parentId, navigate]);
 
   // Fetch products matching selected categories and services
   const { data: productsData, isLoading: productsLoading, refetch: refetchQuotationProducts } = useGetProductsForQuotationQuery(
@@ -2186,14 +2221,20 @@ const RevQuotationFormPage = () => {
                                   }
                                   placeholder="Select Service"
                                   isLoading={servicesLoading}
-                                  addLabel="Add New Service"
-                                  renderAddLabel={(typed) =>
-                                    typed?.trim()
-                                      ? `Add "${typed.trim()}" as New Service`
-                                      : "Add New Service"
+                                  addLabel={isRestrictedUser ? undefined : "Add New Service"}
+                                  renderAddLabel={
+                                    isRestrictedUser
+                                      ? undefined
+                                      : (typed) =>
+                                          typed?.trim()
+                                            ? `Add "${typed.trim()}" as New Service`
+                                            : "Add New Service"
                                   }
-                                  onAdd={(typed) =>
-                                    openServiceQA({ serviceIndex }, typed)
+                                  onAdd={
+                                    isRestrictedUser
+                                      ? undefined
+                                      : (typed) =>
+                                          openServiceQA({ serviceIndex }, typed)
                                   }
                                 />
                               </div>
@@ -2278,18 +2319,24 @@ const RevQuotationFormPage = () => {
                                                 }
                                                 placeholder="Select Floor"
                                                 isLoading={floorsLoading}
-                                                addLabel="Add New Floor"
-                                                renderAddLabel={(typed) =>
-                                                  typed?.trim()
-                                                    ? `Add "${typed.trim()}" as New Floor`
-                                                    : "Add New Floor"
+                                                addLabel={isRestrictedUser ? undefined : "Add New Floor"}
+                                                renderAddLabel={
+                                                  isRestrictedUser
+                                                    ? undefined
+                                                    : (typed) =>
+                                                        typed?.trim()
+                                                          ? `Add "${typed.trim()}" as New Floor`
+                                                          : "Add New Floor"
                                                 }
-                                                onAdd={(typed) =>
-                                                  openQuickName(
-                                                    "floor",
-                                                    { serviceIndex, floorIndex },
-                                                    typed,
-                                                  )
+                                                onAdd={
+                                                  isRestrictedUser
+                                                    ? undefined
+                                                    : (typed) =>
+                                                        openQuickName(
+                                                          "floor",
+                                                          { serviceIndex, floorIndex },
+                                                          typed,
+                                                        )
                                                 }
                                               />
                                             </div>
@@ -2376,22 +2423,28 @@ const RevQuotationFormPage = () => {
                                                               }
                                                               placeholder="Select Area"
                                                               isLoading={areasLoading}
-                                                              addLabel="Add New Area"
-                                                              renderAddLabel={(typed) =>
-                                                                typed?.trim()
-                                                                  ? `Add "${typed.trim()}" as New Area`
-                                                                  : "Add New Area"
+                                                              addLabel={isRestrictedUser ? undefined : "Add New Area"}
+                                                              renderAddLabel={
+                                                                isRestrictedUser
+                                                                  ? undefined
+                                                                  : (typed) =>
+                                                                      typed?.trim()
+                                                                        ? `Add "${typed.trim()}" as New Area`
+                                                                        : "Add New Area"
                                                               }
-                                                              onAdd={(typed) =>
-                                                                openQuickName(
-                                                                  "area",
-                                                                  {
-                                                                    serviceIndex,
-                                                                    floorIndex,
-                                                                    areaIndex,
-                                                                  },
-                                                                  typed,
-                                                                )
+                                                              onAdd={
+                                                                isRestrictedUser
+                                                                  ? undefined
+                                                                  : (typed) =>
+                                                                      openQuickName(
+                                                                        "area",
+                                                                        {
+                                                                          serviceIndex,
+                                                                          floorIndex,
+                                                                          areaIndex,
+                                                                        },
+                                                                        typed,
+                                                                      )
                                                               }
                                                             />
                                                           </div>
@@ -2504,23 +2557,29 @@ const RevQuotationFormPage = () => {
                                                                               isDisabled={
                                                                                 !srv.serviceId || productsLoading
                                                                               }
-                                                                              addLabel="Add New Product"
-                                                                              renderAddLabel={(typed) =>
-                                                                                typed?.trim()
-                                                                                  ? `Add "${typed.trim()}" as New Product`
-                                                                                  : "Add New Product"
+                                                                              addLabel={isRestrictedUser ? undefined : "Add New Product"}
+                                                                              renderAddLabel={
+                                                                                isRestrictedUser
+                                                                                  ? undefined
+                                                                                  : (typed) =>
+                                                                                      typed?.trim()
+                                                                                        ? `Add "${typed.trim()}" as New Product`
+                                                                                        : "Add New Product"
                                                                               }
-                                                                              onAdd={(typed) =>
-                                                                                openProductQA(
-                                                                                  {
-                                                                                    serviceIndex,
-                                                                                    floorIndex,
-                                                                                    areaIndex,
-                                                                                    prodIndex,
-                                                                                  },
-                                                                                  typed,
-                                                                                  srv.serviceId,
-                                                                                )
+                                                                              onAdd={
+                                                                                isRestrictedUser
+                                                                                  ? undefined
+                                                                                  : (typed) =>
+                                                                                      openProductQA(
+                                                                                        {
+                                                                                          serviceIndex,
+                                                                                          floorIndex,
+                                                                                          areaIndex,
+                                                                                          prodIndex,
+                                                                                        },
+                                                                                        typed,
+                                                                                        srv.serviceId,
+                                                                                      )
                                                                               }
                                                                             />
                                                                           </div>
@@ -2533,7 +2592,10 @@ const RevQuotationFormPage = () => {
                                                                             <Input
                                                                               type="number"
                                                                               value={prod.price}
+                                                                              readOnly={isRestrictedUser}
+                                                                              disabled={isRestrictedUser}
                                                                               onChange={(e) =>
+                                                                                !isRestrictedUser &&
                                                                                 handleNestedFieldChange(
                                                                                   serviceIndex,
                                                                                   floorIndex,
@@ -2543,7 +2605,9 @@ const RevQuotationFormPage = () => {
                                                                                   e.target.value,
                                                                                 )
                                                                               }
-                                                                              className="h-8 text-xs bg-transparent border-slate-200 dark:border-slate-800"
+                                                                              className={`h-8 text-xs bg-transparent border-slate-200 dark:border-slate-800 ${
+                                                                                isRestrictedUser ? "opacity-75 cursor-not-allowed bg-slate-50 dark:bg-slate-900" : ""
+                                                                              }`}
                                                                               placeholder="Price"
                                                                             />
                                                                           </div>

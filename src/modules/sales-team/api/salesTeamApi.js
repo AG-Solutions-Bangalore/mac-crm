@@ -24,6 +24,7 @@ export const salesTeamApi = {
       name: data.name,
       email: data.email,
       mobile: data.mobile,
+      role: data.role,
     });
     return response.data;
   },
@@ -34,6 +35,7 @@ export const salesTeamApi = {
       email: data.email,
       mobile: data.mobile,
       status: data.status,
+      role: data.role,
     });
     return response.data;
   },

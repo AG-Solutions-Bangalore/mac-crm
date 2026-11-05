@@ -44,6 +44,7 @@ import { getSalesTeamMemberId } from "../../sales-team/api/salesTeamApi";
 import PreparedByPicker from "../../quotation/components/report/PreparedByPicker";
 import { useCreateProductMutation } from "../../product/hooks/useProduct";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSelector } from "react-redux";
 import MemoizedSelect from "@/components/common/memoized-select";
 import SelectWithAdd from "@/components/common/select-with-add";
 import ConfirmDialog from "@/components/common/confirm-dialog";
@@ -285,6 +286,8 @@ const ProjectFormPage = () => {
   const { id } = useParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
+  const user = useSelector((state) => state.auth?.user);
+  const isRestrictedUser = Number(user?.user_type) === 4;
 
   const [formData, setFormData] = useState({
     project_date: new Date().toISOString().split("T")[0],
@@ -1939,11 +1942,14 @@ const ProjectFormPage = () => {
                   }
                   placement="bottom-left"
                   menuPosition="absolute"
-                  addLabel="Add New Lead"
-                  renderAddLabel={(typed) =>
-                    typed?.trim() ? `Add "${typed.trim()}" as New Lead` : "Add New Lead"
+                  addLabel={isRestrictedUser ? undefined : "Add New Lead"}
+                  renderAddLabel={
+                    isRestrictedUser
+                      ? undefined
+                      : (typed) =>
+                          typed?.trim() ? `Add "${typed.trim()}" as New Lead` : "Add New Lead"
                   }
-                  onAdd={handleBuyerAdd}
+                  onAdd={isRestrictedUser ? undefined : handleBuyerAdd}
                   menuIsOpen={buyerDialogOpen ? false : buyerMenuOpen}
                   onMenuOpen={() => setBuyerMenuOpen(true)}
                   onMenuClose={() => setBuyerMenuOpen(false)}
@@ -2155,13 +2161,20 @@ const ProjectFormPage = () => {
                           }
                           options={allServiceOptions}
                           placeholder="Select Service"
-                          addLabel="+ Add Service"
-                          renderAddLabel={(typed) =>
-                            typed?.trim()
-                              ? `+ Add "${typed.trim()}" as Service`
-                              : "+ Add Service"
+                          addLabel={isRestrictedUser ? undefined : "+ Add Service"}
+                          renderAddLabel={
+                            isRestrictedUser
+                              ? undefined
+                              : (typed) =>
+                                  typed?.trim()
+                                    ? `+ Add "${typed.trim()}" as Service`
+                                    : "+ Add Service"
                           }
-                          onAdd={(typed) => openServiceQA({ serviceIndex: srvIdx }, typed)}
+                          onAdd={
+                            isRestrictedUser
+                              ? undefined
+                              : (typed) => openServiceQA({ serviceIndex: srvIdx }, typed)
+                          }
                         />
                       </div>
                     </div>
@@ -2219,18 +2232,24 @@ const ProjectFormPage = () => {
                                 }
                                 options={getFloorOptions(flr)}
                                 placeholder="Select Floor"
-                                addLabel="+ Add Floor"
-                                renderAddLabel={(typed) =>
-                                  typed?.trim()
-                                    ? `+ Add "${typed.trim()}" as Floor`
-                                    : "+ Add Floor"
+                                addLabel={isRestrictedUser ? undefined : "+ Add Floor"}
+                                renderAddLabel={
+                                  isRestrictedUser
+                                    ? undefined
+                                    : (typed) =>
+                                        typed?.trim()
+                                          ? `+ Add "${typed.trim()}" as Floor`
+                                          : "+ Add Floor"
                                 }
-                                onAdd={(typed) =>
-                                  openQuickName(
-                                    "floor",
-                                    { serviceIndex: srvIdx, floorIndex: flrIdx },
-                                    typed
-                                  )
+                                onAdd={
+                                  isRestrictedUser
+                                    ? undefined
+                                    : (typed) =>
+                                        openQuickName(
+                                          "floor",
+                                          { serviceIndex: srvIdx, floorIndex: flrIdx },
+                                          typed
+                                        )
                                 }
                               />
                             </div>
@@ -2290,22 +2309,28 @@ const ProjectFormPage = () => {
                                       }
                                       options={getAreaOptions(area)}
                                       placeholder="Select Area"
-                                      addLabel="+ Add Area"
-                                      renderAddLabel={(typed) =>
-                                        typed?.trim()
-                                          ? `+ Add "${typed.trim()}" as Area`
-                                          : "+ Add Area"
+                                      addLabel={isRestrictedUser ? undefined : "+ Add Area"}
+                                      renderAddLabel={
+                                        isRestrictedUser
+                                          ? undefined
+                                          : (typed) =>
+                                              typed?.trim()
+                                                ? `+ Add "${typed.trim()}" as Area`
+                                                : "+ Add Area"
                                       }
-                                      onAdd={(typed) =>
-                                        openQuickName(
-                                          "area",
-                                          {
-                                            serviceIndex: srvIdx,
-                                            floorIndex: flrIdx,
-                                            areaIndex,
-                                          },
-                                          typed
-                                        )
+                                      onAdd={
+                                        isRestrictedUser
+                                          ? undefined
+                                          : (typed) =>
+                                              openQuickName(
+                                                "area",
+                                                {
+                                                  serviceIndex: srvIdx,
+                                                  floorIndex: flrIdx,
+                                                  areaIndex,
+                                                },
+                                                typed
+                                              )
                                       }
                                     />
                                   </div>
@@ -2370,23 +2395,29 @@ const ProjectFormPage = () => {
                                               : "Select Service above first"
                                           }
                                           noOptionsMessage={() => emptyHint}
-                                          addLabel="+ Add Product"
-                                          renderAddLabel={(typed) =>
-                                            typed?.trim()
-                                              ? `+ Add "${typed.trim()}" as Product`
-                                              : "+ Add Product"
+                                          addLabel={isRestrictedUser ? undefined : "+ Add Product"}
+                                          renderAddLabel={
+                                            isRestrictedUser
+                                              ? undefined
+                                              : (typed) =>
+                                                  typed?.trim()
+                                                    ? `+ Add "${typed.trim()}" as Product`
+                                                    : "+ Add Product"
                                           }
-                                          onAdd={(typed) =>
-                                            openProductQA(
-                                              {
-                                                serviceIndex: srvIdx,
-                                                floorIndex: flrIdx,
-                                                areaIndex,
-                                                prodIndex,
-                                              },
-                                              typed,
-                                              srv.serviceId
-                                            )
+                                          onAdd={
+                                            isRestrictedUser
+                                              ? undefined
+                                              : (typed) =>
+                                                  openProductQA(
+                                                    {
+                                                      serviceIndex: srvIdx,
+                                                      floorIndex: flrIdx,
+                                                      areaIndex,
+                                                      prodIndex,
+                                                    },
+                                                    typed,
+                                                    srv.serviceId
+                                                  )
                                           }
                                         />
                                       </div>

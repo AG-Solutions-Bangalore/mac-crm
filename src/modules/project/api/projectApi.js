@@ -2,10 +2,13 @@ import apiClient from "@/api/apiClient";
 
 export const projectApi = {
   // Project CRUD
-  getProjects: async (page = 1, search = "", status = "") => {
+  getProjects: async (page = 1, search = "", status = "", year = "") => {
     let url = `/project?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
     if (status && status !== "all") {
       url += `&filter=${encodeURIComponent(status)}`;
+    }
+    if (year && year !== "all") {
+      url += `&year=${encodeURIComponent(year)}`;
     }
     const response = await apiClient.get(url);
     return response.data;

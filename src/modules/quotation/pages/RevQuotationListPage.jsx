@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { usePersistedSearch } from "@/hooks/usePersistedSearch";
 import { Edit, ArrowLeft, CheckCircle2, Award, FileText, CalendarDays, Trash2 } from "lucide-react";
@@ -10,29 +11,54 @@ import ToggleStatus from "@/components/toogle/status-toogle";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/common/page-header";
 import ConfirmDialog from "@/components/common/confirm-dialog";
-import { useRevQuotationsQuery, useApproveRevQuotationMutation, useDeleteRevQuotationMutation, useQuotationQuery } from "../hooks/useQuotation";
+import { useRevQuotationsQuery, useApproveRevQuotationMutation, useDeleteRevQuotationMutation, useQuotationQuery, useCyearQuery } from "../hooks/useQuotation";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import moment from "moment";
 import { toast } from "sonner";
+import { isQuotationOwnedByUser, isViewerUser } from "@/utils/permissions";
 
 const RevQuotationListPage = () => {
   const { id: parentId } = useParams();
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
+  const isRestrictedUser = Number(user?.user_type) === 4;
+  const isViewer = isViewerUser(user);
   const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = usePersistedSearch();
+  const [yearFilter, setYearFilter] = useState("all");
+  const { data: cyearData } = useCyearQuery();
+  const cyearList = cyearData?.data || [];
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingApproveId, setPendingApproveId] = useState(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
-  const { data: responseData, isLoading, isFetching, isError, refetch } = useRevQuotationsQuery(parentId, page, searchTerm);
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useRevQuotationsQuery(parentId, page, searchTerm, yearFilter);
   const { data: parentQuotationData, isLoading: isParentLoading, isError: isParentError } = useQuotationQuery(parentId);
   const approveMutation = useApproveRevQuotationMutation();
   const deleteMutation = useDeleteRevQuotationMutation();
 
   const paginationData = responseData?.data;
-  const revQuotationList = paginationData?.data || [];
+  const rawRevQuotationList = paginationData?.data || [];
+  const revQuotationList = yearFilter && yearFilter !== "all"
+    ? rawRevQuotationList.filter((item) => String(item.year || "").trim() === String(yearFilter).trim())
+    : rawRevQuotationList;
   const parentFinishWorkDate = parentQuotationData?.data?.quotation_finish_work_date;
   const parentStatus = parentQuotationData?.data?.quotation_status;
+
+  useEffect(() => {
+    if (!isRestrictedUser || !parentQuotationData?.data) return;
+    if (!isQuotationOwnedByUser(parentQuotationData.data, user)) {
+      toast.error("You can only view your own quotations");
+      navigate("/quotation-list", { replace: true });
+    }
+  }, [isRestrictedUser, parentQuotationData, user, navigate]);
   // After parent is Approved/Project -> revised list becomes view-only.
   // User can check (view list + reports) but cannot add / edit / approve.
   const isParentApprovedLocked = parentStatus === "Approved" || parentStatus === "Project";
@@ -135,6 +161,9 @@ const RevQuotationListPage = () => {
           }
           return <span className="text-xs font-bold text-slate-500">{status}</span>;
         }
+        if (isRestrictedUser && Number(row.original.id) !== latestRevId) {
+          return <span className="text-xs font-bold text-slate-500">{status}</span>;
+        }
         return (
           <ToggleStatus
             initialStatus={status}
@@ -179,7 +208,7 @@ const RevQuotationListPage = () => {
               </Button>
             </abbr>
 
-            {!isLocked && !isLatestRevision && (
+            {!isLocked && !isLatestRevision && !isRestrictedUser && (
               <abbr title="Delete Revised Quotation">
                 <Button
                   size="icon"
@@ -196,7 +225,7 @@ const RevQuotationListPage = () => {
             {!isLocked &&
               isLatestRevision &&
               !revQuotationList.some((q) => q.quotation_status === "Approved") &&
-              row.original.quotation_status !== "Approved" && (
+              row.original.quotation_status !== "Approved" && !isRestrictedUser && (
                 <abbr title="Approve & Finalize">
                   <Button
                     size="icon"
@@ -255,6 +284,29 @@ const RevQuotationListPage = () => {
 
       <DataTable
         isLoading={isLoading || isFetching}
+        extraButton={
+          <div className="flex items-center gap-2">
+            <Select
+              value={yearFilter}
+              onValueChange={(val) => {
+                setYearFilter(val);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="w-[125px]">
+                <SelectValue placeholder="All Years" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Years</SelectItem>
+                {cyearList.map((c) => (
+                  <SelectItem key={c.cyear} value={c.cyear}>
+                    {c.cyear}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        }
         data={revQuotationList}
         columns={columns}
         searchPlaceholder="Search Revisions..."
@@ -265,7 +317,7 @@ const RevQuotationListPage = () => {
           setPage(1);
         }}
         addButton={
-          !isLocked
+          !isLocked && !isViewer
             ? {
                 onClick: () => navigate(`/quotation-list/revised/${parentId}/create`),
                 label: "Add Revised Quotation",

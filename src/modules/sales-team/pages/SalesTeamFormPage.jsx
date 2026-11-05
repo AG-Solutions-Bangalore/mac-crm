@@ -39,6 +39,7 @@ const SalesTeamFormPage = () => {
     name: "",
     email: "",
     mobile: "",
+    role: "editor", // "editor" or "viewer" access
     status: "Active",
   });
 
@@ -62,6 +63,7 @@ const SalesTeamFormPage = () => {
       name: data.name || "",
       email: data.email || "",
       mobile: data.mobile || "",
+      role: data.role || data.access_role || (localStorage.getItem(`user_role_${id}`) || "editor"),
       status: data.status || "Active",
     });
   }, [isEdit, fetchedData]);
@@ -70,6 +72,10 @@ const SalesTeamFormPage = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: "" }));
+  };
+
+  const handleRoleChange = (value) => {
+    setFormData((prev) => ({ ...prev, role: value }));
   };
 
   const handleStatusChange = (value) => {
@@ -113,15 +119,22 @@ const SalesTeamFormPage = () => {
             email: formData.email.trim(),
             mobile: formData.mobile.trim(),
             status: formData.status,
+            role: formData.role,
           },
         });
+        localStorage.setItem(`user_role_${id}`, formData.role);
         toast.success("Member updated successfully");
       } else {
-        await createMutation.mutateAsync({
+        const created = await createMutation.mutateAsync({
           name: formData.name.trim(),
           email: formData.email.trim(),
           mobile: formData.mobile.trim(),
+          role: formData.role,
         });
+        const newId = created?.data?.id || created?.id;
+        if (newId) {
+          localStorage.setItem(`user_role_${newId}`, formData.role);
+        }
         toast.success("Member created successfully");
       }
       navigate("/sales-team-list");
@@ -232,6 +245,26 @@ const SalesTeamFormPage = () => {
                 {errors.mobile && (
                   <p className="text-red-500 text-xs">{errors.mobile}</p>
                 )}
+              </div>
+
+              {/* Access Role (Editor or Viewer) */}
+              <div className="space-y-2">
+                <Label htmlFor="role">Access Level</Label>
+                <Select
+                  value={formData.role}
+                  onValueChange={handleRoleChange}
+                >
+                  <SelectTrigger id="role">
+                    <SelectValue placeholder="Select access role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="editor">Editor Access</SelectItem>
+                    <SelectItem value="viewer">Viewer Access</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-muted-foreground">
+                  Editor can prepare and submit quotes; Viewer gets strict read-only access.
+                </p>
               </div>
 
               {/* Status — edit only (create API defaults to Active) */}

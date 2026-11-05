@@ -109,7 +109,9 @@ function AppRoutes() {
             path="/service-list/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <ServiceFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <ServiceFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -117,7 +119,9 @@ function AppRoutes() {
             path="/service-list/edit/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <ServiceFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <ServiceFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -135,7 +139,9 @@ function AppRoutes() {
             path="/client-list/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <ClientFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <ClientFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -143,7 +149,9 @@ function AppRoutes() {
             path="/client-list/create-relation/"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <ClientFormPage isRelation={true} />
+                <RoleGuard disallowRoles={[4]}>
+                  <ClientFormPage isRelation={true} />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -151,7 +159,9 @@ function AppRoutes() {
             path="/client-list/edit/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <ClientFormPage isEdit={true} />
+                <RoleGuard disallowRoles={[4]}>
+                  <ClientFormPage isEdit={true} />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -169,7 +179,9 @@ function AppRoutes() {
             path="/buyer-list/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <BuyerFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <BuyerFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -177,7 +189,9 @@ function AppRoutes() {
             path="/buyer-list/edit/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <BuyerFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <BuyerFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -195,7 +209,9 @@ function AppRoutes() {
             path="/property-list/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <PropertyFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <PropertyFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -203,7 +219,9 @@ function AppRoutes() {
             path="/property-list/edit/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <PropertyFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <PropertyFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -221,7 +239,9 @@ function AppRoutes() {
             path="/floor-list/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <FloorFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <FloorFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -229,7 +249,9 @@ function AppRoutes() {
             path="/floor-list/edit/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <FloorFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <FloorFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -247,7 +269,9 @@ function AppRoutes() {
             path="/area-list/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <AreaFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <AreaFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -255,7 +279,9 @@ function AppRoutes() {
             path="/area-list/edit/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <AreaFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <AreaFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -273,7 +299,9 @@ function AppRoutes() {
             path="/brand-list/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <BrandFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <BrandFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -281,7 +309,9 @@ function AppRoutes() {
             path="/brand-list/edit/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <BrandFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <BrandFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -291,7 +321,9 @@ function AppRoutes() {
             path="/sales-team-list"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <SalesTeamListPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <SalesTeamListPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -299,7 +331,9 @@ function AppRoutes() {
             path="/sales-team-list/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <SalesTeamFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <SalesTeamFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -307,7 +341,9 @@ function AppRoutes() {
             path="/sales-team-list/edit/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <SalesTeamFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <SalesTeamFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -325,7 +361,9 @@ function AppRoutes() {
             path="/category-list/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <CategoryFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <CategoryFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -333,7 +371,9 @@ function AppRoutes() {
             path="/category-list/edit/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <CategoryFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <CategoryFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -351,7 +391,9 @@ function AppRoutes() {
             path="/product-list/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <ProductFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <ProductFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -359,7 +401,9 @@ function AppRoutes() {
             path="/product-list/edit/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <ProductFormPage />
+                <RoleGuard disallowRoles={[4]}>
+                  <ProductFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -377,7 +421,9 @@ function AppRoutes() {
             path="/quotation-list/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <QuotationFormPage />
+                <RoleGuard requireEditor={true}>
+                  <QuotationFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -385,7 +431,9 @@ function AppRoutes() {
             path="/quotation-list/edit/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <QuotationFormPage />
+                <RoleGuard requireEditor={true}>
+                  <QuotationFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -403,7 +451,9 @@ function AppRoutes() {
             path="/quotation-list/revised/:id/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <RevQuotationFormPage />
+                <RoleGuard requireEditor={true}>
+                  <RevQuotationFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -411,7 +461,9 @@ function AppRoutes() {
             path="/quotation-list/revised/:id/edit/:revId"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <RevQuotationFormPage />
+                <RoleGuard requireEditor={true}>
+                  <RevQuotationFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -429,7 +481,9 @@ function AppRoutes() {
             path="/project-list/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <ProjectFormPage />
+                <RoleGuard requireEditor={true}>
+                  <ProjectFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />
@@ -437,7 +491,9 @@ function AppRoutes() {
             path="/project-list/edit/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <ProjectFormPage />
+                <RoleGuard requireEditor={true}>
+                  <ProjectFormPage />
+                </RoleGuard>
               </Suspense>
             }
           />

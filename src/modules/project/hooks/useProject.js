@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { projectApi } from "../api/projectApi";
 
-export function useProjectsQuery(page = 1, search = "", status = "all") {
+export function useProjectsQuery(page = 1, search = "", status = "all", year = "all") {
   return useQuery({
-    queryKey: ["projects", page, search, status],
-    queryFn: () => projectApi.getProjects(page, search, status),
+    queryKey: ["projects", page, search, status, year],
+    queryFn: () => projectApi.getProjects(page, search, status, year),
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,

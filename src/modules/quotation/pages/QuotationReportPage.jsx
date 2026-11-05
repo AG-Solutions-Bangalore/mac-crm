@@ -32,6 +32,7 @@ import CompactTableView from "../components/report/CompactTableView";
 import { createStyledQuotationWorkbook, downloadBlob } from "@/app/reports/quotation-xlsx";
 import { calculateMilestoneAmounts } from "@/utils/milestoneUtils";
 import { deriveDiscountPct } from "@/utils/discountUtils";
+import { isQuotationOwnedByUser, isSalesUser } from "@/utils/permissions";
 
 
 const headers = [
@@ -193,6 +194,13 @@ export default function QuotationReportPage() {
     : isRevised
       ? revData?.data
       : parentData?.data;
+
+  useEffect(() => {
+    if (isProject || !isSalesUser(authUser) || !quotationDetail) return;
+    if (!isQuotationOwnedByUser(quotationDetail, authUser)) {
+      navigate("/quotation-list", { replace: true });
+    }
+  }, [isProject, authUser, quotationDetail, navigate]);
 
   useEffect(() => {
     if (!quotationDetail) return;

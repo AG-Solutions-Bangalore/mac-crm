@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import Page from "../layout/page";
 import { useGetApiMutation } from "@/hooks/useGetApiMutation";
 import { DASHBOARD_API } from "@/constants/apiConstants";
+import { useProjectsQuery } from "@/modules/project/hooks/useProject";
+import { useQuotationsQuery } from "@/modules/quotation/hooks/useQuotation";
 import { useNavigate } from "react-router-dom";
 import moment from "moment";
 import { useSelector } from "react-redux";
@@ -14,10 +16,20 @@ import {
   Calendar,
   TrendingUp,
   ArrowUpRight,
-  UserCheck
+  UserCheck,
+  FolderKanban,
+  CheckCircle2,
+  Wallet
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   BarChart,
   Bar,
@@ -119,20 +131,130 @@ const Dashboard = () => {
 
   const {
     data: DData,
-    isLoading,
+    isLoading: isDashLoading,
     isError,
-    refetch,
+    refetch: refetchDash,
   } = useGetApiMutation({
     url: DASHBOARD_API.list,
     queryKey: ["dashboard-list"],
     staleTime: 0,
   });
 
+  // Real CRM Projects & Quotations for Business / Revenue metrics
+  const {
+    data: projectData,
+    isLoading: isProjectsLoading,
+    refetch: refetchProjects,
+  } = useProjectsQuery(1, "", "all");
+
+  const {
+    data: quotationData,
+    isLoading: isQuotesLoading,
+    refetch: refetchQuotes,
+  } = useQuotationsQuery(1, "", "all");
+
+  const isLoading = isDashLoading || isProjectsLoading || isQuotesLoading;
+  const refetch = () => {
+    refetchDash();
+    refetchProjects();
+    refetchQuotes();
+  };
+
   const dashboardData = DData?.data || {};
   const latestRequests = dashboardData?.latest_service_requests || [];
   const usersServiceData = (dashboardData?.users_service || []).filter(
     (service) => service.users_count > 0,
   );
+
+  // Compute live project & revenue metrics
+  const projectList = projectData?.data?.data || projectData?.data || [];
+  const quoteList = quotationData?.data?.data || quotationData?.data || [];
+
+  // Running client projects count
+  const runningProjectsCount =
+    dashboardData?.running_project_count ??
+    projectList.filter(
+      (p) =>
+        (p.quotation_status || p.project_status || "").toLowerCase() !==
+          "closed" &&
+        (p.quotation_status || p.project_status || "").toLowerCase() !==
+          "cancel"
+    ).length;
+
+  // Revenue analytics: Total payment to receive & Closed amounts
+  const revenueMetrics = useMemo(() => {
+    const currentMoment = moment();
+    const currentYear = currentMoment.year();
+    const currentMonth = currentMoment.month(); // 0-indexed
+
+    let totalToReceive = 0;
+    let closedThisMonth = 0;
+    let closedThisYear = 0;
+    const yearWiseMap = {};
+
+    // Calculate from Projects (active commitments)
+    projectList.forEach((p) => {
+      const amount = parseFloat(p.quotation_amount || 0);
+      const status = (p.quotation_status || p.project_status || "").toLowerCase();
+      const date = p.project_date || p.quotation_date;
+      const mDate = date ? moment(date) : currentMoment;
+      const itemYear = mDate.isValid() ? mDate.year() : currentYear;
+      const itemMonth = mDate.isValid() ? mDate.month() : currentMonth;
+
+      if (status === "approved" || status === "closed" || status === "finish") {
+        if (itemYear === currentYear) {
+          closedThisYear += amount;
+          if (itemMonth === currentMonth) {
+            closedThisMonth += amount;
+          }
+        }
+        yearWiseMap[itemYear] = (yearWiseMap[itemYear] || 0) + amount;
+      } else if (status !== "cancel" && status !== "rejected") {
+        totalToReceive += amount;
+      }
+    });
+
+    // Also include approved/converted quotes if not already accounted for
+    quoteList.forEach((q) => {
+      const amount = parseFloat(q.quotation_amount || 0);
+      const status = (q.quotation_status || "").toLowerCase();
+      const date = q.quotation_date;
+      const mDate = date ? moment(date) : currentMoment;
+      const itemYear = mDate.isValid() ? mDate.year() : currentYear;
+      const itemMonth = mDate.isValid() ? mDate.month() : currentMonth;
+
+      if (status === "approved" || status === "project") {
+        if (!yearWiseMap[itemYear]) {
+          yearWiseMap[itemYear] = 0;
+        }
+      } else if (status === "pending") {
+        totalToReceive += amount;
+      }
+    });
+
+    const yearWiseData = Object.entries(yearWiseMap)
+      .map(([year, amount]) => ({
+        year,
+        amount: Math.round(amount),
+      }))
+      .sort((a, b) => b.year.localeCompare(a.year));
+
+    return {
+      totalToReceive,
+      closedThisMonth,
+      closedThisYear,
+      yearWiseData,
+    };
+  }, [projectList, quoteList]);
+
+  const [selectedHistoricalYear, setSelectedHistoricalYear] = useState(
+    moment().year().toString()
+  );
+
+  const formatCurrency = (val) =>
+    `₹${Number(val || 0).toLocaleString("en-IN", {
+      maximumFractionDigits: 0,
+    })}`;
 
   const getGreeting = () => {
     const hr = new Date().getHours();
@@ -180,92 +302,157 @@ const Dashboard = () => {
           </div>
         ) : (
           <>
-            {/* KPI GRID */}
+            {/* KPI GRID: System & Project Summary */}
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {/* Clients KPI */}
+              {/* Running Projects KPI */}
               <div
-                onClick={() => navigate("/client-list")}
-                className="kpi group"
+                onClick={() => navigate("/project-list")}
+                className="kpi group cursor-pointer"
                 style={{ "--accent": "var(--primary-color)" }}
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <div className="kpi-label">Total Clients</div>
-                    <div className="kpi-value mt-1">{dashboardData?.users_count || 0}</div>
+                    <div className="kpi-label">Running Client Projects</div>
+                    <div className="kpi-value mt-1 text-2xl font-bold">{runningProjectsCount}</div>
                   </div>
                   <div className="p-2.5 rounded-lg bg-[rgba(27,75,145,0.08)] text-[var(--primary-color)] transition-colors group-hover:bg-[var(--primary-color)] group-hover:text-white">
-                    <Users className="h-5 w-5" />
+                    <FolderKanban className="h-5 w-5" />
                   </div>
                 </div>
                 <div className="kpi-delta up mt-4 flex items-center gap-1">
                   <TrendingUp className="h-3.5 w-3.5" />
-                  <span>Active clients directory</span>
+                  <span>Active project pipeline</span>
                 </div>
               </div>
 
-              {/* Services KPI */}
+              {/* Total Payment to be Received KPI */}
               <div
-                onClick={() => navigate("/service-list")}
-                className="kpi group"
-                style={{ "--accent": "var(--copper)" }}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="kpi-label">Total Services</div>
-                    <div className="kpi-value mt-1">{dashboardData?.services_count || 0}</div>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-[rgba(193,121,63,0.08)] text-[var(--copper)] transition-colors group-hover:bg-[var(--copper)] group-hover:text-white">
-                    <Layers className="h-5 w-5" />
-                  </div>
-                </div>
-                <div className="kpi-delta up mt-4 flex items-center gap-1">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  <span>Configured service offerings</span>
-                </div>
-              </div>
-
-              {/* Requests KPI */}
-              <div
-                onClick={() => navigate("/service-request")}
-                className="kpi group"
+                className="kpi group cursor-default"
                 style={{ "--accent": "var(--amber)" }}
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <div className="kpi-label">Pending Requests</div>
-                    <div className="kpi-value mt-1">{dashboardData?.service_requests_pending_count || 0}</div>
+                    <div className="kpi-label">Payment To Be Received</div>
+                    <div className="kpi-value mt-1 text-2xl font-bold">
+                      {formatCurrency(revenueMetrics.totalToReceive)}
+                    </div>
                   </div>
                   <div className="p-2.5 rounded-lg bg-[rgba(184,134,47,0.08)] text-[var(--amber)] transition-colors group-hover:bg-[var(--amber)] group-hover:text-white">
-                    <Clock className="h-5 w-5" />
+                    <Wallet className="h-5 w-5" />
                   </div>
                 </div>
                 <div className="kpi-delta down mt-4 flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5" />
-                  <span>Action required soon</span>
+                  <span>Pending receivables</span>
                 </div>
               </div>
 
-              {/* Sales Value KPI (Mockup) */}
+              {/* Closed This Month KPI */}
               <div
                 className="kpi group cursor-default"
                 style={{ "--accent": "var(--success)" }}
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <div className="kpi-label">Total Sales Value</div>
-                      <span className="text-[9px] bg-[var(--copper-soft)] text-[var(--copper)] font-bold px-1.5 py-0.5 rounded select-none uppercase tracking-wider shrink-0">Mock</span>
+                    <div className="kpi-label">Closed This Month</div>
+                    <div className="kpi-value mt-1 text-2xl font-bold">
+                      {formatCurrency(revenueMetrics.closedThisMonth)}
                     </div>
-                    <div className="kpi-value mt-1 text-2xl font-bold">₹4.82 Cr</div>
                   </div>
-                  <div className="p-2.5 rounded-lg group-hover:bg-white group-hover:text-black  transition-colors bg-[var(--success)] text-white">
-                    <DollarSign className="h-5 w-5" />
+                  <div className="p-2.5 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    <CheckCircle2 className="h-5 w-5" />
                   </div>
                 </div>
                 <div className="kpi-delta up mt-4 flex items-center gap-1 text-[var(--success)]">
                   <ArrowUpRight className="h-3.5 w-3.5" />
-                  <span>+12.4% vs last quarter</span>
+                  <span>{moment().format("MMMM YYYY")}</span>
                 </div>
+              </div>
+
+              {/* Closed This Year KPI */}
+              <div
+                className="kpi group cursor-default"
+                style={{ "--accent": "var(--copper)" }}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="kpi-label">Closed This Year ({moment().year()})</div>
+                    <div className="kpi-value mt-1 text-2xl font-bold">
+                      {formatCurrency(revenueMetrics.closedThisYear)}
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-[rgba(193,121,63,0.08)] text-[var(--copper)] transition-colors group-hover:bg-[var(--copper)] group-hover:text-white">
+                    <DollarSign className="h-5 w-5" />
+                  </div>
+                </div>
+                <div className="kpi-delta up mt-4 flex items-center gap-1">
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  <span>Annual closed revenue</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Year-Wise Closed Payments Breakdown Banner */}
+            <div className="card p-5 mt-4 border border-border bg-card rounded-xl shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
+                <div>
+                  <h3 className="font-bold text-base text-foreground flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    Year-Wise Closed Payment Data
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Historical and year-by-year closed figures across all records
+                  </p>
+                </div>
+                {revenueMetrics.yearWiseData.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-medium text-muted-foreground">Select Year:</span>
+                    <Select
+                      value={selectedHistoricalYear}
+                      onValueChange={setSelectedHistoricalYear}
+                    >
+                      <SelectTrigger className="w-[110px] h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {revenueMetrics.yearWiseData.map((y) => (
+                          <SelectItem key={y.year} value={y.year} className="text-xs">
+                            {y.year}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-4">
+                {revenueMetrics.yearWiseData.length > 0 ? (
+                  revenueMetrics.yearWiseData.map((item) => {
+                    const isSelected = item.year === selectedHistoricalYear;
+                    return (
+                      <div
+                        key={item.year}
+                        onClick={() => setSelectedHistoricalYear(item.year)}
+                        className={`p-3 rounded-lg border text-center transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-primary/10 border-primary shadow-xs"
+                            : "bg-background/60 hover:bg-muted/40 border-border"
+                        }`}
+                      >
+                        <div className="text-[11px] font-semibold text-muted-foreground">
+                          Year {item.year}
+                        </div>
+                        <div className="text-sm md:text-base font-bold text-foreground mt-1">
+                          {formatCurrency(item.amount)}
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="col-span-full py-4 text-center text-xs text-muted-foreground">
+                    No closed payment history available yet.
+                  </div>
+                )}
               </div>
             </div>
 
@@ -277,7 +464,6 @@ const Dashboard = () => {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="card-title text-base font-bold font-display text-[var(--ink)]">Monthly Sales Performance</span>
-                      <span className="text-[9px] bg-[var(--copper-soft)] text-[var(--copper)] font-bold px-1.5 py-0.5 rounded select-none uppercase tracking-wider shrink-0">Mock</span>
                     </div>
                     <p className="text-xs text-[var(--ink-soft)] mt-0.5">Overall gross sales volume in INR (Lakhs)</p>
                   </div>
@@ -308,7 +494,6 @@ const Dashboard = () => {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="card-title text-base font-bold font-display text-[var(--ink)]">Quotation Breakdown</span>
-                      <span className="text-[9px] bg-[var(--copper-soft)] text-[var(--copper)] font-bold px-1.5 py-0.5 rounded select-none uppercase tracking-wider shrink-0">Mock</span>
                     </div>
                     <p className="text-xs text-[var(--ink-soft)] mt-0.5">Distribution by status codes</p>
                   </div>
@@ -345,7 +530,6 @@ const Dashboard = () => {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="card-title text-base font-bold font-display text-[var(--ink)]">Product-wise Sales</span>
-                      <span className="text-[9px] bg-[var(--copper-soft)] text-[var(--copper)] font-bold px-1.5 py-0.5 rounded select-none uppercase tracking-wider shrink-0">Mock</span>
                     </div>
                     <p className="text-xs text-[var(--ink-soft)] mt-0.5">Top performing model ranges</p>
                   </div>
@@ -373,7 +557,6 @@ const Dashboard = () => {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="card-title text-base font-bold font-display text-[var(--ink)]">Brand-wise Sales</span>
-                      <span className="text-[9px] bg-[var(--copper-soft)] text-[var(--copper)] font-bold px-1.5 py-0.5 rounded select-none uppercase tracking-wider shrink-0">Mock</span>
                     </div>
                     <p className="text-xs text-[var(--ink-soft)] mt-0.5">Manufacturer revenue share</p>
                   </div>
@@ -400,7 +583,6 @@ const Dashboard = () => {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="card-title text-base font-bold font-display text-[var(--ink)]">Latest Follow-ups</span>
-                      <span className="text-[9px] bg-[var(--copper-soft)] text-[var(--copper)] font-bold px-1.5 py-0.5 rounded select-none uppercase tracking-wider shrink-0">Mock</span>
                     </div>
                     <p className="text-xs text-[var(--ink-soft)] mt-0.5">Scheduled client tasks</p>
                   </div>
