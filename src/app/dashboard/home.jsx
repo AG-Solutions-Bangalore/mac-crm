@@ -83,7 +83,7 @@ const YearWiseTooltip = ({ active, payload, label }) => {
       <div className="rounded-xl border border-border bg-card p-3.5 shadow-xl text-xs text-foreground min-w-[210px] backdrop-blur-md">
         {label && (
           <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2.5 pb-1.5 border-b border-border flex items-center justify-between">
-            <span>Fiscal Year</span>
+            <span>Year</span>
             <span className="font-mono text-foreground font-bold text-xs">
               {label}
             </span>
@@ -511,7 +511,8 @@ const Dashboard = () => {
             </div>
 
             {/* 3. YEAR-WISE COMPARISON GRAPH (Strictly from API graph1, ONLY YEARS on X-Axis) */}
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
+            {yearWiseChartData && yearWiseChartData.length > 0 && (
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -676,6 +677,7 @@ const Dashboard = () => {
               </div>
 
             </div>
+            )}
 
             {/* 4. SERVICE USERS BREAKDOWN (users_service & users_hide_service) */}
             <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
