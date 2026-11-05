@@ -40,7 +40,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
   LabelList,
 } from "recharts";
@@ -75,26 +74,6 @@ const getServiceBadgeClass = (serviceName) => {
   )
     return "badge-security";
   return "badge-default";
-};
-
-// Calculate previous financial year string (e.g. "2026-27" -> "2025-26")
-const getPreviousYearStr = (yearStr) => {
-  if (!yearStr) return "2025-26";
-  const match = yearStr.match(/^(\d{4})-(\d{2,4})$/);
-  if (match) {
-    const startYear = parseInt(match[1], 10) - 1;
-    const endYear = parseInt(match[2], 10) - 1;
-    const endStr =
-      match[2].length === 2
-        ? String(endYear).padStart(2, "0")
-        : String(endYear);
-    return `${startYear}-${endStr}`;
-  }
-  const singleYear = parseInt(yearStr, 10);
-  if (!isNaN(singleYear)) {
-    return String(singleYear - 1);
-  }
-  return "2025-26";
 };
 
 // Tooltip for Year-Wise Comparison
@@ -157,75 +136,17 @@ const Dashboard = () => {
   const dashboardData = DData?.data || {};
   const graph1List = dashboardData?.graph1 || [];
 
-  // Determine current year and previous year purely as year numbers/strings
-  const currentYearStr = useMemo(() => {
-    if (graph1List.length > 0 && graph1List[0].year) {
-      return graph1List[0].year;
-    }
-    const curr = moment().year();
-    const nextShort = String((curr + 1) % 100).padStart(2, "0");
-    return `${curr}-${nextShort}`;
-  }, [graph1List]);
-
-  const prevYearStr = useMemo(() => {
-    return getPreviousYearStr(currentYearStr);
-  }, [currentYearStr]);
-
-  // Current year data from graph1
-  const currentYearData = useMemo(() => {
-    const found = graph1List.find((g) => g.year === currentYearStr);
-    return {
-      year: currentYearStr,
-      pending: Number(found?.pending_count || 0),
-      approved: Number(found?.approved_count || 0),
-      running: Number(found?.running_project_count || 0),
-      finished: Number(found?.finish_project_count || 0),
-    };
-  }, [graph1List, currentYearStr]);
-
-  // Previous year data from graph1 if available, otherwise baseline 0
-  const prevYearData = useMemo(() => {
-    const found = graph1List.find((g) => g.year === prevYearStr);
-    return {
-      year: prevYearStr,
-      pending: Number(found?.pending_count || 0),
-      approved: Number(found?.approved_count || 0),
-      running: Number(found?.running_project_count || 0),
-      finished: Number(found?.finish_project_count || 0),
-      isFromApi: Boolean(found),
-    };
-  }, [graph1List, prevYearStr]);
-
-  // Chart data: ONLY the years on X-Axis (e.g. "2025-26", "2026-27")
+  // Chart data: strictly and directly from API graph1 (no static fallback)
   const yearWiseChartData = useMemo(() => {
-    if (graph1List.length > 1) {
-      return graph1List.map((item) => ({
-        year: item.year, // ONLY YEAR
-        "Pending Quotations": Number(item.pending_count || 0),
-        "Approved Quotations": Number(item.approved_count || 0),
-        "Running Projects": Number(item.running_project_count || 0),
-        "Finished Projects": Number(item.finish_project_count || 0),
-      }));
-    }
-
-    // Default comparison between prevYear and currentYear showing ONLY year strings
-    return [
-      {
-        year: prevYearStr, // ONLY YEAR e.g. "2025-26"
-        "Pending Quotations": prevYearData.pending,
-        "Approved Quotations": prevYearData.approved,
-        "Running Projects": prevYearData.running,
-        "Finished Projects": prevYearData.finished,
-      },
-      {
-        year: currentYearStr, // ONLY YEAR e.g. "2026-27"
-        "Pending Quotations": currentYearData.pending,
-        "Approved Quotations": currentYearData.approved,
-        "Running Projects": currentYearData.running,
-        "Finished Projects": currentYearData.finished,
-      },
-    ];
-  }, [graph1List, prevYearStr, currentYearStr, prevYearData, currentYearData]);
+    return graph1List.map((item) => ({
+      year: item.year,
+      "Pending Quotations": Number(item.pending_count || 0),
+      "Approved Quotations": Number(item.approved_count || 0),
+      "Cancelled Quotations": Number(item.cancel_count || 0),
+      "Running Projects": Number(item.running_project_count || 0),
+      "Finished Projects": Number(item.finish_project_count || 0),
+    }));
+  }, [graph1List]);
 
   // Image URLs resolution from image_url array
   const serviceBaseUrl = useMemo(() => {
@@ -602,19 +523,32 @@ const Dashboard = () => {
                     </h3>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Quotations and projects performance grouped by fiscal year
+                    
                   </p>
                 </div>
 
-                {/* Year indicator badges */}
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 px-3 py-1 text-xs font-semibold font-mono text-muted-foreground">
-                    {prevYearStr}
-                  </span>
-                  <span className="text-muted-foreground text-xs font-bold">vs</span>
-                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold font-mono text-primary">
-                    {currentYearStr}
-                  </span>
+                {/* Legend placed above the divider line */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#F59E0B]" />
+                    <span className="text-muted-foreground font-medium">Pending Quotations</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#10B981]" />
+                    <span className="text-muted-foreground font-medium">Approved Quotations</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#EF4444]" />
+                    <span className="text-muted-foreground font-medium">Cancelled Quotations</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#3B82F6]" />
+                    <span className="text-muted-foreground font-medium">Running Projects</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-[#8B5CF6]" />
+                    <span className="text-muted-foreground font-medium">Finished Projects</span>
+                  </div>
                 </div>
               </div>
 
@@ -625,7 +559,7 @@ const Dashboard = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={yearWiseChartData}
-                    margin={{ top: 22, right: 20, left: -15, bottom: 5 }}
+                    margin={{ top: 25, right: 20, left: -15, bottom: 5 }}
                     barGap={8}
                   >
                     <CartesianGrid
@@ -652,19 +586,11 @@ const Dashboard = () => {
                       domain={[0, (dataMax) => (dataMax ? Math.max(4, dataMax + 1) : 4)]}
                     />
                     <Tooltip content={<YearWiseTooltip />} />
-                    <Legend
-                      verticalAlign="top"
-                      align="right"
-                      height={40}
-                      iconType="circle"
-                      iconSize={8}
-                      wrapperStyle={{ fontSize: 12, paddingBottom: 12 }}
-                    />
                     <Bar
                       dataKey="Pending Quotations"
                       fill="#F59E0B"
                       radius={[6, 6, 0, 0]}
-                      maxBarSize={48}
+                      maxBarSize={44}
                     >
                       <LabelList
                         dataKey="Pending Quotations"
@@ -681,7 +607,7 @@ const Dashboard = () => {
                       dataKey="Approved Quotations"
                       fill="#10B981"
                       radius={[6, 6, 0, 0]}
-                      maxBarSize={48}
+                      maxBarSize={44}
                     >
                       <LabelList
                         dataKey="Approved Quotations"
@@ -695,10 +621,27 @@ const Dashboard = () => {
                       />
                     </Bar>
                     <Bar
+                      dataKey="Cancelled Quotations"
+                      fill="#EF4444"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={44}
+                    >
+                      <LabelList
+                        dataKey="Cancelled Quotations"
+                        position="top"
+                        offset={8}
+                        formatter={(val) => (Number(val) > 0 ? val : "")}
+                        fill="var(--color-foreground, #0f172a)"
+                        fontSize={12}
+                        fontWeight={700}
+                        className="font-mono font-bold"
+                      />
+                    </Bar>
+                    <Bar
                       dataKey="Running Projects"
                       fill="#3B82F6"
                       radius={[6, 6, 0, 0]}
-                      maxBarSize={48}
+                      maxBarSize={44}
                     >
                       <LabelList
                         dataKey="Running Projects"
@@ -715,7 +658,7 @@ const Dashboard = () => {
                       dataKey="Finished Projects"
                       fill="#8B5CF6"
                       radius={[6, 6, 0, 0]}
-                      maxBarSize={48}
+                      maxBarSize={44}
                     >
                       <LabelList
                         dataKey="Finished Projects"
