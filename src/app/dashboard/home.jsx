@@ -26,6 +26,7 @@ import {
   Filter,
   BarChart3,
   Inbox,
+  ArrowLeftRight,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,15 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+
+const YEAR_COLORS = [
+  "#3B82F6", // Blue
+  "#10B981", // Emerald
+  "#F59E0B", // Amber
+  "#8B5CF6", // Purple
+  "#EC4899", // Pink
+  "#14B8A6", // Teal
+];
 
 const getInitials = (name) => {
   if (!name) return "U";
@@ -73,14 +83,14 @@ const getServiceBadgeClass = (serviceName) => {
   return "badge-default";
 };
 
-// Custom Tooltip for Year-Wise Graph
+// Tooltip for Group-by-Year view
 const YearWiseTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-xl border border-border bg-card p-3.5 shadow-xl text-xs text-foreground min-w-[210px] backdrop-blur-md">
         {label && (
           <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2.5 pb-1.5 border-b border-border flex items-center justify-between">
-            <span>Year</span>
+            <span>Fiscal Year</span>
             <span className="font-mono text-foreground font-bold text-xs">
               {label}
             </span>
@@ -108,6 +118,41 @@ const YearWiseTooltip = ({ active, payload, label }) => {
   return null;
 };
 
+// Tooltip for Compare-by-Metric view
+const MetricWiseTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-3.5 shadow-xl text-xs text-foreground min-w-[210px] backdrop-blur-md">
+        {label && (
+          <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2.5 pb-1.5 border-b border-border flex items-center justify-between">
+            <span>Metric</span>
+            <span className="font-mono text-foreground font-bold text-xs">
+              {label}
+            </span>
+          </div>
+        )}
+        <div className="space-y-2">
+          {payload.map((item, idx) => (
+            <div key={idx} className="flex items-center justify-between gap-4">
+              <span className="flex items-center gap-2 text-muted-foreground font-medium">
+                <span
+                  className="inline-block h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: item.color || item.fill }}
+                />
+                Year {item.dataKey}:
+              </span>
+              <span className="font-bold text-foreground font-mono text-xs">
+                {item.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth?.user);
@@ -117,6 +162,7 @@ const Dashboard = () => {
   const [serviceSearchTerm, setServiceSearchTerm] = useState("");
   const [onlyWithClients, setOnlyWithClients] = useState(false);
   const [requestFilter, setRequestFilter] = useState("all");
+  const [comparisonView, setComparisonView] = useState("byYear"); // "byYear" | "byMetric"
 
   const {
     data: DData,
@@ -131,6 +177,7 @@ const Dashboard = () => {
   });
 
   const dashboardData = DData?.data || {};
+  const graph1List = dashboardData?.graph1 || [];
 
   // Image URLs resolution from image_url array
   const serviceBaseUrl = useMemo(() => {
@@ -158,16 +205,41 @@ const Dashboard = () => {
     return `${serviceBaseUrl}${logo}`;
   };
 
-  // Year-Wise Chart Data strictly mapped from graph1
-  const yearWiseGraphData = useMemo(() => {
-    return (dashboardData?.graph1 || []).map((item) => ({
+  // 1. Group-by-Year data (X-Axis: Year)
+  const yearWiseChartData = useMemo(() => {
+    return graph1List.map((item) => ({
       year: item.year || "-",
       "Pending Quotations": Number(item.pending_count || 0),
       "Approved Quotations": Number(item.approved_count || 0),
       "Running Projects": Number(item.running_project_count || 0),
       "Finished Projects": Number(item.finish_project_count || 0),
     }));
-  }, [dashboardData?.graph1]);
+  }, [graph1List]);
+
+  // 2. Compare-by-Metric data (X-Axis: Metric, Bars: Years)
+  const metricCompareChartData = useMemo(() => {
+    if (graph1List.length === 0) return [];
+
+    const metrics = [
+      { key: "pending_count", label: "Pending Quotes" },
+      { key: "approved_count", label: "Approved Quotes" },
+      { key: "running_project_count", label: "Running Projects" },
+      { key: "finish_project_count", label: "Finished Projects" },
+    ];
+
+    return metrics.map((m) => {
+      const row = { metric: m.label };
+      graph1List.forEach((yr) => {
+        row[yr.year] = Number(yr[m.key] || 0);
+      });
+      return row;
+    });
+  }, [graph1List]);
+
+  // Available unique years in graph1
+  const availableYears = useMemo(() => {
+    return graph1List.map((item) => item.year).filter(Boolean);
+  }, [graph1List]);
 
   const latestRequests = dashboardData?.latest_service_requests || [];
   const usersServiceList = dashboardData?.users_service || [];
@@ -480,7 +552,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* 3. YEAR-WISE GRAPH (Dedicated graph1 Section with Year on X-Axis) */}
+            {/* 3. YEAR-WISE COMPARISON GRAPH (Strictly from API graph1) */}
             <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
                 <div className="space-y-1">
@@ -489,31 +561,49 @@ const Dashboard = () => {
                       <BarChart3 className="h-4 w-4" />
                     </div>
                     <h3 className="font-bold text-base font-display text-foreground">
-                      Year-Wise Graph
+                      Year-Wise Comparison
                     </h3>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Quotations and projects grouped year-wise from API data
+                    Compare quotation proposals and project performance across fiscal years
                   </p>
                 </div>
 
-                {/* Legend badges */}
-                <div className="flex flex-wrap items-center gap-2">
-                  {(dashboardData?.graph1 || []).map((item) => (
-                    <span
-                      key={item.year}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary font-mono"
+                {/* View Switcher: Group by Year VS Compare by Metric */}
+                <div className="flex items-center gap-3">
+                  <div className="inline-flex items-center rounded-lg border border-border bg-muted/40 p-0.5 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setComparisonView("byYear")}
+                      className={`px-3 py-1.5 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                        comparisonView === "byYear"
+                          ? "bg-background text-foreground shadow-xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
                     >
-                      Fiscal Year: {item.year}
-                    </span>
-                  ))}
+                      <Calendar className="h-3.5 w-3.5" />
+                      <span>Group by Year</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setComparisonView("byMetric")}
+                      className={`px-3 py-1.5 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                        comparisonView === "byMetric"
+                          ? "bg-background text-foreground shadow-xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <ArrowLeftRight className="h-3.5 w-3.5" />
+                      <span>Compare by Metric</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* Year Summary Stat Cards */}
-              {(dashboardData?.graph1 || []).length > 0 && (
+              {/* Comparison Summary Cards */}
+              {graph1List.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-                  {(dashboardData?.graph1 || []).map((g) => (
+                  {graph1List.map((g) => (
                     <React.Fragment key={g.year}>
                       <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5">
                         <div className="text-[11px] font-semibold text-muted-foreground">
@@ -555,71 +645,123 @@ const Dashboard = () => {
                 </div>
               )}
 
-              {/* Year-Wise Bar Chart with Year on X-Axis */}
+              {/* Year-Wise Chart */}
               <div className="h-[310px] w-full mt-6">
-                {yearWiseGraphData.length > 0 ? (
+                {graph1List.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={yearWiseGraphData}
-                      margin={{ top: 15, right: 20, left: -15, bottom: 5 }}
-                      barGap={8}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        vertical={false}
-                        stroke="var(--color-border)"
-                        opacity={0.7}
-                      />
-                      <XAxis
-                        dataKey="year"
-                        stroke="var(--ink-soft)"
-                        fontSize={13}
-                        fontWeight={600}
-                        tickLine={false}
-                        axisLine={{ stroke: "var(--color-border)" }}
-                        dy={8}
-                      />
-                      <YAxis
-                        stroke="var(--ink-soft)"
-                        fontSize={12}
-                        tickLine={false}
-                        axisLine={false}
-                        allowDecimals={false}
-                      />
-                      <Tooltip content={<YearWiseTooltip />} />
-                      <Legend
-                        verticalAlign="top"
-                        align="right"
-                        height={40}
-                        iconType="circle"
-                        iconSize={8}
-                        wrapperStyle={{ fontSize: 12, paddingBottom: 12 }}
-                      />
-                      <Bar
-                        dataKey="Pending Quotations"
-                        fill="#F59E0B"
-                        radius={[6, 6, 0, 0]}
-                        maxBarSize={48}
-                      />
-                      <Bar
-                        dataKey="Approved Quotations"
-                        fill="#10B981"
-                        radius={[6, 6, 0, 0]}
-                        maxBarSize={48}
-                      />
-                      <Bar
-                        dataKey="Running Projects"
-                        fill="#3B82F6"
-                        radius={[6, 6, 0, 0]}
-                        maxBarSize={48}
-                      />
-                      <Bar
-                        dataKey="Finished Projects"
-                        fill="#8B5CF6"
-                        radius={[6, 6, 0, 0]}
-                        maxBarSize={48}
-                      />
-                    </BarChart>
+                    {comparisonView === "byYear" ? (
+                      // 1. Group by Year (X-Axis: Fiscal Years)
+                      <BarChart
+                        data={yearWiseChartData}
+                        margin={{ top: 15, right: 20, left: -15, bottom: 5 }}
+                        barGap={8}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          stroke="var(--color-border)"
+                          opacity={0.7}
+                        />
+                        <XAxis
+                          dataKey="year"
+                          stroke="var(--ink-soft)"
+                          fontSize={13}
+                          fontWeight={600}
+                          tickLine={false}
+                          axisLine={{ stroke: "var(--color-border)" }}
+                          dy={8}
+                        />
+                        <YAxis
+                          stroke="var(--ink-soft)"
+                          fontSize={12}
+                          tickLine={false}
+                          axisLine={false}
+                          allowDecimals={false}
+                        />
+                        <Tooltip content={<YearWiseTooltip />} />
+                        <Legend
+                          verticalAlign="top"
+                          align="right"
+                          height={40}
+                          iconType="circle"
+                          iconSize={8}
+                          wrapperStyle={{ fontSize: 12, paddingBottom: 12 }}
+                        />
+                        <Bar
+                          dataKey="Pending Quotations"
+                          fill="#F59E0B"
+                          radius={[6, 6, 0, 0]}
+                          maxBarSize={48}
+                        />
+                        <Bar
+                          dataKey="Approved Quotations"
+                          fill="#10B981"
+                          radius={[6, 6, 0, 0]}
+                          maxBarSize={48}
+                        />
+                        <Bar
+                          dataKey="Running Projects"
+                          fill="#3B82F6"
+                          radius={[6, 6, 0, 0]}
+                          maxBarSize={48}
+                        />
+                        <Bar
+                          dataKey="Finished Projects"
+                          fill="#8B5CF6"
+                          radius={[6, 6, 0, 0]}
+                          maxBarSize={48}
+                        />
+                      </BarChart>
+                    ) : (
+                      // 2. Compare by Metric across Years (X-Axis: Metrics, Bars: Years)
+                      <BarChart
+                        data={metricCompareChartData}
+                        margin={{ top: 15, right: 20, left: -15, bottom: 5 }}
+                        barGap={8}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          stroke="var(--color-border)"
+                          opacity={0.7}
+                        />
+                        <XAxis
+                          dataKey="metric"
+                          stroke="var(--ink-soft)"
+                          fontSize={12}
+                          fontWeight={600}
+                          tickLine={false}
+                          axisLine={{ stroke: "var(--color-border)" }}
+                          dy={8}
+                        />
+                        <YAxis
+                          stroke="var(--ink-soft)"
+                          fontSize={12}
+                          tickLine={false}
+                          axisLine={false}
+                          allowDecimals={false}
+                        />
+                        <Tooltip content={<MetricWiseTooltip />} />
+                        <Legend
+                          verticalAlign="top"
+                          align="right"
+                          height={40}
+                          iconType="circle"
+                          iconSize={8}
+                          wrapperStyle={{ fontSize: 12, paddingBottom: 12 }}
+                        />
+                        {availableYears.map((yearKey, idx) => (
+                          <Bar
+                            key={yearKey}
+                            dataKey={yearKey}
+                            name={`Year ${yearKey}`}
+                            fill={YEAR_COLORS[idx % YEAR_COLORS.length]}
+                            radius={[6, 6, 0, 0]}
+                            maxBarSize={48}
+                          />
+                        ))}
+                      </BarChart>
+                    )}
                   </ResponsiveContainer>
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center text-xs text-muted-foreground gap-2">
@@ -628,6 +770,73 @@ const Dashboard = () => {
                   </div>
                 )}
               </div>
+
+              {/* Year Comparison Data Table */}
+              {graph1List.length > 0 && (
+                <div className="overflow-x-auto mt-6 pt-4 border-t border-border">
+                  <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2.5">
+                    Year-Wise Comparison Summary
+                  </div>
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="border-b border-border text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/30">
+                        <th className="py-2.5 px-3">Fiscal Year</th>
+                        <th className="py-2.5 px-3 text-amber-600 dark:text-amber-400">
+                          Pending Quotes
+                        </th>
+                        <th className="py-2.5 px-3 text-emerald-600 dark:text-emerald-400">
+                          Approved Quotes
+                        </th>
+                        <th className="py-2.5 px-3 text-blue-600 dark:text-blue-400">
+                          Running Projects
+                        </th>
+                        <th className="py-2.5 px-3 text-purple-600 dark:text-purple-400">
+                          Finished Projects
+                        </th>
+                        <th className="py-2.5 px-3 text-right">
+                          Total Activities
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/60">
+                      {graph1List.map((item) => {
+                        const pending = Number(item.pending_count || 0);
+                        const approved = Number(item.approved_count || 0);
+                        const running = Number(item.running_project_count || 0);
+                        const finished = Number(item.finish_project_count || 0);
+                        const total = pending + approved + running + finished;
+
+                        return (
+                          <tr
+                            key={item.year}
+                            className="hover:bg-muted/30 transition-colors"
+                          >
+                            <td className="py-3 px-3 font-bold font-mono text-foreground flex items-center gap-1.5">
+                              <Calendar className="h-3.5 w-3.5 text-primary" />
+                              {item.year}
+                            </td>
+                            <td className="py-3 px-3 font-mono font-semibold text-foreground">
+                              {pending}
+                            </td>
+                            <td className="py-3 px-3 font-mono font-semibold text-foreground">
+                              {approved}
+                            </td>
+                            <td className="py-3 px-3 font-mono font-semibold text-foreground">
+                              {running}
+                            </td>
+                            <td className="py-3 px-3 font-mono font-semibold text-foreground">
+                              {finished}
+                            </td>
+                            <td className="py-3 px-3 font-mono font-bold text-foreground text-right">
+                              {total}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
             {/* 4. SERVICE USERS BREAKDOWN (users_service & users_hide_service) */}
