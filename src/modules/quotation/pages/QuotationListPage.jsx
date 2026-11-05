@@ -38,13 +38,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import moment from "moment";
-import { isQuotationOwnedByUser, isViewerUser } from "@/utils/permissions";
+import { isQuotationOwnedByUser } from "@/utils/permissions";
 
 const QuotationListPage = () => {
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth?.user);
   const isRestrictedUser = Number(user?.user_type) === 4;
-  const isViewer = isViewerUser(user);
   const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = usePersistedSearch();
   const [statusFilter, setStatusFilter] = useState("all");
@@ -294,7 +293,7 @@ const QuotationListPage = () => {
         onClick: () => navigate(`/quotation-report/${q.id}`),
         extra: "text-slate-600 hover:text-slate-800",
       },
-      ...(canFinishDate && !isRestrictedUser
+      ...(canFinishDate
         ? [
             {
               label: "Finish Date",
@@ -306,19 +305,15 @@ const QuotationListPage = () => {
             },
           ]
         : []),
-      ...(!isRestrictedUser
-        ? [
-            {
-              label: "Validity Date",
-              title: "Update Validity Date",
-              icon: CalendarDays,
-              onClick: () => handleOpenValidateDateDialog(q),
-              extra:
-                "text-sky-600 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/30",
-            },
-          ]
-        : []),
-      ...(showConvertButton && !isRestrictedUser
+      {
+        label: "Validity Date",
+        title: "Update Validity Date",
+        icon: CalendarDays,
+        onClick: () => handleOpenValidateDateDialog(q),
+        extra:
+          "text-sky-600 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/30",
+      },
+      ...(showConvertButton
         ? [
             {
               label: "Convert",
@@ -617,14 +612,10 @@ const QuotationListPage = () => {
           setSearchTerm(val);
           setPage(1);
         }}
-        addButton={
-          isViewer
-            ? undefined
-            : {
-                onClick: () => navigate("/quotation-list/create"),
-                label: "Add Quotation",
-              }
-        }
+        addButton={{
+          onClick: () => navigate("/quotation-list/create"),
+          label: "Add Quotation",
+        }}
         backendPagination={true}
         page={paginationData?.current_page || 1}
         totalPages={paginationData?.last_page || 1}

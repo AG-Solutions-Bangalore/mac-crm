@@ -2,8 +2,6 @@ import React, { useMemo, useState } from "react";
 import Page from "../layout/page";
 import { useGetApiMutation } from "@/hooks/useGetApiMutation";
 import { DASHBOARD_API } from "@/constants/apiConstants";
-import { useProjectsQuery } from "@/modules/project/hooks/useProject";
-import { useQuotationsQuery } from "@/modules/quotation/hooks/useQuotation";
 import { useNavigate } from "react-router-dom";
 import moment from "moment";
 import { useSelector } from "react-redux";
@@ -11,113 +9,122 @@ import {
   Users,
   Layers,
   Clock,
-  DollarSign,
   RefreshCw,
   Calendar,
-  TrendingUp,
-  ArrowUpRight,
-  UserCheck,
-  FolderKanban,
+  FileText,
   CheckCircle2,
-  Wallet
+  XCircle,
+  FolderKanban,
+  CheckCheck,
+  ChevronDown,
+  ChevronUp,
+  Phone,
+  EyeOff,
+  UserCheck,
+  ArrowRight,
+  Search,
+  Filter,
+  BarChart3,
+  Inbox,
+  TrendingUp,
+  TrendingDown,
+  Minus,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   BarChart,
   Bar,
-  AreaChart,
-  Area,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
   ResponsiveContainer,
+  LabelList,
 } from "recharts";
 
-// Mockup datasets matching raw_html.html
-const monthlySalesData = [
-  { name: "Aug", sales: 28.5 },
-  { name: "Sep", sales: 31.2 },
-  { name: "Oct", sales: 29.6 },
-  { name: "Nov", sales: 39.8 },
-  { name: "Dec", sales: 45.2 },
-  { name: "Jan", sales: 36.1 },
-  { name: "Feb", sales: 41.1 },
-  { name: "Mar", sales: 52.3 },
-  { name: "Apr", sales: 48.9 },
-  { name: "May", sales: 53.4 },
-  { name: "Jun", sales: 47.2 },
-  { name: "Jul", sales: 50.3 },
-];
-
-const quotationStatusData = [
-  { name: "Approved", value: 201, color: "#1F8A5F" },
-  { name: "Pending", value: 27, color: "#B8862F" },
-  { name: "Rejected", value: 14, color: "#C0432F" },
-  { name: "Draft", value: 70, color: "#5D6B80" },
-];
-
-const productWiseSalesData = [
-  { name: "8M - Fan/Ctrl", value: 8.42 },
-  { name: "8M - Socket/Ctrl", value: 6.91 },
-  { name: "4M - Control", value: 5.32 },
-  { name: "2M - Control", value: 3.98 },
-  { name: "BLE Bridge", value: 3.14 },
-  { name: "Curtain Module", value: 2.26 },
-];
-
-const brandWiseSalesData = [
-  { name: "MAK", value: 32.4 },
-  { name: "Lutron", value: 9.8 },
-  { name: "Fibaro", value: 4.2 },
-  { name: "Other", value: 1.85 },
-];
-
-const followupsData = [
-  { date: "Jul 03", title: "Rajeev Menon", desc: "Confirm MBR layout change", who: "Sales: Arjun" },
-  { date: "Jul 04", title: "Ashok Builders", desc: "Send Rev-3 for site visit", who: "Sales: Divya" },
-  { date: "Jul 07", title: "Green Valley", desc: "Approval follow-up call", who: "Sales: Arjun" },
-];
+const getInitials = (name) => {
+  if (!name) return "U";
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n) => n[0].toUpperCase())
+    .join("");
+};
 
 const getServiceBadgeClass = (serviceName) => {
   if (!serviceName) return "badge-default";
   const service = serviceName.toLowerCase();
   if (service.includes("switch")) return "badge-switches";
-  if (service.includes("door") || service.includes("automation")) return "badge-automation";
-  if (service.includes("network") || service.includes("wifi") || service.includes("internet")) return "badge-networking";
+  if (service.includes("door") || service.includes("automation"))
+    return "badge-automation";
+  if (
+    service.includes("network") ||
+    service.includes("wifi") ||
+    service.includes("internet")
+  )
+    return "badge-networking";
   if (service.includes("light")) return "badge-lighting";
-  if (service.includes("secur") || service.includes("camera") || service.includes("cctv")) return "badge-security";
+  if (
+    service.includes("secur") ||
+    service.includes("camera") ||
+    service.includes("cctv")
+  )
+    return "badge-security";
   return "badge-default";
 };
 
-const CustomTooltip = ({ active, payload, label, prefix = "", suffix = "" }) => {
+// Calculate previous financial year string (e.g. "2026-27" -> "2025-26")
+const getPreviousYearStr = (yearStr) => {
+  if (!yearStr) return "2025-26";
+  const match = yearStr.match(/^(\d{4})-(\d{2,4})$/);
+  if (match) {
+    const startYear = parseInt(match[1], 10) - 1;
+    const endYear = parseInt(match[2], 10) - 1;
+    const endStr =
+      match[2].length === 2
+        ? String(endYear).padStart(2, "0")
+        : String(endYear);
+    return `${startYear}-${endStr}`;
+  }
+  const singleYear = parseInt(yearStr, 10);
+  if (!isNaN(singleYear)) {
+    return String(singleYear - 1);
+  }
+  return "2025-26";
+};
+
+// Tooltip for Year-Wise Comparison
+const YearWiseTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
-    const data = payload[0];
-    const showName = data.name && data.name !== "value" && data.name !== "sales" && data.name !== "value";
     return (
-      <div className="rounded-lg border border-[var(--line)] bg-[var(--surface)] p-2.5 shadow-md text-xs text-[var(--ink)]">
-        <div className="flex flex-col gap-0.5">
-          {label && (
-            <span className="text-[10px] text-[var(--ink-soft)] font-semibold uppercase tracking-wider font-mono">
+      <div className="rounded-xl border border-border bg-card p-3.5 shadow-xl text-xs text-foreground min-w-[210px] backdrop-blur-md">
+        {label && (
+          <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2.5 pb-1.5 border-b border-border flex items-center justify-between">
+            <span>Fiscal Year</span>
+            <span className="font-mono text-foreground font-bold text-xs">
               {label}
             </span>
-          )}
-          <span className="font-semibold text-sm">
-            {showName ? `${data.name}: ` : ""}
-            {prefix}{data.value}{suffix}
-          </span>
+          </div>
+        )}
+        <div className="space-y-2">
+          {payload.map((item, idx) => (
+            <div key={idx} className="flex items-center justify-between gap-4">
+              <span className="flex items-center gap-2 text-muted-foreground font-medium">
+                <span
+                  className="inline-block h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: item.color || item.fill }}
+                />
+                {item.name}:
+              </span>
+              <span className="font-bold text-foreground font-mono text-xs">
+                {item.value}
+              </span>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -129,132 +136,166 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth?.user);
 
+  const [expandedActiveService, setExpandedActiveService] = useState(null);
+  const [expandedHideService, setExpandedHideService] = useState(null);
+  const [serviceSearchTerm, setServiceSearchTerm] = useState("");
+  const [onlyWithClients, setOnlyWithClients] = useState(false);
+  const [requestFilter, setRequestFilter] = useState("all");
+
   const {
     data: DData,
-    isLoading: isDashLoading,
+    isLoading,
     isError,
-    refetch: refetchDash,
+    refetch,
+    isFetching,
   } = useGetApiMutation({
     url: DASHBOARD_API.list,
     queryKey: ["dashboard-list"],
     staleTime: 0,
   });
 
-  // Real CRM Projects & Quotations for Business / Revenue metrics
-  const {
-    data: projectData,
-    isLoading: isProjectsLoading,
-    refetch: refetchProjects,
-  } = useProjectsQuery(1, "", "all");
+  const dashboardData = DData?.data || {};
+  const graph1List = dashboardData?.graph1 || [];
 
-  const {
-    data: quotationData,
-    isLoading: isQuotesLoading,
-    refetch: refetchQuotes,
-  } = useQuotationsQuery(1, "", "all");
+  // Determine current year and previous year purely as year numbers/strings
+  const currentYearStr = useMemo(() => {
+    if (graph1List.length > 0 && graph1List[0].year) {
+      return graph1List[0].year;
+    }
+    const curr = moment().year();
+    const nextShort = String((curr + 1) % 100).padStart(2, "0");
+    return `${curr}-${nextShort}`;
+  }, [graph1List]);
 
-  const isLoading = isDashLoading || isProjectsLoading || isQuotesLoading;
-  const refetch = () => {
-    refetchDash();
-    refetchProjects();
-    refetchQuotes();
+  const prevYearStr = useMemo(() => {
+    return getPreviousYearStr(currentYearStr);
+  }, [currentYearStr]);
+
+  // Current year data from graph1
+  const currentYearData = useMemo(() => {
+    const found = graph1List.find((g) => g.year === currentYearStr);
+    return {
+      year: currentYearStr,
+      pending: Number(found?.pending_count || 0),
+      approved: Number(found?.approved_count || 0),
+      running: Number(found?.running_project_count || 0),
+      finished: Number(found?.finish_project_count || 0),
+    };
+  }, [graph1List, currentYearStr]);
+
+  // Previous year data from graph1 if available, otherwise baseline 0
+  const prevYearData = useMemo(() => {
+    const found = graph1List.find((g) => g.year === prevYearStr);
+    return {
+      year: prevYearStr,
+      pending: Number(found?.pending_count || 0),
+      approved: Number(found?.approved_count || 0),
+      running: Number(found?.running_project_count || 0),
+      finished: Number(found?.finish_project_count || 0),
+      isFromApi: Boolean(found),
+    };
+  }, [graph1List, prevYearStr]);
+
+  // Chart data: ONLY the years on X-Axis (e.g. "2025-26", "2026-27")
+  const yearWiseChartData = useMemo(() => {
+    if (graph1List.length > 1) {
+      return graph1List.map((item) => ({
+        year: item.year, // ONLY YEAR
+        "Pending Quotations": Number(item.pending_count || 0),
+        "Approved Quotations": Number(item.approved_count || 0),
+        "Running Projects": Number(item.running_project_count || 0),
+        "Finished Projects": Number(item.finish_project_count || 0),
+      }));
+    }
+
+    // Default comparison between prevYear and currentYear showing ONLY year strings
+    return [
+      {
+        year: prevYearStr, // ONLY YEAR e.g. "2025-26"
+        "Pending Quotations": prevYearData.pending,
+        "Approved Quotations": prevYearData.approved,
+        "Running Projects": prevYearData.running,
+        "Finished Projects": prevYearData.finished,
+      },
+      {
+        year: currentYearStr, // ONLY YEAR e.g. "2026-27"
+        "Pending Quotations": currentYearData.pending,
+        "Approved Quotations": currentYearData.approved,
+        "Running Projects": currentYearData.running,
+        "Finished Projects": currentYearData.finished,
+      },
+    ];
+  }, [graph1List, prevYearStr, currentYearStr, prevYearData, currentYearData]);
+
+  // Image URLs resolution from image_url array
+  const serviceBaseUrl = useMemo(() => {
+    const item = (dashboardData?.image_url || []).find(
+      (img) => (img.image_for || "").toLowerCase() === "service"
+    );
+    return (
+      item?.image_url ||
+      "https://makcautomations.com/crmapi/public/assets/images/service_images/"
+    );
+  }, [dashboardData?.image_url]);
+
+  const noImageUrl = useMemo(() => {
+    const item = (dashboardData?.image_url || []).find(
+      (img) => (img.image_for || "").toLowerCase() === "no image"
+    );
+    return (
+      item?.image_url ||
+      "https://makcautomations.com/crmapi/public/assets/images/no_image.jpg"
+    );
+  }, [dashboardData?.image_url]);
+
+  const getServiceLogoUrl = (logo) => {
+    if (!logo) return noImageUrl;
+    return `${serviceBaseUrl}${logo}`;
   };
 
-  const dashboardData = DData?.data || {};
   const latestRequests = dashboardData?.latest_service_requests || [];
-  const usersServiceData = (dashboardData?.users_service || []).filter(
-    (service) => service.users_count > 0,
-  );
+  const usersServiceList = dashboardData?.users_service || [];
+  const usersHideServiceList = dashboardData?.users_hide_service || [];
 
-  // Compute live project & revenue metrics
-  const projectList = projectData?.data?.data || projectData?.data || [];
-  const quoteList = quotationData?.data?.data || quotationData?.data || [];
+  // Filtered requests
+  const filteredRequests = useMemo(() => {
+    if (requestFilter === "all") return latestRequests;
+    return latestRequests.filter(
+      (r) =>
+        (r.services_request_status || "").toLowerCase() ===
+        requestFilter.toLowerCase()
+    );
+  }, [latestRequests, requestFilter]);
 
-  // Running client projects count
-  const runningProjectsCount =
-    dashboardData?.running_project_count ??
-    projectList.filter(
-      (p) =>
-        (p.quotation_status || p.project_status || "").toLowerCase() !==
-          "closed" &&
-        (p.quotation_status || p.project_status || "").toLowerCase() !==
-          "cancel"
-    ).length;
-
-  // Revenue analytics: Total payment to receive & Closed amounts
-  const revenueMetrics = useMemo(() => {
-    const currentMoment = moment();
-    const currentYear = currentMoment.year();
-    const currentMonth = currentMoment.month(); // 0-indexed
-
-    let totalToReceive = 0;
-    let closedThisMonth = 0;
-    let closedThisYear = 0;
-    const yearWiseMap = {};
-
-    // Calculate from Projects (active commitments)
-    projectList.forEach((p) => {
-      const amount = parseFloat(p.quotation_amount || 0);
-      const status = (p.quotation_status || p.project_status || "").toLowerCase();
-      const date = p.project_date || p.quotation_date;
-      const mDate = date ? moment(date) : currentMoment;
-      const itemYear = mDate.isValid() ? mDate.year() : currentYear;
-      const itemMonth = mDate.isValid() ? mDate.month() : currentMonth;
-
-      if (status === "approved" || status === "closed" || status === "finish") {
-        if (itemYear === currentYear) {
-          closedThisYear += amount;
-          if (itemMonth === currentMonth) {
-            closedThisMonth += amount;
-          }
-        }
-        yearWiseMap[itemYear] = (yearWiseMap[itemYear] || 0) + amount;
-      } else if (status !== "cancel" && status !== "rejected") {
-        totalToReceive += amount;
-      }
+  // Filtered active services
+  const filteredActiveServices = useMemo(() => {
+    return usersServiceList.filter((s) => {
+      const matchesSearch =
+        s.service_name.toLowerCase().includes(serviceSearchTerm.toLowerCase()) ||
+        (s.users || []).some((u) =>
+          (u.name || "").toLowerCase().includes(serviceSearchTerm.toLowerCase())
+        );
+      const matchesClients = onlyWithClients
+        ? Number(s.users_count || 0) > 0
+        : true;
+      return matchesSearch && matchesClients;
     });
+  }, [usersServiceList, serviceSearchTerm, onlyWithClients]);
 
-    // Also include approved/converted quotes if not already accounted for
-    quoteList.forEach((q) => {
-      const amount = parseFloat(q.quotation_amount || 0);
-      const status = (q.quotation_status || "").toLowerCase();
-      const date = q.quotation_date;
-      const mDate = date ? moment(date) : currentMoment;
-      const itemYear = mDate.isValid() ? mDate.year() : currentYear;
-      const itemMonth = mDate.isValid() ? mDate.month() : currentMonth;
-
-      if (status === "approved" || status === "project") {
-        if (!yearWiseMap[itemYear]) {
-          yearWiseMap[itemYear] = 0;
-        }
-      } else if (status === "pending") {
-        totalToReceive += amount;
-      }
+  // Filtered hidden services
+  const filteredHideServices = useMemo(() => {
+    return usersHideServiceList.filter((s) => {
+      const matchesSearch =
+        s.service_name.toLowerCase().includes(serviceSearchTerm.toLowerCase()) ||
+        (s.users || []).some((u) =>
+          (u.name || "").toLowerCase().includes(serviceSearchTerm.toLowerCase())
+        );
+      const matchesClients = onlyWithClients
+        ? Number(s.users_count || 0) > 0
+        : true;
+      return matchesSearch && matchesClients;
     });
-
-    const yearWiseData = Object.entries(yearWiseMap)
-      .map(([year, amount]) => ({
-        year,
-        amount: Math.round(amount),
-      }))
-      .sort((a, b) => b.year.localeCompare(a.year));
-
-    return {
-      totalToReceive,
-      closedThisMonth,
-      closedThisYear,
-      yearWiseData,
-    };
-  }, [projectList, quoteList]);
-
-  const [selectedHistoricalYear, setSelectedHistoricalYear] = useState(
-    moment().year().toString()
-  );
-
-  const formatCurrency = (val) =>
-    `₹${Number(val || 0).toLocaleString("en-IN", {
-      maximumFractionDigits: 0,
-    })}`;
+  }, [usersHideServiceList, serviceSearchTerm, onlyWithClients]);
 
   const getGreeting = () => {
     const hr = new Date().getHours();
@@ -263,456 +304,934 @@ const Dashboard = () => {
     return "Good evening";
   };
 
+  const renderVarianceBadge = (diff, prevVal) => {
+    if (diff > 0) {
+      return (
+        <span className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400 font-mono text-xs">
+          <TrendingUp className="h-3.5 w-3.5" />
+          +{diff} {prevVal === 0 ? "(New)" : `(+${Math.round((diff / prevVal) * 100)}%)`}
+        </span>
+      );
+    }
+    if (diff < 0) {
+      return (
+        <span className="inline-flex items-center gap-1 font-bold text-rose-600 dark:text-rose-400 font-mono text-xs">
+          <TrendingDown className="h-3.5 w-3.5" />
+          {diff} {prevVal !== 0 ? `(${Math.round((diff / prevVal) * 100)}%)` : ""}
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 text-muted-foreground font-mono text-xs">
+        <Minus className="h-3 w-3" />
+        0 (Equal)
+      </span>
+    );
+  };
+
   return (
     <Page>
-      <div className="main space-y-6">
+      <div className="main space-y-6 max-w-7xl mx-auto">
         {/* HEADER GREETING BANNER */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card p-6 rounded-xl border border-border shadow-sm">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold font-display tracking-tight text-foreground flex items-center gap-2">
-              {getGreeting()}, <span className="text-primary font-extrabold">{user?.name || "Admin"}</span>
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
-              <Calendar className="h-4 w-4 text-[var(--copper)]" />
-              Here's your business summary for today, {moment().format("MMMM Do, YYYY")}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetch()}
-              className="text-xs font-semibold gap-1.5"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              Refresh Data
-            </Button>
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-6 md:p-8 shadow-xs">
+          <div className="relative z-1 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                </span>
+                Live CRM Dashboard
+              </div>
+              <h1 className="text-2xl md:text-3xl font-extrabold font-display tracking-tight text-foreground">
+                {getGreeting()},{" "}
+                <span className="text-primary">{user?.name || "Admin"}</span>
+              </h1>
+              <p className="text-xs md:text-sm text-muted-foreground flex items-center gap-1.5 pt-0.5">
+                <Calendar className="h-3.5 w-3.5 text-muted-foreground/80" />
+                <span>Today is {moment().format("dddd, MMMM Do, YYYY")}</span>
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetch()}
+                disabled={isFetching}
+                className="text-xs font-semibold gap-2 h-9 px-3.5 shadow-2xs cursor-pointer hover:bg-muted transition-all"
+              >
+                <RefreshCw
+                  className={`h-3.5 w-3.5 ${isFetching ? "animate-spin text-primary" : ""}`}
+                />
+                <span>{isFetching ? "Updating..." : "Refresh Data"}</span>
+              </Button>
+            </div>
           </div>
         </div>
 
         {isLoading ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-28 w-full rounded-xl" />
-            ))}
+          <div className="space-y-6">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-32 w-full rounded-2xl" />
+              ))}
+            </div>
+            <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-24 w-full rounded-xl" />
+              ))}
+            </div>
+            <Skeleton className="h-80 w-full rounded-2xl" />
+            <Skeleton className="h-96 w-full rounded-2xl" />
           </div>
         ) : isError ? (
-          <div className="text-red-500 font-semibold p-4 bg-red-50 border border-red-200 rounded-lg">
-            Failed to load dashboard data.
+          <div className="rounded-xl border border-destructive/20 bg-destructive/10 p-5 text-center text-sm font-semibold text-destructive">
+            Failed to load dashboard data. Please verify your connection and click Refresh.
           </div>
         ) : (
           <>
-            {/* KPI GRID: System & Project Summary */}
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {/* Running Projects KPI */}
+            {/* 1. TOP ROW: PRIMARY ENTITY COUNTS (3 Cards) */}
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+              {/* Total Clients Card */}
               <div
-                onClick={() => navigate("/project-list")}
-                className="kpi group cursor-pointer"
-                style={{ "--accent": "var(--primary-color)" }}
+                onClick={() => navigate("/client-list")}
+                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-xs hover:border-blue-500/50 hover:shadow-md transition-all cursor-pointer"
               >
                 <div className="flex items-start justify-between">
-                  <div>
-                    <div className="kpi-label">Running Client Projects</div>
-                    <div className="kpi-value mt-1 text-2xl font-bold">{runningProjectsCount}</div>
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      Total Clients
+                    </span>
+                    <div className="text-3xl font-extrabold font-mono tracking-tight text-foreground pt-1">
+                      {dashboardData?.users_count ?? 0}
+                    </div>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-[rgba(27,75,145,0.08)] text-[var(--primary-color)] transition-colors group-hover:bg-[var(--primary-color)] group-hover:text-white">
-                    <FolderKanban className="h-5 w-5" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 group-hover:scale-105 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                    <Users className="h-6 w-6" />
                   </div>
                 </div>
-                <div className="kpi-delta up mt-4 flex items-center gap-1">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  <span>Active project pipeline</span>
+                <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3 text-xs">
+                  <span className="text-muted-foreground">Registered accounts</span>
+                  <span className="font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                    View Clients <ArrowRight className="h-3 w-3" />
+                  </span>
                 </div>
               </div>
 
-              {/* Total Payment to be Received KPI */}
+              {/* Total Services Card */}
               <div
-                className="kpi group cursor-default"
-                style={{ "--accent": "var(--amber)" }}
+                onClick={() => navigate("/service-list")}
+                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-xs hover:border-amber-500/50 hover:shadow-md transition-all cursor-pointer"
               >
                 <div className="flex items-start justify-between">
-                  <div>
-                    <div className="kpi-label">Payment To Be Received</div>
-                    <div className="kpi-value mt-1 text-2xl font-bold">
-                      {formatCurrency(revenueMetrics.totalToReceive)}
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      Total Services
+                    </span>
+                    <div className="text-3xl font-extrabold font-mono tracking-tight text-foreground pt-1">
+                      {dashboardData?.services_count ?? 0}
                     </div>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-[rgba(184,134,47,0.08)] text-[var(--amber)] transition-colors group-hover:bg-[var(--amber)] group-hover:text-white">
-                    <Wallet className="h-5 w-5" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 group-hover:scale-105 group-hover:bg-amber-600 group-hover:text-white transition-all">
+                    <Layers className="h-6 w-6" />
                   </div>
                 </div>
-                <div className="kpi-delta down mt-4 flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" />
-                  <span>Pending receivables</span>
+                <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3 text-xs">
+                  <span className="text-muted-foreground">Active service catalog</span>
+                  <span className="font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                    View Services <ArrowRight className="h-3 w-3" />
+                  </span>
                 </div>
               </div>
 
-              {/* Closed This Month KPI */}
+              {/* Pending Requests Card */}
               <div
-                className="kpi group cursor-default"
-                style={{ "--accent": "var(--success)" }}
+                onClick={() => navigate("/service-request")}
+                className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-xs hover:border-orange-500/50 hover:shadow-md transition-all cursor-pointer"
               >
                 <div className="flex items-start justify-between">
-                  <div>
-                    <div className="kpi-label">Closed This Month</div>
-                    <div className="kpi-value mt-1 text-2xl font-bold">
-                      {formatCurrency(revenueMetrics.closedThisMonth)}
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                      Pending Requests
+                    </span>
+                    <div className="text-3xl font-extrabold font-mono tracking-tight text-foreground pt-1">
+                      {dashboardData?.service_requests_pending_count ?? 0}
                     </div>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
-                    <CheckCircle2 className="h-5 w-5" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 group-hover:scale-105 group-hover:bg-orange-600 group-hover:text-white transition-all">
+                    <Clock className="h-6 w-6" />
                   </div>
                 </div>
-                <div className="kpi-delta up mt-4 flex items-center gap-1 text-[var(--success)]">
-                  <ArrowUpRight className="h-3.5 w-3.5" />
-                  <span>{moment().format("MMMM YYYY")}</span>
-                </div>
-              </div>
-
-              {/* Closed This Year KPI */}
-              <div
-                className="kpi group cursor-default"
-                style={{ "--accent": "var(--copper)" }}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="kpi-label">Closed This Year ({moment().year()})</div>
-                    <div className="kpi-value mt-1 text-2xl font-bold">
-                      {formatCurrency(revenueMetrics.closedThisYear)}
-                    </div>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-[rgba(193,121,63,0.08)] text-[var(--copper)] transition-colors group-hover:bg-[var(--copper)] group-hover:text-white">
-                    <DollarSign className="h-5 w-5" />
-                  </div>
-                </div>
-                <div className="kpi-delta up mt-4 flex items-center gap-1">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  <span>Annual closed revenue</span>
+                <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3 text-xs">
+                  <span className="text-orange-600 dark:text-orange-400 font-medium flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse" />
+                    Action required
+                  </span>
+                  <span className="font-semibold text-orange-600 dark:text-orange-400 flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                    Manage Queue <ArrowRight className="h-3 w-3" />
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Year-Wise Closed Payments Breakdown Banner */}
-            <div className="card p-5 mt-4 border border-border bg-card rounded-xl shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
-                <div>
-                  <h3 className="font-bold text-base text-foreground flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-primary" />
-                    Year-Wise Closed Payment Data
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Historical and year-by-year closed figures across all records
+            {/* 2. PIPELINE LIFECYCLE (5 Stage Quotations & Projects Workflow) */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  
+                </span>
+                <span className="text-[11px] text-muted-foreground font-mono">
+                  
+                </span>
+              </div>
+
+              <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+                {/* 1. Pending Quotations */}
+                <div
+                  onClick={() => navigate("/quotation-list")}
+                  className="group rounded-xl border border-border bg-card p-4 hover:border-amber-500/50 hover:bg-muted/30 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                      Pending Quotes
+                    </span>
+                    <FileText className="h-4 w-4 text-amber-500" />
+                  </div>
+                  <div className="mt-2 text-2xl font-bold font-mono text-foreground">
+                    {dashboardData?.pending_quotation_count ?? 0}
+                  </div>
+                  <div className="mt-2 flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    Awaiting response
+                  </div>
+                </div>
+
+                {/* 2. Approved Quotations */}
+                <div
+                  onClick={() => navigate("/quotation-list")}
+                  className="group rounded-xl border border-border bg-card p-4 hover:border-emerald-500/50 hover:bg-muted/30 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                      Approved Quotes
+                    </span>
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  </div>
+                  <div className="mt-2 text-2xl font-bold font-mono text-foreground">
+                    {dashboardData?.approved_quotation_count ?? 0}
+                  </div>
+                  <div className="mt-2 flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    Accepted by client
+                  </div>
+                </div>
+
+                {/* 3. Cancelled Quotations */}
+                <div
+                  onClick={() => navigate("/quotation-list")}
+                  className="group rounded-xl border border-border bg-card p-4 hover:border-rose-500/50 hover:bg-muted/30 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                      Cancelled Quotes
+                    </span>
+                    <XCircle className="h-4 w-4 text-rose-500" />
+                  </div>
+                  <div className="mt-2 text-2xl font-bold font-mono text-foreground">
+                    {dashboardData?.cancel_quotation_count ?? 0}
+                  </div>
+                  <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground font-medium">
+                    <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
+                    Declined proposals
+                  </div>
+                </div>
+
+                {/* 4. Running Projects */}
+                <div
+                  onClick={() => navigate("/project-list")}
+                  className="group rounded-xl border border-border bg-card p-4 hover:border-blue-500/50 hover:bg-muted/30 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                      Running Projects
+                    </span>
+                    <FolderKanban className="h-4 w-4 text-blue-500" />
+                  </div>
+                  <div className="mt-2 text-2xl font-bold font-mono text-foreground">
+                    {dashboardData?.running_project_count ?? 0}
+                  </div>
+                  <div className="mt-2 flex items-center gap-1.5 text-[11px] text-blue-600 dark:text-blue-400 font-medium">
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                    In execution
+                  </div>
+                </div>
+
+                {/* 5. Finished Projects */}
+                <div
+                  onClick={() => navigate("/project-list")}
+                  className="group rounded-xl border border-border bg-card p-4 hover:border-purple-500/50 hover:bg-muted/30 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">
+                      Finished Projects
+                    </span>
+                    <CheckCheck className="h-4 w-4 text-purple-500" />
+                  </div>
+                  <div className="mt-2 text-2xl font-bold font-mono text-foreground">
+                    {dashboardData?.finish_project_count ?? 0}
+                  </div>
+                  <div className="mt-2 flex items-center gap-1.5 text-[11px] text-purple-600 dark:text-purple-400 font-medium">
+                    <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+                    Delivered & closed
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. YEAR-WISE COMPARISON GRAPH (Strictly from API graph1, ONLY YEARS on X-Axis) */}
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-md bg-primary/10 text-primary">
+                      <BarChart3 className="h-4 w-4" />
+                    </div>
+                    <h3 className="font-bold text-base font-display text-foreground">
+                      Year-Wise Comparison
+                    </h3>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Quotations and projects performance grouped by fiscal year
                   </p>
                 </div>
-                {revenueMetrics.yearWiseData.length > 0 && (
+
+                {/* Year indicator badges */}
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 px-3 py-1 text-xs font-semibold font-mono text-muted-foreground">
+                    {prevYearStr}
+                  </span>
+                  <span className="text-muted-foreground text-xs font-bold">vs</span>
+                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold font-mono text-primary">
+                    {currentYearStr}
+                  </span>
+                </div>
+              </div>
+
+
+
+              {/* BAR CHART: ONLY YEARS ON X-AXIS */}
+              <div className="h-[310px] w-full mt-6">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={yearWiseChartData}
+                    margin={{ top: 22, right: 20, left: -15, bottom: 5 }}
+                    barGap={8}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke="var(--color-border)"
+                      opacity={0.7}
+                    />
+                    <XAxis
+                      dataKey="year"
+                      stroke="var(--ink-soft)"
+                      fontSize={13}
+                      fontWeight={600}
+                      tickLine={false}
+                      axisLine={{ stroke: "var(--color-border)" }}
+                      dy={8}
+                    />
+                    <YAxis
+                      stroke="var(--ink-soft)"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      allowDecimals={false}
+                      domain={[0, (dataMax) => (dataMax ? Math.max(4, dataMax + 1) : 4)]}
+                    />
+                    <Tooltip content={<YearWiseTooltip />} />
+                    <Legend
+                      verticalAlign="top"
+                      align="right"
+                      height={40}
+                      iconType="circle"
+                      iconSize={8}
+                      wrapperStyle={{ fontSize: 12, paddingBottom: 12 }}
+                    />
+                    <Bar
+                      dataKey="Pending Quotations"
+                      fill="#F59E0B"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={48}
+                    >
+                      <LabelList
+                        dataKey="Pending Quotations"
+                        position="top"
+                        offset={8}
+                        formatter={(val) => (Number(val) > 0 ? val : "")}
+                        fill="var(--color-foreground, #0f172a)"
+                        fontSize={12}
+                        fontWeight={700}
+                        className="font-mono font-bold"
+                      />
+                    </Bar>
+                    <Bar
+                      dataKey="Approved Quotations"
+                      fill="#10B981"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={48}
+                    >
+                      <LabelList
+                        dataKey="Approved Quotations"
+                        position="top"
+                        offset={8}
+                        formatter={(val) => (Number(val) > 0 ? val : "")}
+                        fill="var(--color-foreground, #0f172a)"
+                        fontSize={12}
+                        fontWeight={700}
+                        className="font-mono font-bold"
+                      />
+                    </Bar>
+                    <Bar
+                      dataKey="Running Projects"
+                      fill="#3B82F6"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={48}
+                    >
+                      <LabelList
+                        dataKey="Running Projects"
+                        position="top"
+                        offset={8}
+                        formatter={(val) => (Number(val) > 0 ? val : "")}
+                        fill="var(--color-foreground, #0f172a)"
+                        fontSize={12}
+                        fontWeight={700}
+                        className="font-mono font-bold"
+                      />
+                    </Bar>
+                    <Bar
+                      dataKey="Finished Projects"
+                      fill="#8B5CF6"
+                      radius={[6, 6, 0, 0]}
+                      maxBarSize={48}
+                    >
+                      <LabelList
+                        dataKey="Finished Projects"
+                        position="top"
+                        offset={8}
+                        formatter={(val) => (Number(val) > 0 ? val : "")}
+                        fill="var(--color-foreground, #0f172a)"
+                        fontSize={12}
+                        fontWeight={700}
+                        className="font-mono font-bold"
+                      />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+            </div>
+
+            {/* 4. SERVICE USERS BREAKDOWN (users_service & users_hide_service) */}
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border">
+                <div>
+                  <h3 className="font-bold text-base font-display text-foreground">
+                    Service Clients Breakdown
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Registered users enrolled per catalog service
+                  </p>
+                </div>
+
+                {/* Filter and search toolbar */}
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Search service or client..."
+                      value={serviceSearchTerm}
+                      onChange={(e) => setServiceSearchTerm(e.target.value)}
+                      className="h-8 w-48 sm:w-56 pl-8 pr-3 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+
+                  <Button
+                    variant={onlyWithClients ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setOnlyWithClients(!onlyWithClients)}
+                    className="h-8 text-xs gap-1.5 cursor-pointer"
+                  >
+                    <Filter className="h-3 w-3" />
+                    <span>With Clients</span>
+                  </Button>
+                </div>
+              </div>
+
+              <Tabs defaultValue="active" className="w-full mt-4">
+                <TabsList className="grid w-full sm:w-[380px] grid-cols-2 p-1 bg-muted/60">
+                  <TabsTrigger
+                    value="active"
+                    className="text-xs font-semibold cursor-pointer"
+                  >
+                    Active Services ({usersServiceList.length})
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="hidden"
+                    className="text-xs font-semibold cursor-pointer"
+                  >
+                    Hidden Services ({usersHideServiceList.length})
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* TAB 1: ACTIVE SERVICES */}
+                <TabsContent value="active" className="mt-5">
+                  <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+                    {filteredActiveServices.length > 0 ? (
+                      filteredActiveServices.map((service) => {
+                        const isExpanded =
+                          expandedActiveService === service.service_id;
+                        const hasUsers = (service.users || []).length > 0;
+
+                        return (
+                          <div
+                            key={service.service_id}
+                            className={`rounded-xl border transition-all ${
+                              isExpanded
+                                ? "border-primary/50 bg-card shadow-sm"
+                                : "border-border bg-card/60 hover:bg-card hover:border-border/90 hover:shadow-2xs"
+                            } p-4`}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <img
+                                  src={getServiceLogoUrl(service.service_logo)}
+                                  alt={service.service_name}
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = noImageUrl;
+                                  }}
+                                  className="h-10 w-10 rounded-lg object-cover border border-border/80 bg-muted/40 shrink-0"
+                                />
+                                <div className="min-w-0">
+                                  <h4 className="text-xs font-bold text-foreground truncate">
+                                    {service.service_name}
+                                  </h4>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span
+                                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold font-mono ${
+                                        hasUsers
+                                          ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20"
+                                          : "bg-muted text-muted-foreground"
+                                      }`}
+                                    >
+                                      {service.users_count}{" "}
+                                      {service.users_count === 1
+                                        ? "client"
+                                        : "clients"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {hasUsers ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    setExpandedActiveService(
+                                      isExpanded ? null : service.service_id
+                                    )
+                                  }
+                                  className="h-8 px-2.5 text-xs gap-1 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer"
+                                >
+                                  <span>{isExpanded ? "Close" : "View"}</span>
+                                  {isExpanded ? (
+                                    <ChevronUp className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <ChevronDown className="h-3.5 w-3.5" />
+                                  )}
+                                </Button>
+                              ) : (
+                                <span className="text-[11px] text-muted-foreground/60 italic px-2">
+                                  Empty
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Collapsible Enrolled Clients */}
+                            {isExpanded && hasUsers && (
+                              <div className="mt-3.5 pt-3 border-t border-border space-y-2">
+                                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                  <span>Enrolled Clients</span>
+                                  <span className="font-mono">
+                                    {service.users.length} registered
+                                  </span>
+                                </div>
+                                <div className="space-y-1.5 max-h-52 overflow-y-auto pr-0.5">
+                                  {service.users.map((client, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="p-2.5 rounded-lg bg-muted/40 border border-border/80 flex items-center justify-between gap-3 text-xs"
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <div className="h-7 w-7 rounded-full bg-primary/10 text-primary font-bold text-[10px] flex items-center justify-center shrink-0">
+                                          {getInitials(client.name)}
+                                        </div>
+                                        <div className="min-w-0">
+                                          <div className="font-semibold text-foreground truncate">
+                                            {client.name}
+                                          </div>
+                                          <div className="text-[10px] text-muted-foreground font-mono">
+                                            M-ID: #{client.m_id}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {client.mobile && (
+                                        <a
+                                          href={`tel:${client.mobile}`}
+                                          className="text-[11px] font-mono text-muted-foreground hover:text-primary flex items-center gap-1.5 bg-background px-2 py-1 rounded-md border border-border shrink-0 transition-colors"
+                                        >
+                                          <Phone className="h-3 w-3 text-muted-foreground" />
+                                          <span>{client.mobile}</span>
+                                        </a>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="col-span-full py-12 text-center text-xs text-muted-foreground">
+                        No active services matched your filter.
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+
+                {/* TAB 2: HIDDEN SERVICES */}
+                <TabsContent value="hidden" className="mt-5">
+                  <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+                    {filteredHideServices.length > 0 ? (
+                      filteredHideServices.map((service) => {
+                        const isExpanded =
+                          expandedHideService === service.service_id;
+                        const hasUsers = (service.users || []).length > 0;
+
+                        return (
+                          <div
+                            key={service.service_id}
+                            className={`rounded-xl border transition-all ${
+                              isExpanded
+                                ? "border-primary/50 bg-card shadow-sm"
+                                : "border-border bg-card/60 hover:bg-card hover:border-border/90 hover:shadow-2xs"
+                            } p-4`}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <img
+                                  src={getServiceLogoUrl(service.service_logo)}
+                                  alt={service.service_name}
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = noImageUrl;
+                                  }}
+                                  className="h-10 w-10 rounded-lg object-cover border border-border/80 bg-muted/40 shrink-0 opacity-80"
+                                />
+                                <div className="min-w-0">
+                                  <h4 className="text-xs font-bold text-foreground truncate flex items-center gap-1.5">
+                                    {service.service_name}
+                                    <EyeOff className="h-3 w-3 text-muted-foreground shrink-0" />
+                                  </h4>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span
+                                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold font-mono ${
+                                        hasUsers
+                                          ? "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20"
+                                          : "bg-muted text-muted-foreground"
+                                      }`}
+                                    >
+                                      {service.users_count}{" "}
+                                      {service.users_count === 1
+                                        ? "client"
+                                        : "clients"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {hasUsers ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    setExpandedHideService(
+                                      isExpanded ? null : service.service_id
+                                    )
+                                  }
+                                  className="h-8 px-2.5 text-xs gap-1 shrink-0 text-muted-foreground hover:text-foreground cursor-pointer"
+                                >
+                                  <span>{isExpanded ? "Close" : "View"}</span>
+                                  {isExpanded ? (
+                                    <ChevronUp className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <ChevronDown className="h-3.5 w-3.5" />
+                                  )}
+                                </Button>
+                              ) : (
+                                <span className="text-[11px] text-muted-foreground/60 italic px-2">
+                                  Empty
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Collapsible Hidden Clients */}
+                            {isExpanded && hasUsers && (
+                              <div className="mt-3.5 pt-3 border-t border-border space-y-2">
+                                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                                  <span>Hidden Service Clients</span>
+                                  <span className="font-mono">
+                                    {service.users.length} registered
+                                  </span>
+                                </div>
+                                <div className="space-y-1.5 max-h-52 overflow-y-auto pr-0.5">
+                                  {service.users.map((client, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="p-2.5 rounded-lg bg-muted/40 border border-border/80 flex items-center justify-between gap-3 text-xs"
+                                    >
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <div className="h-7 w-7 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold text-[10px] flex items-center justify-center shrink-0">
+                                          {getInitials(client.name)}
+                                        </div>
+                                        <div className="min-w-0">
+                                          <div className="font-semibold text-foreground truncate">
+                                            {client.name}
+                                          </div>
+                                          <div className="text-[10px] text-muted-foreground font-mono">
+                                            M-ID: #{client.m_id}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {client.mobile && (
+                                        <a
+                                          href={`tel:${client.mobile}`}
+                                          className="text-[11px] font-mono text-muted-foreground hover:text-primary flex items-center gap-1.5 bg-background px-2 py-1 rounded-md border border-border shrink-0 transition-colors"
+                                        >
+                                          <Phone className="h-3 w-3 text-muted-foreground" />
+                                          <span>{client.mobile}</span>
+                                        </a>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="col-span-full py-12 text-center text-xs text-muted-foreground">
+                        No hidden services matched your filter.
+                      </div>
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+
+            {/* 5. LATEST SERVICE REQUESTS */}
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+                <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-muted-foreground">Select Year:</span>
-                    <Select
-                      value={selectedHistoricalYear}
-                      onValueChange={setSelectedHistoricalYear}
+                    <h3 className="font-bold text-base font-display text-foreground">
+                      Latest Service Requests
+                    </h3>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-muted text-muted-foreground">
+                      {latestRequests.length} recent
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Incoming client tickets and maintenance requests
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  {/* Status filter buttons */}
+                  <div className="inline-flex items-center rounded-lg border border-border bg-muted/40 p-0.5 text-xs">
+                    <button
+                      onClick={() => setRequestFilter("all")}
+                      className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer ${
+                        requestFilter === "all"
+                          ? "bg-background text-foreground shadow-xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
                     >
-                      <SelectTrigger className="w-[110px] h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {revenueMetrics.yearWiseData.map((y) => (
-                          <SelectItem key={y.year} value={y.year} className="text-xs">
-                            {y.year}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 mt-4">
-                {revenueMetrics.yearWiseData.length > 0 ? (
-                  revenueMetrics.yearWiseData.map((item) => {
-                    const isSelected = item.year === selectedHistoricalYear;
-                    return (
-                      <div
-                        key={item.year}
-                        onClick={() => setSelectedHistoricalYear(item.year)}
-                        className={`p-3 rounded-lg border text-center transition-all cursor-pointer ${
-                          isSelected
-                            ? "bg-primary/10 border-primary shadow-xs"
-                            : "bg-background/60 hover:bg-muted/40 border-border"
-                        }`}
-                      >
-                        <div className="text-[11px] font-semibold text-muted-foreground">
-                          Year {item.year}
-                        </div>
-                        <div className="text-sm md:text-base font-bold text-foreground mt-1">
-                          {formatCurrency(item.amount)}
-                        </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="col-span-full py-4 text-center text-xs text-muted-foreground">
-                    No closed payment history available yet.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* GRID 2: Business Performance charts */}
-            <div className="grid gap-6 lg:grid-cols-3 mt-4">
-              {/* Monthly Sales */}
-              <div className="card lg:col-span-2">
-                <div className="card-head">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="card-title text-base font-bold font-display text-[var(--ink)]">Monthly Sales Performance</span>
-                    </div>
-                    <p className="text-xs text-[var(--ink-soft)] mt-0.5">Overall gross sales volume in INR (Lakhs)</p>
-                  </div>
-                  <span className="card-link text-xs font-semibold">Last 12 Months</span>
-                </div>
-                <div className="h-[260px] w-full mt-6">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={monthlySalesData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="var(--primary-color)" stopOpacity={0.15} />
-                          <stop offset="95%" stopColor="var(--primary-color)" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="5 5" vertical={false} stroke="var(--line)" />
-                      <XAxis dataKey="name" stroke="var(--ink-soft)" fontSize={11} tickLine={false} axisLine={false} />
-                      <YAxis stroke="var(--ink-soft)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v}L`} />
-                      <Tooltip content={<CustomTooltip prefix="₹" suffix=" Lakhs" />} />
-                      <Area type="monotone" dataKey="sales" stroke="var(--primary-color)" strokeWidth={2} fillOpacity={1} fill="url(#colorSales)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Quotation Status */}
-              <div className="card">
-                <div className="card-head">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="card-title text-base font-bold font-display text-[var(--ink)]">Quotation Breakdown</span>
-                    </div>
-                    <p className="text-xs text-[var(--ink-soft)] mt-0.5">Distribution by status codes</p>
-                  </div>
-                </div>
-                <div className="h-[260px] w-full mt-4 flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={quotationStatusData}
-                        cx="50%"
-                        cy="45%"
-                        innerRadius={55}
-                        outerRadius={75}
-                        paddingAngle={4}
-                        dataKey="value"
-                      >
-                        {quotationStatusData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend verticalAlign="bottom" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, color: 'var(--ink-soft)' }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-
-            {/* GRID 3: Product-wise, Brand-wise & Follow-ups */}
-            <div className="grid gap-6 lg:grid-cols-3 mt-4">
-              {/* Product-wise Sales */}
-              <div className="card">
-                <div className="card-head">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="card-title text-base font-bold font-display text-[var(--ink)]">Product-wise Sales</span>
-                    </div>
-                    <p className="text-xs text-[var(--ink-soft)] mt-0.5">Top performing model ranges</p>
-                  </div>
-                </div>
-                <div className="h-[230px] w-full mt-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={productWiseSalesData}
-                      layout="vertical"
-                      margin={{ top: 10, right: 10, left: 15, bottom: 0 }}
+                      All
+                    </button>
+                    <button
+                      onClick={() => setRequestFilter("pending")}
+                      className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer ${
+                        requestFilter === "pending"
+                          ? "bg-background text-amber-600 dark:text-amber-400 shadow-xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
                     >
-                      <CartesianGrid strokeDasharray="5 5" horizontal={false} stroke="var(--line)" />
-                      <XAxis type="number" stroke="var(--ink-soft)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v}L`} />
-                      <YAxis dataKey="name" type="category" stroke="var(--ink-soft)" fontSize={11} tickLine={false} axisLine={false} width={90} />
-                      <Tooltip cursor={false} content={<CustomTooltip prefix="₹" suffix=" Lakhs" />} />
-                      <Bar dataKey="value" fill="var(--copper)" radius={[0, 4, 4, 0]} barSize={10} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Brand-wise Sales */}
-              <div className="card">
-                <div className="card-head">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="card-title text-base font-bold font-display text-[var(--ink)]">Brand-wise Sales</span>
-                    </div>
-                    <p className="text-xs text-[var(--ink-soft)] mt-0.5">Manufacturer revenue share</p>
-                  </div>
-                </div>
-                <div className="h-[230px] w-full mt-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={brandWiseSalesData}
-                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                      Pending
+                    </button>
+                    <button
+                      onClick={() => setRequestFilter("approved")}
+                      className={`px-2.5 py-1 rounded-md font-medium transition-all cursor-pointer ${
+                        requestFilter === "approved"
+                          ? "bg-background text-emerald-600 dark:text-emerald-400 shadow-xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
                     >
-                      <CartesianGrid strokeDasharray="5 5" vertical={false} stroke="var(--line)" />
-                      <XAxis dataKey="name" stroke="var(--ink-soft)" fontSize={11} tickLine={false} axisLine={false} />
-                      <YAxis stroke="var(--ink-soft)" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${v}L`} />
-                      <Tooltip cursor={false} content={<CustomTooltip prefix="₹" suffix=" Lakhs" />} />
-                      <Bar dataKey="value" fill="var(--primary-color)" radius={[4, 4, 0, 0]} barSize={30} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                      Approved
+                    </button>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate("/service-request")}
+                    className="text-xs gap-1.5 h-8 font-semibold cursor-pointer"
+                  >
+                    <span>View All</span>
+                    <ArrowRight className="h-3 w-3" />
+                  </Button>
                 </div>
               </div>
 
-              {/* Latest Follow-ups Card */}
-              <div className="card">
-                <div className="card-head border-b border-[var(--line)] pb-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="card-title text-base font-bold font-display text-[var(--ink)]">Latest Follow-ups</span>
-                    </div>
-                    <p className="text-xs text-[var(--ink-soft)] mt-0.5">Scheduled client tasks</p>
-                  </div>
-                </div>
-                <div className="space-y-4 mt-4 overflow-y-auto max-h-[230px]">
-                  {followupsData.map((item, index) => (
-                    <div key={index} className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-200">
-                      <div className="shrink-0 text-center px-2 py-1 rounded bg-[rgba(193,121,63,0.08)] text-[var(--copper)] font-mono text-[10px] font-bold leading-tight">
-                        {item.date.split(" ")[0]}
-                        <br />
-                        {item.date.split(" ")[1]}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-xs font-bold text-[var(--ink)] truncate">{item.title}</h4>
-                        <p className="text-[11px] text-[var(--ink-soft)] mt-0.5 line-clamp-1">{item.desc}</p>
-                        <div className="flex items-center gap-1 mt-1">
-                          <UserCheck className="h-3 w-3 text-slate-400" />
-                          <span className="text-[9.5px] font-semibold text-slate-500">{item.who}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* GRID 4: Real CRM Data (Client Services & Latest Requests) */}
-            <div className="grid gap-6 lg:grid-cols-3 mt-4">
-              {/* Client Services Chart Card */}
-              <div className="card">
-                <div className="card-head">
-                  <div>
-                    <span className="card-title text-base font-bold font-display text-[var(--ink)]">Client Service Distribution</span>
-                    <p className="text-xs text-[var(--ink-soft)] mt-0.5">Live CRM system client volume</p>
-                  </div>
-                </div>
-                <div className="h-[250px] w-full mt-6">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={usersServiceData}
-                      margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
-                    >
-                      <CartesianGrid strokeDasharray="5 5" vertical={false} stroke="var(--line)" />
-                      <XAxis
-                        dataKey="service_name"
-                        stroke="var(--ink-soft)"
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
-                      />
-                      <YAxis
-                        stroke="var(--ink-soft)"
-                        fontSize={10}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(value) => `${value}`}
-                      />
-                      <Tooltip
-                        cursor={false}
-                        content={<CustomTooltip suffix=" Clients" />}
-                      />
-                      <Bar
-                        dataKey="users_count"
-                        fill="var(--primary-color)"
-                        radius={[4, 4, 0, 0]}
-                        barSize={30}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Latest Service Requests Card */}
-              <div className="card lg:col-span-2">
-                <div className="card-head">
-                  <div>
-                    <span className="card-title text-base font-bold font-display text-[var(--ink)]">Latest Service Requests</span>
-                    <p className="text-xs text-[var(--ink-soft)] mt-0.5">Real-time incoming member ticket queue</p>
-                  </div>
-                  <span className="card-link text-xs font-semibold cursor-pointer hover:underline" onClick={() => navigate("/service-request")}>View all</span>
-                </div>
-                <div className="overflow-x-auto mt-6">
-                  <table className="list">
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>User Name</th>
-                        <th>Mobile</th>
-                        <th>Service</th>
-                        <th>Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {latestRequests.length > 0 ? (
-                        latestRequests.map((request) => (
-                          <tr key={request.id} className="clickable hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors" onClick={() => navigate("/service-request")}>
-                            <td className="mono text-[11px]">
-                              {request.services_request_date
-                                ? moment(request.services_request_date).format("DD-MM-YYYY")
-                                : "-"}
-                            </td>
-                            <td className="font-medium text-xs text-[var(--ink)]">{request.name}</td>
-                            <td className="mono text-[11px] text-[var(--ink-soft)]">{request.mobile}</td>
-                            <td>
-                              <span className={`service-badge ${getServiceBadgeClass(request.service_name)}`}>
+              <div className="overflow-x-auto mt-4">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-border text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                      <th className="py-3 px-3">Date</th>
+                      <th className="py-3 px-3">Client</th>
+                      <th className="py-3 px-3">Mobile</th>
+                      <th className="py-3 px-3">Service</th>
+                      <th className="py-3 px-3">Status</th>
+                      <th className="py-3 px-3 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/60">
+                    {filteredRequests.length > 0 ? (
+                      filteredRequests.map((request) => (
+                        <tr
+                          key={request.id}
+                          onClick={() => navigate("/service-request")}
+                          className="hover:bg-muted/40 transition-colors cursor-pointer group"
+                        >
+                          <td className="py-3.5 px-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">
+                            {request.services_request_date
+                              ? moment(request.services_request_date).format(
+                                  "DD MMM YYYY"
+                                )
+                              : "-"}
+                          </td>
+                          <td className="py-3.5 px-3">
+                            <div className="flex items-center gap-2">
+                              <div className="h-7 w-7 rounded-full bg-primary/10 text-primary font-bold text-[10px] flex items-center justify-center shrink-0">
+                                {getInitials(request.name)}
+                              </div>
+                              <div>
+                                <div className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                                  {request.name}
+                                </div>
+                                {request.m_id && (
+                                  <div className="text-[10px] text-muted-foreground font-mono">
+                                    M-ID: #{request.m_id}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-3 font-mono text-[11px] text-muted-foreground whitespace-nowrap">
+                            {request.mobile ? (
+                              <span className="flex items-center gap-1.5">
+                                <Phone className="h-3 w-3 text-muted-foreground/70" />
+                                {request.mobile}
+                              </span>
+                            ) : (
+                              "-"
+                            )}
+                          </td>
+                          <td className="py-3.5 px-3">
+                            <div className="flex items-center gap-2">
+                              {request.service_logo && (
+                                <img
+                                  src={getServiceLogoUrl(request.service_logo)}
+                                  alt={request.service_name}
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = noImageUrl;
+                                  }}
+                                  className="h-6 w-6 rounded-md object-cover border border-border/80 bg-muted/40 shrink-0"
+                                />
+                              )}
+                              <span
+                                className={`service-badge ${getServiceBadgeClass(
+                                  request.service_name
+                                )}`}
+                              >
                                 {request.service_name}
                               </span>
-                            </td>
-                            <td>
-                              <span className={`pill ${request.services_request_status === "Pending"
-                                  ? "pill-pending"
-                                  : request.services_request_status === "Approved"
-                                    ? "pill-approved"
-                                    : "pill-rejected"
-                                }`}>
-                                {request.services_request_status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={5} className="empty text-center py-10 text-[var(--ink-soft)]">
-                            No recent requests found.
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-3">
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                                (request.services_request_status || "").toLowerCase() === "pending"
+                                  ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                                  : (request.services_request_status || "").toLowerCase() === "approved" ||
+                                    (request.services_request_status || "").toLowerCase() === "closed"
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                  : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+                              }`}
+                            >
+                              <span
+                                className={`h-1.5 w-1.5 rounded-full ${
+                                  (request.services_request_status || "").toLowerCase() === "pending"
+                                    ? "bg-amber-500 animate-pulse"
+                                    : (request.services_request_status || "").toLowerCase() === "approved" ||
+                                      (request.services_request_status || "").toLowerCase() === "closed"
+                                    ? "bg-emerald-500"
+                                    : "bg-rose-500"
+                                }`}
+                              />
+                              {request.services_request_status}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-3 text-right">
+                            <span className="text-muted-foreground group-hover:text-primary transition-colors inline-flex items-center gap-1 text-[11px] font-semibold">
+                              Details <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
+                            </span>
                           </td>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan={6}
+                          className="text-center py-12 text-muted-foreground text-xs"
+                        >
+                          <Inbox className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+                          No service requests match the selected status.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </>

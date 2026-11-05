@@ -421,9 +421,7 @@ function AppRoutes() {
             path="/quotation-list/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <RoleGuard requireEditor={true}>
-                  <QuotationFormPage />
-                </RoleGuard>
+                <QuotationFormPage />
               </Suspense>
             }
           />
@@ -431,9 +429,7 @@ function AppRoutes() {
             path="/quotation-list/edit/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <RoleGuard requireEditor={true}>
-                  <QuotationFormPage />
-                </RoleGuard>
+                <QuotationFormPage />
               </Suspense>
             }
           />
@@ -451,9 +447,7 @@ function AppRoutes() {
             path="/quotation-list/revised/:id/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <RoleGuard requireEditor={true}>
-                  <RevQuotationFormPage />
-                </RoleGuard>
+                <RevQuotationFormPage />
               </Suspense>
             }
           />
@@ -461,9 +455,7 @@ function AppRoutes() {
             path="/quotation-list/revised/:id/edit/:revId"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <RoleGuard requireEditor={true}>
-                  <RevQuotationFormPage />
-                </RoleGuard>
+                <RevQuotationFormPage />
               </Suspense>
             }
           />
@@ -481,9 +473,7 @@ function AppRoutes() {
             path="/project-list/create"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <RoleGuard requireEditor={true}>
-                  <ProjectFormPage />
-                </RoleGuard>
+                <ProjectFormPage />
               </Suspense>
             }
           />
@@ -491,9 +481,7 @@ function AppRoutes() {
             path="/project-list/edit/:id"
             element={
               <Suspense fallback={<LoadingBar />}>
-                <RoleGuard requireEditor={true}>
-                  <ProjectFormPage />
-                </RoleGuard>
+                <ProjectFormPage />
               </Suspense>
             }
           />

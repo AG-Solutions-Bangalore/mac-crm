@@ -21,14 +21,13 @@ import {
 } from "@/components/ui/select";
 import moment from "moment";
 import { toast } from "sonner";
-import { isQuotationOwnedByUser, isViewerUser } from "@/utils/permissions";
+import { isQuotationOwnedByUser } from "@/utils/permissions";
 
 const RevQuotationListPage = () => {
   const { id: parentId } = useParams();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const isRestrictedUser = Number(user?.user_type) === 4;
-  const isViewer = isViewerUser(user);
   const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = usePersistedSearch();
   const [yearFilter, setYearFilter] = useState("all");
@@ -161,9 +160,6 @@ const RevQuotationListPage = () => {
           }
           return <span className="text-xs font-bold text-slate-500">{status}</span>;
         }
-        if (isRestrictedUser && Number(row.original.id) !== latestRevId) {
-          return <span className="text-xs font-bold text-slate-500">{status}</span>;
-        }
         return (
           <ToggleStatus
             initialStatus={status}
@@ -208,7 +204,7 @@ const RevQuotationListPage = () => {
               </Button>
             </abbr>
 
-            {!isLocked && !isLatestRevision && !isRestrictedUser && (
+            {!isLocked && !isLatestRevision && (
               <abbr title="Delete Revised Quotation">
                 <Button
                   size="icon"
@@ -225,7 +221,7 @@ const RevQuotationListPage = () => {
             {!isLocked &&
               isLatestRevision &&
               !revQuotationList.some((q) => q.quotation_status === "Approved") &&
-              row.original.quotation_status !== "Approved" && !isRestrictedUser && (
+              row.original.quotation_status !== "Approved" && (
                 <abbr title="Approve & Finalize">
                   <Button
                     size="icon"
@@ -317,7 +313,7 @@ const RevQuotationListPage = () => {
           setPage(1);
         }}
         addButton={
-          !isLocked && !isViewer
+          !isLocked
             ? {
                 onClick: () => navigate(`/quotation-list/revised/${parentId}/create`),
                 label: "Add Revised Quotation",

@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { usePersistedSearch } from "@/hooks/usePersistedSearch";
 import { Edit, FileText, MoreHorizontal, FolderKanban, CheckCircle, XCircle, RotateCcw } from "lucide-react";
@@ -27,14 +26,10 @@ import {
 } from "@/components/ui/select";
 import { useProjectsQuery, useUpdateProjectStatusMutation } from "../hooks/useProject";
 import { useCyearQuery } from "../../quotation/hooks/useQuotation";
-import { isViewerUser } from "@/utils/permissions";
 import moment from "moment";
 
 const ProjectListPage = () => {
   const navigate = useNavigate();
-  const { user } = useSelector((state) => state.auth);
-  const isRestrictedUser = Number(user?.user_type) === 4;
-  const isViewer = isViewerUser(user);
   const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = usePersistedSearch();
   const [statusFilter, setStatusFilter] = useState("all");
@@ -198,22 +193,20 @@ const ProjectListPage = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[12rem]">
-              {!isViewer && (
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={() => navigate(`/project-list/edit/${p.id}`)}
-                >
-                  <Edit className="h-4 w-4 mr-2" /> Edit Project
-                </DropdownMenuItem>
-              )}
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => navigate(`/project-list/edit/${p.id}`)}
+              >
+                <Edit className="h-4 w-4 mr-2" /> Edit Project
+              </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
                 onClick={() => navigate(`/quotation-report/${p.id}?type=project`)}
               >
                 <FileText className="h-4 w-4 mr-2" /> View Report
               </DropdownMenuItem>
-              {!isRestrictedUser && <DropdownMenuSeparator />}
-              {!isRestrictedUser && status !== "Approved" && (
+              <DropdownMenuSeparator />
+              {status !== "Approved" && (
                 <DropdownMenuItem
                   className="cursor-pointer text-emerald-600 dark:text-emerald-400 font-medium"
                   onClick={async () => {
@@ -229,7 +222,7 @@ const ProjectListPage = () => {
                   <CheckCircle className="h-4 w-4 mr-2" /> Mark as Approved
                 </DropdownMenuItem>
               )}
-              {!isRestrictedUser && status !== "Project" && (
+              {status !== "Project" && (
                 <DropdownMenuItem
                   className="cursor-pointer text-blue-600 dark:text-blue-400 font-medium"
                   onClick={async () => {
@@ -245,7 +238,7 @@ const ProjectListPage = () => {
                   <RotateCcw className="h-4 w-4 mr-2" /> Set as Project
                 </DropdownMenuItem>
               )}
-              {!isRestrictedUser && status !== "Cancel" && (
+              {status !== "Cancel" && (
                 <DropdownMenuItem
                   className="cursor-pointer text-rose-600 dark:text-rose-400 font-medium"
                   onClick={async () => {
@@ -331,14 +324,10 @@ const ProjectListPage = () => {
           setSearchTerm(val);
           setPage(1);
         }}
-        addButton={
-          isViewer
-            ? undefined
-            : {
-                onClick: () => navigate("/project-list/create"),
-                label: "Add Project",
-              }
-        }
+        addButton={{
+          onClick: () => navigate("/project-list/create"),
+          label: "Add Project",
+        }}
         backendPagination={true}
         page={paginationData?.current_page || 1}
         totalPages={paginationData?.last_page || 1}
