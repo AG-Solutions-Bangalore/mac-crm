@@ -570,7 +570,7 @@ const QuotationListPage = () => {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-[125px]">
+              <SelectTrigger className="w-full sm:w-[125px]">
                 <SelectValue placeholder="All Years" />
               </SelectTrigger>
               <SelectContent>
@@ -590,7 +590,7 @@ const QuotationListPage = () => {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-[130px]">
+              <SelectTrigger className="w-full sm:w-[130px]">
                 <SelectValue placeholder="Select Status" />
               </SelectTrigger>
               <SelectContent>

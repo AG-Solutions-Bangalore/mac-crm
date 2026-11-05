@@ -162,8 +162,9 @@ const ProductListPage = () => {
       />
       <DataTable
         isLoading={isLoading || isFetching}
+        extraButtonFullWidthOnMobile
         extraButton={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Select
               value={serviceFilter}
               onValueChange={(val) => {
@@ -172,7 +173,7 @@ const ProductListPage = () => {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="All Services" />
               </SelectTrigger>
               <SelectContent>
@@ -194,7 +195,7 @@ const ProductListPage = () => {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-[120px]">
+              <SelectTrigger className="w-full sm:w-[120px]">
                 <SelectValue placeholder="Select Status" />
               </SelectTrigger>
               <SelectContent>

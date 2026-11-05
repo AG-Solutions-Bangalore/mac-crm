@@ -100,7 +100,7 @@ const PropertyListPage = () => {
               setPage(1);
             }}
           >
-            <SelectTrigger className="w-[120px]">
+            <SelectTrigger className="w-full sm:w-[120px]">
               <SelectValue placeholder="Select Status" />
             </SelectTrigger>
             <SelectContent>

@@ -281,7 +281,7 @@ const RevQuotationListPage = () => {
       <DataTable
         isLoading={isLoading || isFetching}
         extraButton={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Select
               value={yearFilter}
               onValueChange={(val) => {
@@ -289,7 +289,7 @@ const RevQuotationListPage = () => {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="w-[125px]">
+              <SelectTrigger className="w-full sm:w-[125px]">
                 <SelectValue placeholder="All Years" />
               </SelectTrigger>
               <SelectContent>

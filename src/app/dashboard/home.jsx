@@ -252,10 +252,10 @@ const Dashboard = () => {
 
   return (
     <Page>
-      <div className="main space-y-6 max-w-7xl mx-auto">
+      <div className="main space-y-6  md:max-w-7xl mx-auto px-2! md:px-4">
         {/* HEADER GREETING BANNER */}
-        <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-6 md:p-8 shadow-xs">
-          <div className="relative z-1 flex flex-col md:flex-row md:items-center justify-between gap-5">
+        <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-6 md:p-8 shadow-xs">
+          <div className="relative z-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-5">
             <div className="space-y-1.5">
               <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold">
                 <span className="relative flex h-2 w-2">
@@ -292,13 +292,13 @@ const Dashboard = () => {
         </div>
 
         {isLoading ? (
-          <div className="space-y-6">
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-32 w-full rounded-2xl" />
-              ))}
-            </div>
-            <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
+            <div className="space-y-6">
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-32 w-full rounded-2xl" />
+                ))}
+              </div>
+            <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
               {[...Array(5)].map((_, i) => (
                 <Skeleton key={i} className="h-24 w-full rounded-xl" />
               ))}
@@ -313,7 +313,7 @@ const Dashboard = () => {
         ) : (
           <>
             {/* 1. TOP ROW: PRIMARY ENTITY COUNTS (3 Cards) */}
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {/* Total Clients Card */}
               <div
                 onClick={() => navigate("/client-list")}
@@ -407,7 +407,7 @@ const Dashboard = () => {
                 </span>
               </div>
 
-              <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+              <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
                 {/* 1. Pending Quotations */}
                 <div
                   onClick={() => navigate("/quotation-list")}
@@ -515,21 +515,21 @@ const Dashboard = () => {
               <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-md bg-primary/10 text-primary">
-                      <BarChart3 className="h-4 w-4" />
-                    </div>
-                    <h3 className="font-bold text-base font-display text-foreground">
-                      Year-Wise Comparison
-                    </h3>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                  <div className="p-1.5 rounded-md bg-primary/10 text-primary">
+                    <BarChart3 className="h-4 w-4" />
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    
-                  </p>
+                  <h3 className="font-bold text-base font-display text-foreground">
+                    Year-Wise Comparison
+                  </h3>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  
+                </p>
+              </div>
 
-                {/* Legend placed above the divider line */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+              {/* Legend placed above the divider line */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs">
                   <div className="flex items-center gap-1.5">
                     <span className="h-2.5 w-2.5 rounded-full bg-[#F59E0B]" />
                     <span className="text-muted-foreground font-medium">Pending Quotations</span>
@@ -695,13 +695,13 @@ const Dashboard = () => {
                 <div className="flex flex-wrap items-center gap-2.5">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                    <input
-                      type="text"
-                      placeholder="Search service or client..."
-                      value={serviceSearchTerm}
-                      onChange={(e) => setServiceSearchTerm(e.target.value)}
-                      className="h-8 w-48 sm:w-56 pl-8 pr-3 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
+                      <input
+                        type="text"
+                        placeholder="Search service or client..."
+                        value={serviceSearchTerm}
+                        onChange={(e) => setServiceSearchTerm(e.target.value)}
+                        className="h-8 w-40 sm:w-48 md:w-56 pl-8 pr-3 rounded-lg border border-border bg-background text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                      />
                   </div>
 
                   <Button
@@ -717,7 +717,7 @@ const Dashboard = () => {
               </div>
 
               <Tabs defaultValue="active" className="w-full mt-4">
-                <TabsList className="grid w-full sm:w-[380px] grid-cols-2 p-1 bg-muted/60">
+                <TabsList className="grid w-full max-w-xs sm:max-w-[380px] grid-cols-2 p-1 bg-muted/60">
                   <TabsTrigger
                     value="active"
                     className="text-xs font-semibold cursor-pointer"
@@ -734,7 +734,7 @@ const Dashboard = () => {
 
                 {/* TAB 1: ACTIVE SERVICES */}
                 <TabsContent value="active" className="mt-5">
-                  <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-3 sm:gap-3.5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredActiveServices.length > 0 ? (
                       filteredActiveServices.map((service) => {
                         const isExpanded =
@@ -863,7 +863,7 @@ const Dashboard = () => {
 
                 {/* TAB 2: HIDDEN SERVICES */}
                 <TabsContent value="hidden" className="mt-5">
-                  <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-3 sm:gap-3.5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredHideServices.length > 0 ? (
                       filteredHideServices.map((service) => {
                         const isExpanded =
