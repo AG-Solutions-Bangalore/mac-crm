@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import Page from "../layout/page";
 import { useGetApiMutation } from "@/hooks/useGetApiMutation";
 import { DASHBOARD_API } from "@/constants/apiConstants";
@@ -27,9 +27,19 @@ import {
   BarChart3,
   Inbox,
   ArrowLeftRight,
+  TrendingUp,
+  TrendingDown,
+  Minus,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   BarChart,
@@ -41,15 +51,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-
-const YEAR_COLORS = [
-  "#3B82F6", // Blue
-  "#10B981", // Emerald
-  "#F59E0B", // Amber
-  "#8B5CF6", // Purple
-  "#EC4899", // Pink
-  "#14B8A6", // Teal
-];
 
 const getInitials = (name) => {
   if (!name) return "U";
@@ -83,8 +84,79 @@ const getServiceBadgeClass = (serviceName) => {
   return "badge-default";
 };
 
-// Tooltip for Group-by-Year view
-const YearWiseTooltip = ({ active, payload, label }) => {
+// Calculate previous financial year string (e.g. "2026-27" -> "2025-26")
+const getPreviousYearStr = (yearStr) => {
+  if (!yearStr) return "2025-26";
+  const match = yearStr.match(/^(\d{4})-(\d{2,4})$/);
+  if (match) {
+    const startYear = parseInt(match[1], 10) - 1;
+    const endYear = parseInt(match[2], 10) - 1;
+    const endStr =
+      match[2].length === 2
+        ? String(endYear).padStart(2, "0")
+        : String(endYear);
+    return `${startYear}-${endStr}`;
+  }
+  const singleYear = parseInt(yearStr, 10);
+  if (!isNaN(singleYear)) {
+    return String(singleYear - 1);
+  }
+  return "2025-26";
+};
+
+// Tooltip for Side-by-Side YoY Comparison
+const YoYComparisonTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    const item1 = payload[0];
+    const item2 = payload[1];
+    const diff = (item1?.value || 0) - (item2?.value || 0);
+
+    return (
+      <div className="rounded-xl border border-border bg-card p-3.5 shadow-xl text-xs text-foreground min-w-[220px] backdrop-blur-md">
+        <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2.5 pb-1.5 border-b border-border flex items-center justify-between">
+          <span>{label}</span>
+        </div>
+        <div className="space-y-2">
+          {payload.map((item, idx) => (
+            <div key={idx} className="flex items-center justify-between gap-4">
+              <span className="flex items-center gap-2 text-muted-foreground font-medium">
+                <span
+                  className="inline-block h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: item.color || item.fill }}
+                />
+                {item.name}:
+              </span>
+              <span className="font-bold text-foreground font-mono text-xs">
+                {item.value}
+              </span>
+            </div>
+          ))}
+
+          {payload.length >= 2 && (
+            <div className="pt-2 border-t border-border flex items-center justify-between text-[11px]">
+              <span className="text-muted-foreground font-semibold">Change (YoY):</span>
+              <span
+                className={`font-mono font-bold ${
+                  diff > 0
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : diff < 0
+                    ? "text-rose-600 dark:text-rose-400"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {diff > 0 ? `+${diff}` : diff}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
+// Tooltip for Timeline view
+const TimelineTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
       <div className="rounded-xl border border-border bg-card p-3.5 shadow-xl text-xs text-foreground min-w-[210px] backdrop-blur-md">
@@ -118,41 +190,6 @@ const YearWiseTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-// Tooltip for Compare-by-Metric view
-const MetricWiseTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="rounded-xl border border-border bg-card p-3.5 shadow-xl text-xs text-foreground min-w-[210px] backdrop-blur-md">
-        {label && (
-          <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2.5 pb-1.5 border-b border-border flex items-center justify-between">
-            <span>Metric</span>
-            <span className="font-mono text-foreground font-bold text-xs">
-              {label}
-            </span>
-          </div>
-        )}
-        <div className="space-y-2">
-          {payload.map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between gap-4">
-              <span className="flex items-center gap-2 text-muted-foreground font-medium">
-                <span
-                  className="inline-block h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: item.color || item.fill }}
-                />
-                Year {item.dataKey}:
-              </span>
-              <span className="font-bold text-foreground font-mono text-xs">
-                {item.value}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-  return null;
-};
-
 const Dashboard = () => {
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth?.user);
@@ -162,7 +199,7 @@ const Dashboard = () => {
   const [serviceSearchTerm, setServiceSearchTerm] = useState("");
   const [onlyWithClients, setOnlyWithClients] = useState(false);
   const [requestFilter, setRequestFilter] = useState("all");
-  const [comparisonView, setComparisonView] = useState("byYear"); // "byYear" | "byMetric"
+  const [comparisonView, setComparisonView] = useState("sideBySide"); // "sideBySide" | "timeline"
 
   const {
     data: DData,
@@ -178,6 +215,103 @@ const Dashboard = () => {
 
   const dashboardData = DData?.data || {};
   const graph1List = dashboardData?.graph1 || [];
+
+  // Determine This Year from API data (or fallback)
+  const defaultThisYear = useMemo(() => {
+    if (graph1List.length > 0 && graph1List[0].year) {
+      return graph1List[0].year;
+    }
+    const curr = moment().year();
+    const nextShort = String((curr + 1) % 100).padStart(2, "0");
+    return `${curr}-${nextShort}`;
+  }, [graph1List]);
+
+  const [selectedThisYear, setSelectedThisYear] = useState(defaultThisYear);
+  const [selectedPrevYear, setSelectedPrevYear] = useState(
+    getPreviousYearStr(defaultThisYear)
+  );
+
+  useEffect(() => {
+    if (defaultThisYear) {
+      setSelectedThisYear(defaultThisYear);
+      setSelectedPrevYear(getPreviousYearStr(defaultThisYear));
+    }
+  }, [defaultThisYear]);
+
+  // Data for This Year (from graph1)
+  const thisYearData = useMemo(() => {
+    const found = graph1List.find((g) => g.year === selectedThisYear);
+    return {
+      year: selectedThisYear,
+      pending: Number(found?.pending_count || 0),
+      approved: Number(found?.approved_count || 0),
+      running: Number(found?.running_project_count || 0),
+      finished: Number(found?.finish_project_count || 0),
+      isFromApi: Boolean(found),
+    };
+  }, [graph1List, selectedThisYear]);
+
+  // Data for Previous Year (from graph1 if present, otherwise 0s)
+  const prevYearData = useMemo(() => {
+    const found = graph1List.find((g) => g.year === selectedPrevYear);
+    return {
+      year: selectedPrevYear,
+      pending: Number(found?.pending_count || 0),
+      approved: Number(found?.approved_count || 0),
+      running: Number(found?.running_project_count || 0),
+      finished: Number(found?.finish_project_count || 0),
+      isFromApi: Boolean(found),
+    };
+  }, [graph1List, selectedPrevYear]);
+
+  // Side-by-Side YoY chart data (Metric on X-Axis, This Year vs Prev Year bars)
+  const yoyChartData = useMemo(() => {
+    const thisLabel = `This Year (${thisYearData.year})`;
+    const prevLabel = `Previous Year (${prevYearData.year})`;
+
+    return [
+      {
+        metric: "Pending Quotations",
+        [thisLabel]: thisYearData.pending,
+        [prevLabel]: prevYearData.pending,
+      },
+      {
+        metric: "Approved Quotations",
+        [thisLabel]: thisYearData.approved,
+        [prevLabel]: prevYearData.approved,
+      },
+      {
+        metric: "Running Projects",
+        [thisLabel]: thisYearData.running,
+        [prevLabel]: prevYearData.running,
+      },
+      {
+        metric: "Finished Projects",
+        [thisLabel]: thisYearData.finished,
+        [prevLabel]: prevYearData.finished,
+      },
+    ];
+  }, [thisYearData, prevYearData]);
+
+  // Timeline chart data (Years on X-Axis)
+  const timelineChartData = useMemo(() => {
+    return [
+      {
+        year: `Prev (${prevYearData.year})`,
+        "Pending Quotations": prevYearData.pending,
+        "Approved Quotations": prevYearData.approved,
+        "Running Projects": prevYearData.running,
+        "Finished Projects": prevYearData.finished,
+      },
+      {
+        year: `This Year (${thisYearData.year})`,
+        "Pending Quotations": thisYearData.pending,
+        "Approved Quotations": thisYearData.approved,
+        "Running Projects": thisYearData.running,
+        "Finished Projects": thisYearData.finished,
+      },
+    ];
+  }, [prevYearData, thisYearData]);
 
   // Image URLs resolution from image_url array
   const serviceBaseUrl = useMemo(() => {
@@ -204,42 +338,6 @@ const Dashboard = () => {
     if (!logo) return noImageUrl;
     return `${serviceBaseUrl}${logo}`;
   };
-
-  // 1. Group-by-Year data (X-Axis: Year)
-  const yearWiseChartData = useMemo(() => {
-    return graph1List.map((item) => ({
-      year: item.year || "-",
-      "Pending Quotations": Number(item.pending_count || 0),
-      "Approved Quotations": Number(item.approved_count || 0),
-      "Running Projects": Number(item.running_project_count || 0),
-      "Finished Projects": Number(item.finish_project_count || 0),
-    }));
-  }, [graph1List]);
-
-  // 2. Compare-by-Metric data (X-Axis: Metric, Bars: Years)
-  const metricCompareChartData = useMemo(() => {
-    if (graph1List.length === 0) return [];
-
-    const metrics = [
-      { key: "pending_count", label: "Pending Quotes" },
-      { key: "approved_count", label: "Approved Quotes" },
-      { key: "running_project_count", label: "Running Projects" },
-      { key: "finish_project_count", label: "Finished Projects" },
-    ];
-
-    return metrics.map((m) => {
-      const row = { metric: m.label };
-      graph1List.forEach((yr) => {
-        row[yr.year] = Number(yr[m.key] || 0);
-      });
-      return row;
-    });
-  }, [graph1List]);
-
-  // Available unique years in graph1
-  const availableYears = useMemo(() => {
-    return graph1List.map((item) => item.year).filter(Boolean);
-  }, [graph1List]);
 
   const latestRequests = dashboardData?.latest_service_requests || [];
   const usersServiceList = dashboardData?.users_service || [];
@@ -290,6 +388,32 @@ const Dashboard = () => {
     if (hr < 12) return "Good morning";
     if (hr < 17) return "Good afternoon";
     return "Good evening";
+  };
+
+  // Helper to render variance badge
+  const renderVarianceBadge = (diff, prevVal) => {
+    if (diff > 0) {
+      return (
+        <span className="inline-flex items-center gap-1 font-bold text-emerald-600 dark:text-emerald-400 font-mono text-xs">
+          <TrendingUp className="h-3.5 w-3.5" />
+          +{diff} {prevVal === 0 ? "(New)" : `(+${Math.round((diff / prevVal) * 100)}%)`}
+        </span>
+      );
+    }
+    if (diff < 0) {
+      return (
+        <span className="inline-flex items-center gap-1 font-bold text-rose-600 dark:text-rose-400 font-mono text-xs">
+          <TrendingDown className="h-3.5 w-3.5" />
+          {diff} {prevVal !== 0 ? `(${Math.round((diff / prevVal) * 100)}%)` : ""}
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 text-muted-foreground font-mono text-xs">
+        <Minus className="h-3 w-3" />
+        0 (Equal)
+      </span>
+    );
   };
 
   return (
@@ -552,291 +676,529 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* 3. YEAR-WISE COMPARISON GRAPH (Strictly from API graph1) */}
+            {/* 3. THIS YEAR VS PREVIOUS YEAR COMPARISON (graph1) */}
             <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-border">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <div className="p-1.5 rounded-md bg-primary/10 text-primary">
                       <BarChart3 className="h-4 w-4" />
                     </div>
                     <h3 className="font-bold text-base font-display text-foreground">
-                      Year-Wise Comparison
+                      This Year vs Previous Year Comparison
                     </h3>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Compare quotation proposals and project performance across fiscal years
+                    Side-by-side performance comparison:{" "}
+                    <span className="font-semibold text-primary font-mono">
+                      {thisYearData.year} (This Year)
+                    </span>{" "}
+                    vs{" "}
+                    <span className="font-semibold text-slate-500 dark:text-slate-400 font-mono">
+                      {prevYearData.year} (Previous Year)
+                    </span>
                   </p>
                 </div>
 
-                {/* View Switcher: Group by Year VS Compare by Metric */}
-                <div className="flex items-center gap-3">
+                {/* Controls: Mode Switcher & Year Selectors */}
+                <div className="flex flex-wrap items-center gap-2.5">
                   <div className="inline-flex items-center rounded-lg border border-border bg-muted/40 p-0.5 text-xs">
                     <button
                       type="button"
-                      onClick={() => setComparisonView("byYear")}
+                      onClick={() => setComparisonView("sideBySide")}
                       className={`px-3 py-1.5 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                        comparisonView === "byYear"
-                          ? "bg-background text-foreground shadow-xs font-semibold"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <Calendar className="h-3.5 w-3.5" />
-                      <span>Group by Year</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setComparisonView("byMetric")}
-                      className={`px-3 py-1.5 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
-                        comparisonView === "byMetric"
+                        comparisonView === "sideBySide"
                           ? "bg-background text-foreground shadow-xs font-semibold"
                           : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
                       <ArrowLeftRight className="h-3.5 w-3.5" />
-                      <span>Compare by Metric</span>
+                      <span>Side-by-Side</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setComparisonView("timeline")}
+                      className={`px-3 py-1.5 rounded-md font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                        comparisonView === "timeline"
+                          ? "bg-background text-foreground shadow-xs font-semibold"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Calendar className="h-3.5 w-3.5" />
+                      <span>Timeline</span>
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Comparison Summary Cards */}
-              {graph1List.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
-                  {graph1List.map((g) => (
-                    <React.Fragment key={g.year}>
-                      <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5">
-                        <div className="text-[11px] font-semibold text-muted-foreground">
-                          Pending Quotes ({g.year})
-                        </div>
-                        <div className="text-xl font-bold font-mono text-amber-600 dark:text-amber-400 mt-1">
-                          {g.pending_count || 0}
-                        </div>
-                      </div>
-
-                      <div className="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
-                        <div className="text-[11px] font-semibold text-muted-foreground">
-                          Approved Quotes ({g.year})
-                        </div>
-                        <div className="text-xl font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-1">
-                          {g.approved_count || 0}
-                        </div>
-                      </div>
-
-                      <div className="p-3 rounded-xl border border-blue-500/20 bg-blue-500/5">
-                        <div className="text-[11px] font-semibold text-muted-foreground">
-                          Running Projects ({g.year})
-                        </div>
-                        <div className="text-xl font-bold font-mono text-blue-600 dark:text-blue-400 mt-1">
-                          {g.running_project_count || 0}
-                        </div>
-                      </div>
-
-                      <div className="p-3 rounded-xl border border-purple-500/20 bg-purple-500/5">
-                        <div className="text-[11px] font-semibold text-muted-foreground">
-                          Finished Projects ({g.year})
-                        </div>
-                        <div className="text-xl font-bold font-mono text-purple-600 dark:text-purple-400 mt-1">
-                          {g.finish_project_count || 0}
-                        </div>
-                      </div>
-                    </React.Fragment>
-                  ))}
-                </div>
-              )}
-
-              {/* Year-Wise Chart */}
-              <div className="h-[310px] w-full mt-6">
-                {graph1List.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    {comparisonView === "byYear" ? (
-                      // 1. Group by Year (X-Axis: Fiscal Years)
-                      <BarChart
-                        data={yearWiseChartData}
-                        margin={{ top: 15, right: 20, left: -15, bottom: 5 }}
-                        barGap={8}
-                      >
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          vertical={false}
-                          stroke="var(--color-border)"
-                          opacity={0.7}
-                        />
-                        <XAxis
-                          dataKey="year"
-                          stroke="var(--ink-soft)"
-                          fontSize={13}
-                          fontWeight={600}
-                          tickLine={false}
-                          axisLine={{ stroke: "var(--color-border)" }}
-                          dy={8}
-                        />
-                        <YAxis
-                          stroke="var(--ink-soft)"
-                          fontSize={12}
-                          tickLine={false}
-                          axisLine={false}
-                          allowDecimals={false}
-                        />
-                        <Tooltip content={<YearWiseTooltip />} />
-                        <Legend
-                          verticalAlign="top"
-                          align="right"
-                          height={40}
-                          iconType="circle"
-                          iconSize={8}
-                          wrapperStyle={{ fontSize: 12, paddingBottom: 12 }}
-                        />
-                        <Bar
-                          dataKey="Pending Quotations"
-                          fill="#F59E0B"
-                          radius={[6, 6, 0, 0]}
-                          maxBarSize={48}
-                        />
-                        <Bar
-                          dataKey="Approved Quotations"
-                          fill="#10B981"
-                          radius={[6, 6, 0, 0]}
-                          maxBarSize={48}
-                        />
-                        <Bar
-                          dataKey="Running Projects"
-                          fill="#3B82F6"
-                          radius={[6, 6, 0, 0]}
-                          maxBarSize={48}
-                        />
-                        <Bar
-                          dataKey="Finished Projects"
-                          fill="#8B5CF6"
-                          radius={[6, 6, 0, 0]}
-                          maxBarSize={48}
-                        />
-                      </BarChart>
-                    ) : (
-                      // 2. Compare by Metric across Years (X-Axis: Metrics, Bars: Years)
-                      <BarChart
-                        data={metricCompareChartData}
-                        margin={{ top: 15, right: 20, left: -15, bottom: 5 }}
-                        barGap={8}
-                      >
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          vertical={false}
-                          stroke="var(--color-border)"
-                          opacity={0.7}
-                        />
-                        <XAxis
-                          dataKey="metric"
-                          stroke="var(--ink-soft)"
-                          fontSize={12}
-                          fontWeight={600}
-                          tickLine={false}
-                          axisLine={{ stroke: "var(--color-border)" }}
-                          dy={8}
-                        />
-                        <YAxis
-                          stroke="var(--ink-soft)"
-                          fontSize={12}
-                          tickLine={false}
-                          axisLine={false}
-                          allowDecimals={false}
-                        />
-                        <Tooltip content={<MetricWiseTooltip />} />
-                        <Legend
-                          verticalAlign="top"
-                          align="right"
-                          height={40}
-                          iconType="circle"
-                          iconSize={8}
-                          wrapperStyle={{ fontSize: 12, paddingBottom: 12 }}
-                        />
-                        {availableYears.map((yearKey, idx) => (
-                          <Bar
-                            key={yearKey}
-                            dataKey={yearKey}
-                            name={`Year ${yearKey}`}
-                            fill={YEAR_COLORS[idx % YEAR_COLORS.length]}
-                            radius={[6, 6, 0, 0]}
-                            maxBarSize={48}
-                          />
-                        ))}
-                      </BarChart>
-                    )}
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-xs text-muted-foreground gap-2">
-                    <Inbox className="h-8 w-8 text-muted-foreground/40" />
-                    <span>No graph records found in API data.</span>
+              {/* 4 SIDE-BY-SIDE YoY COMPARISON CARDS */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+                {/* 1. Pending Quotes YoY Card */}
+                <div className="p-3.5 rounded-xl border border-amber-500/20 bg-amber-500/5 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-muted-foreground">
+                      Pending Quotes
+                    </span>
+                    <FileText className="h-3.5 w-3.5 text-amber-500" />
                   </div>
-                )}
+                  <div className="flex items-baseline justify-between">
+                    <div>
+                      <div className="text-2xl font-bold font-mono text-foreground">
+                        {thisYearData.pending}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground font-mono">
+                        This Year ({thisYearData.year})
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-semibold font-mono text-muted-foreground">
+                        {prevYearData.pending}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground font-mono">
+                        Prev ({prevYearData.year})
+                      </div>
+                    </div>
+                  </div>
+                  <div className="pt-1.5 border-t border-amber-500/10 flex items-center justify-between text-[11px]">
+                    <span className="text-muted-foreground">Variance:</span>
+                    {renderVarianceBadge(
+                      thisYearData.pending - prevYearData.pending,
+                      prevYearData.pending
+                    )}
+                  </div>
+                </div>
+
+                {/* 2. Approved Quotes YoY Card */}
+                <div className="p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-muted-foreground">
+                      Approved Quotes
+                    </span>
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <div>
+                      <div className="text-2xl font-bold font-mono text-foreground">
+                        {thisYearData.approved}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground font-mono">
+                        This Year ({thisYearData.year})
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-semibold font-mono text-muted-foreground">
+                        {prevYearData.approved}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground font-mono">
+                        Prev ({prevYearData.year})
+                      </div>
+                    </div>
+                  </div>
+                  <div className="pt-1.5 border-t border-emerald-500/10 flex items-center justify-between text-[11px]">
+                    <span className="text-muted-foreground">Variance:</span>
+                    {renderVarianceBadge(
+                      thisYearData.approved - prevYearData.approved,
+                      prevYearData.approved
+                    )}
+                  </div>
+                </div>
+
+                {/* 3. Running Projects YoY Card */}
+                <div className="p-3.5 rounded-xl border border-blue-500/20 bg-blue-500/5 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-muted-foreground">
+                      Running Projects
+                    </span>
+                    <FolderKanban className="h-3.5 w-3.5 text-blue-500" />
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <div>
+                      <div className="text-2xl font-bold font-mono text-foreground">
+                        {thisYearData.running}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground font-mono">
+                        This Year ({thisYearData.year})
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-semibold font-mono text-muted-foreground">
+                        {prevYearData.running}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground font-mono">
+                        Prev ({prevYearData.year})
+                      </div>
+                    </div>
+                  </div>
+                  <div className="pt-1.5 border-t border-blue-500/10 flex items-center justify-between text-[11px]">
+                    <span className="text-muted-foreground">Variance:</span>
+                    {renderVarianceBadge(
+                      thisYearData.running - prevYearData.running,
+                      prevYearData.running
+                    )}
+                  </div>
+                </div>
+
+                {/* 4. Finished Projects YoY Card */}
+                <div className="p-3.5 rounded-xl border border-purple-500/20 bg-purple-500/5 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-muted-foreground">
+                      Finished Projects
+                    </span>
+                    <CheckCheck className="h-3.5 w-3.5 text-purple-500" />
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <div>
+                      <div className="text-2xl font-bold font-mono text-foreground">
+                        {thisYearData.finished}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground font-mono">
+                        This Year ({thisYearData.year})
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-semibold font-mono text-muted-foreground">
+                        {prevYearData.finished}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground font-mono">
+                        Prev ({prevYearData.year})
+                      </div>
+                    </div>
+                  </div>
+                  <div className="pt-1.5 border-t border-purple-500/10 flex items-center justify-between text-[11px]">
+                    <span className="text-muted-foreground">Variance:</span>
+                    {renderVarianceBadge(
+                      thisYearData.finished - prevYearData.finished,
+                      prevYearData.finished
+                    )}
+                  </div>
+                </div>
               </div>
 
-              {/* Year Comparison Data Table */}
-              {graph1List.length > 0 && (
-                <div className="overflow-x-auto mt-6 pt-4 border-t border-border">
-                  <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2.5">
-                    Year-Wise Comparison Summary
-                  </div>
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="border-b border-border text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/30">
-                        <th className="py-2.5 px-3">Fiscal Year</th>
-                        <th className="py-2.5 px-3 text-amber-600 dark:text-amber-400">
-                          Pending Quotes
-                        </th>
-                        <th className="py-2.5 px-3 text-emerald-600 dark:text-emerald-400">
-                          Approved Quotes
-                        </th>
-                        <th className="py-2.5 px-3 text-blue-600 dark:text-blue-400">
-                          Running Projects
-                        </th>
-                        <th className="py-2.5 px-3 text-purple-600 dark:text-purple-400">
-                          Finished Projects
-                        </th>
-                        <th className="py-2.5 px-3 text-right">
-                          Total Activities
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/60">
-                      {graph1List.map((item) => {
-                        const pending = Number(item.pending_count || 0);
-                        const approved = Number(item.approved_count || 0);
-                        const running = Number(item.running_project_count || 0);
-                        const finished = Number(item.finish_project_count || 0);
-                        const total = pending + approved + running + finished;
+              {/* THE YEAR-WISE COMPARISON GRAPH */}
+              <div className="h-[310px] w-full mt-6">
+                <ResponsiveContainer width="100%" height="100%">
+                  {comparisonView === "sideBySide" ? (
+                    // Side-by-Side: Metric on X-Axis, 2 Bars (This Year vs Previous Year)
+                    <BarChart
+                      data={yoyChartData}
+                      margin={{ top: 15, right: 20, left: -15, bottom: 5 }}
+                      barGap={8}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="var(--color-border)"
+                        opacity={0.7}
+                      />
+                      <XAxis
+                        dataKey="metric"
+                        stroke="var(--ink-soft)"
+                        fontSize={12}
+                        fontWeight={600}
+                        tickLine={false}
+                        axisLine={{ stroke: "var(--color-border)" }}
+                        dy={8}
+                      />
+                      <YAxis
+                        stroke="var(--ink-soft)"
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
+                        allowDecimals={false}
+                      />
+                      <Tooltip content={<YoYComparisonTooltip />} />
+                      <Legend
+                        verticalAlign="top"
+                        align="right"
+                        height={40}
+                        iconType="circle"
+                        iconSize={8}
+                        wrapperStyle={{ fontSize: 12, paddingBottom: 12 }}
+                      />
+                      <Bar
+                        dataKey={`This Year (${thisYearData.year})`}
+                        fill="#3B82F6"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={48}
+                      />
+                      <Bar
+                        dataKey={`Previous Year (${prevYearData.year})`}
+                        fill="#94A3B8"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={48}
+                      />
+                    </BarChart>
+                  ) : (
+                    // Timeline: Years on X-Axis
+                    <BarChart
+                      data={timelineChartData}
+                      margin={{ top: 15, right: 20, left: -15, bottom: 5 }}
+                      barGap={8}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        vertical={false}
+                        stroke="var(--color-border)"
+                        opacity={0.7}
+                      />
+                      <XAxis
+                        dataKey="year"
+                        stroke="var(--ink-soft)"
+                        fontSize={13}
+                        fontWeight={600}
+                        tickLine={false}
+                        axisLine={{ stroke: "var(--color-border)" }}
+                        dy={8}
+                      />
+                      <YAxis
+                        stroke="var(--ink-soft)"
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
+                        allowDecimals={false}
+                      />
+                      <Tooltip content={<TimelineTooltip />} />
+                      <Legend
+                        verticalAlign="top"
+                        align="right"
+                        height={40}
+                        iconType="circle"
+                        iconSize={8}
+                        wrapperStyle={{ fontSize: 12, paddingBottom: 12 }}
+                      />
+                      <Bar
+                        dataKey="Pending Quotations"
+                        fill="#F59E0B"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={48}
+                      />
+                      <Bar
+                        dataKey="Approved Quotations"
+                        fill="#10B981"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={48}
+                      />
+                      <Bar
+                        dataKey="Running Projects"
+                        fill="#3B82F6"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={48}
+                      />
+                      <Bar
+                        dataKey="Finished Projects"
+                        fill="#8B5CF6"
+                        radius={[6, 6, 0, 0]}
+                        maxBarSize={48}
+                      />
+                    </BarChart>
+                  )}
+                </ResponsiveContainer>
+              </div>
 
-                        return (
-                          <tr
-                            key={item.year}
-                            className="hover:bg-muted/30 transition-colors"
-                          >
-                            <td className="py-3 px-3 font-bold font-mono text-foreground flex items-center gap-1.5">
-                              <Calendar className="h-3.5 w-3.5 text-primary" />
-                              {item.year}
-                            </td>
-                            <td className="py-3 px-3 font-mono font-semibold text-foreground">
-                              {pending}
-                            </td>
-                            <td className="py-3 px-3 font-mono font-semibold text-foreground">
-                              {approved}
-                            </td>
-                            <td className="py-3 px-3 font-mono font-semibold text-foreground">
-                              {running}
-                            </td>
-                            <td className="py-3 px-3 font-mono font-semibold text-foreground">
-                              {finished}
-                            </td>
-                            <td className="py-3 px-3 font-mono font-bold text-foreground text-right">
-                              {total}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+              {/* YoY COMPARISON SUMMARY DATA TABLE */}
+              <div className="overflow-x-auto mt-6 pt-4 border-t border-border">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    This Year vs Previous Year Variance Table
+                  </span>
+                  {!prevYearData.isFromApi && (
+                    <span className="text-[11px] text-muted-foreground/80 italic">
+                      * Previous year ({prevYearData.year}) baseline: 0
+                    </span>
+                  )}
                 </div>
-              )}
+
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-border text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-muted/30">
+                      <th className="py-2.5 px-3">Metric Category</th>
+                      <th className="py-2.5 px-3 text-slate-500 dark:text-slate-400">
+                        Previous Year ({prevYearData.year})
+                      </th>
+                      <th className="py-2.5 px-3 text-primary">
+                        This Year ({thisYearData.year})
+                      </th>
+                      <th className="py-2.5 px-3">Variance (Difference)</th>
+                      <th className="py-2.5 px-3 text-right">Trend</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/60">
+                    <tr className="hover:bg-muted/30 transition-colors">
+                      <td className="py-3 px-3 font-semibold text-foreground flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-amber-500" />
+                        Pending Quotations
+                      </td>
+                      <td className="py-3 px-3 font-mono text-muted-foreground">
+                        {prevYearData.pending}
+                      </td>
+                      <td className="py-3 px-3 font-mono font-bold text-foreground">
+                        {thisYearData.pending}
+                      </td>
+                      <td className="py-3 px-3">
+                        {renderVarianceBadge(
+                          thisYearData.pending - prevYearData.pending,
+                          prevYearData.pending
+                        )}
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        {thisYearData.pending > prevYearData.pending ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            Increased <TrendingUp className="h-3 w-3" />
+                          </span>
+                        ) : thisYearData.pending < prevYearData.pending ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                            Decreased <TrendingDown className="h-3 w-3" />
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">
+                            Equal
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+
+                    <tr className="hover:bg-muted/30 transition-colors">
+                      <td className="py-3 px-3 font-semibold text-foreground flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                        Approved Quotations
+                      </td>
+                      <td className="py-3 px-3 font-mono text-muted-foreground">
+                        {prevYearData.approved}
+                      </td>
+                      <td className="py-3 px-3 font-mono font-bold text-foreground">
+                        {thisYearData.approved}
+                      </td>
+                      <td className="py-3 px-3">
+                        {renderVarianceBadge(
+                          thisYearData.approved - prevYearData.approved,
+                          prevYearData.approved
+                        )}
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        {thisYearData.approved > prevYearData.approved ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            Increased <TrendingUp className="h-3 w-3" />
+                          </span>
+                        ) : thisYearData.approved < prevYearData.approved ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                            Decreased <TrendingDown className="h-3 w-3" />
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">
+                            Equal
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+
+                    <tr className="hover:bg-muted/30 transition-colors">
+                      <td className="py-3 px-3 font-semibold text-foreground flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-blue-500" />
+                        Running Projects
+                      </td>
+                      <td className="py-3 px-3 font-mono text-muted-foreground">
+                        {prevYearData.running}
+                      </td>
+                      <td className="py-3 px-3 font-mono font-bold text-foreground">
+                        {thisYearData.running}
+                      </td>
+                      <td className="py-3 px-3">
+                        {renderVarianceBadge(
+                          thisYearData.running - prevYearData.running,
+                          prevYearData.running
+                        )}
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        {thisYearData.running > prevYearData.running ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            Increased <TrendingUp className="h-3 w-3" />
+                          </span>
+                        ) : thisYearData.running < prevYearData.running ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                            Decreased <TrendingDown className="h-3 w-3" />
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">
+                            Equal
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+
+                    <tr className="hover:bg-muted/30 transition-colors">
+                      <td className="py-3 px-3 font-semibold text-foreground flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-purple-500" />
+                        Finished Projects
+                      </td>
+                      <td className="py-3 px-3 font-mono text-muted-foreground">
+                        {prevYearData.finished}
+                      </td>
+                      <td className="py-3 px-3 font-mono font-bold text-foreground">
+                        {thisYearData.finished}
+                      </td>
+                      <td className="py-3 px-3">
+                        {renderVarianceBadge(
+                          thisYearData.finished - prevYearData.finished,
+                          prevYearData.finished
+                        )}
+                      </td>
+                      <td className="py-3 px-3 text-right">
+                        {thisYearData.finished > prevYearData.finished ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            Increased <TrendingUp className="h-3 w-3" />
+                          </span>
+                        ) : thisYearData.finished < prevYearData.finished ? (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+                            Decreased <TrendingDown className="h-3 w-3" />
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">
+                            Equal
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+
+                    {/* Total Row */}
+                    <tr className="bg-muted/20 font-bold">
+                      <td className="py-3 px-3 text-foreground">
+                        Total Activities
+                      </td>
+                      <td className="py-3 px-3 font-mono text-muted-foreground">
+                        {prevYearData.pending +
+                          prevYearData.approved +
+                          prevYearData.running +
+                          prevYearData.finished}
+                      </td>
+                      <td className="py-3 px-3 font-mono text-foreground">
+                        {thisYearData.pending +
+                          thisYearData.approved +
+                          thisYearData.running +
+                          thisYearData.finished}
+                      </td>
+                      <td className="py-3 px-3">
+                        {renderVarianceBadge(
+                          thisYearData.pending +
+                            thisYearData.approved +
+                            thisYearData.running +
+                            thisYearData.finished -
+                            (prevYearData.pending +
+                              prevYearData.approved +
+                              prevYearData.running +
+                              prevYearData.finished),
+                          prevYearData.pending +
+                            prevYearData.approved +
+                            prevYearData.running +
+                            prevYearData.finished
+                        )}
+                      </td>
+                      <td className="py-3 px-3 text-right font-mono">
+                        Summary
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* 4. SERVICE USERS BREAKDOWN (users_service & users_hide_service) */}
