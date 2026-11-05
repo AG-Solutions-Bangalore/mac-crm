@@ -77,26 +77,6 @@ const getServiceBadgeClass = (serviceName) => {
   return "badge-default";
 };
 
-// Calculate previous financial year string (e.g. "2026-27" -> "2025-26")
-const getPreviousYearStr = (yearStr) => {
-  if (!yearStr) return "2025-26";
-  const match = yearStr.match(/^(\d{4})-(\d{2,4})$/);
-  if (match) {
-    const startYear = parseInt(match[1], 10) - 1;
-    const endYear = parseInt(match[2], 10) - 1;
-    const endStr =
-      match[2].length === 2
-        ? String(endYear).padStart(2, "0")
-        : String(endYear);
-    return `${startYear}-${endStr}`;
-  }
-  const singleYear = parseInt(yearStr, 10);
-  if (!isNaN(singleYear)) {
-    return String(singleYear - 1);
-  }
-  return "2025-26";
-};
-
 // Tooltip for Year-Wise Comparison
 const YearWiseTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -157,75 +137,16 @@ const Dashboard = () => {
   const dashboardData = DData?.data || {};
   const graph1List = dashboardData?.graph1 || [];
 
-  // Determine current year and previous year purely as year numbers/strings
-  const currentYearStr = useMemo(() => {
-    if (graph1List.length > 0 && graph1List[0].year) {
-      return graph1List[0].year;
-    }
-    const curr = moment().year();
-    const nextShort = String((curr + 1) % 100).padStart(2, "0");
-    return `${curr}-${nextShort}`;
-  }, [graph1List]);
-
-  const prevYearStr = useMemo(() => {
-    return getPreviousYearStr(currentYearStr);
-  }, [currentYearStr]);
-
-  // Current year data from graph1
-  const currentYearData = useMemo(() => {
-    const found = graph1List.find((g) => g.year === currentYearStr);
-    return {
-      year: currentYearStr,
-      pending: Number(found?.pending_count || 0),
-      approved: Number(found?.approved_count || 0),
-      running: Number(found?.running_project_count || 0),
-      finished: Number(found?.finish_project_count || 0),
-    };
-  }, [graph1List, currentYearStr]);
-
-  // Previous year data from graph1 if available, otherwise baseline 0
-  const prevYearData = useMemo(() => {
-    const found = graph1List.find((g) => g.year === prevYearStr);
-    return {
-      year: prevYearStr,
-      pending: Number(found?.pending_count || 0),
-      approved: Number(found?.approved_count || 0),
-      running: Number(found?.running_project_count || 0),
-      finished: Number(found?.finish_project_count || 0),
-      isFromApi: Boolean(found),
-    };
-  }, [graph1List, prevYearStr]);
-
-  // Chart data: ONLY the years on X-Axis (e.g. "2025-26", "2026-27")
+  // Chart data: strictly and directly from API graph1 (no static fallback)
   const yearWiseChartData = useMemo(() => {
-    if (graph1List.length > 1) {
-      return graph1List.map((item) => ({
-        year: item.year, // ONLY YEAR
-        "Pending Quotations": Number(item.pending_count || 0),
-        "Approved Quotations": Number(item.approved_count || 0),
-        "Running Projects": Number(item.running_project_count || 0),
-        "Finished Projects": Number(item.finish_project_count || 0),
-      }));
-    }
-
-    // Default comparison between prevYear and currentYear showing ONLY year strings
-    return [
-      {
-        year: prevYearStr, // ONLY YEAR e.g. "2025-26"
-        "Pending Quotations": prevYearData.pending,
-        "Approved Quotations": prevYearData.approved,
-        "Running Projects": prevYearData.running,
-        "Finished Projects": prevYearData.finished,
-      },
-      {
-        year: currentYearStr, // ONLY YEAR e.g. "2026-27"
-        "Pending Quotations": currentYearData.pending,
-        "Approved Quotations": currentYearData.approved,
-        "Running Projects": currentYearData.running,
-        "Finished Projects": currentYearData.finished,
-      },
-    ];
-  }, [graph1List, prevYearStr, currentYearStr, prevYearData, currentYearData]);
+    return graph1List.map((item) => ({
+      year: item.year,
+      "Pending Quotations": Number(item.pending_count || 0),
+      "Approved Quotations": Number(item.approved_count || 0),
+      "Running Projects": Number(item.running_project_count || 0),
+      "Finished Projects": Number(item.finish_project_count || 0),
+    }));
+  }, [graph1List]);
 
   // Image URLs resolution from image_url array
   const serviceBaseUrl = useMemo(() => {
@@ -591,7 +512,7 @@ const Dashboard = () => {
 
             {/* 3. YEAR-WISE COMPARISON GRAPH (Strictly from API graph1, ONLY YEARS on X-Axis) */}
             <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+              <div className="pb-4 border-b border-border">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <div className="p-1.5 rounded-md bg-primary/10 text-primary">
@@ -602,19 +523,8 @@ const Dashboard = () => {
                     </h3>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Quotations and projects performance grouped by fiscal year
+                    
                   </p>
-                </div>
-
-                {/* Year indicator badges */}
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/30 px-3 py-1 text-xs font-semibold font-mono text-muted-foreground">
-                    {prevYearStr}
-                  </span>
-                  <span className="text-muted-foreground text-xs font-bold">vs</span>
-                  <span className="inline-flex items-center gap-1.5 rounded-lg border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold font-mono text-primary">
-                    {currentYearStr}
-                  </span>
                 </div>
               </div>
 
