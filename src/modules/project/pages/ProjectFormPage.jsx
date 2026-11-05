@@ -1864,7 +1864,7 @@ const ProjectFormPage = () => {
   );
 
   return (
-    <div className="max-w-full mx-auto px-5 pb-10">
+    <div className="max-w-full mx-auto px-2 pb-10">
       <PageHeader
         icon={FolderKanban}
         title={isEdit ? "Edit Project" : "Add Project"}

@@ -1880,7 +1880,7 @@ const QuotationFormPage = () => {
   );
 
   return (
-    <div className="max-w-full mx-auto px-5 pb-10">
+    <div className="max-w-full mx-auto px-2 pb-10">
       <PageHeader
         icon={FileText}
         title={isEdit ? "Edit Quotation" : "Add Quotation"}
