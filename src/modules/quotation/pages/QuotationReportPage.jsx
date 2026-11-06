@@ -949,17 +949,19 @@ export default function QuotationReportPage() {
               grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
             }
             .makc-bank-card {
-              flex-direction: column !important;
-              align-items: stretch !important;
+              grid-template-columns: 1fr !important;
               gap: 14px !important;
               padding: 14px !important;
             }
             .makc-bank-grid {
-              grid-template-columns: 1fr !important;
+              grid-template-columns: 1fr 1fr !important;
               gap: 10px !important;
             }
-            .makc-bank-qr {
-              align-self: center !important;
+            .makc-bank-upi-pane {
+              padding-left: 0 !important;
+              border-left: none !important;
+              border-top: 1px dashed rgba(148, 163, 184, 0.3) !important;
+              padding-top: 12px !important;
             }
             .makc-sign-grid {
               grid-template-columns: 1fr !important;
