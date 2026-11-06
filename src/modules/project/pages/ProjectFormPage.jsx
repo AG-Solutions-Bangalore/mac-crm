@@ -2094,7 +2094,7 @@ const ProjectFormPage = () => {
    
         {/* Project Items (Nested Line Items) */}
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div>
                 <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
@@ -2104,7 +2104,7 @@ const ProjectFormPage = () => {
                   Organized hierarchically by Service → Floor → Area → Products
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -2136,17 +2136,17 @@ const ProjectFormPage = () => {
               {servicesState.map((srv, srvIdx) => (
                 <div
                   key={srvIdx}
-                  className="border rounded-xl p-4 bg-slate-50/50 dark:bg-slate-900/30 dark:border-slate-800 relative"
+                  className="border rounded-xl p-3 sm:p-4 bg-slate-50/50 dark:bg-slate-900/30 dark:border-slate-800 relative"
                 >
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b dark:border-slate-800">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-4 border-b dark:border-slate-800">
                     <div
-                      className="flex items-center gap-3 w-full md:w-1/2"
+                      className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3"
                       data-error-field={`service-${srvIdx}`}
                     >
                       <span className="font-semibold text-sm bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 px-2.5 py-1 rounded-md shrink-0">
                         Service #{srvIdx + 1}
                       </span>
-                      <div className="w-full">
+                      <div className="flex-1 min-w-0 max-w-md">
                         <SelectWithAdd
                           value={srv.serviceId}
                           onChange={(opt) =>
@@ -2179,7 +2179,7 @@ const ProjectFormPage = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 self-end md:self-auto">
+                    <div className="flex items-center gap-2 justify-end shrink-0">
                       <Button
                         type="button"
                         variant="outline"
@@ -2207,17 +2207,17 @@ const ProjectFormPage = () => {
                     {srv.floors.map((flr, flrIdx) => (
                       <div
                         key={flrIdx}
-                        className="border rounded-lg p-3 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
+                        className="border rounded-lg p-2.5 sm:p-3 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"
                       >
-                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pb-3 border-b dark:border-slate-800">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-3 border-b dark:border-slate-800">
                           <div
-                            className="flex items-center gap-3 w-full md:w-1/3"
+                            className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3"
                             data-error-field={`floor-${srvIdx}-${flrIdx}`}
                           >
                             <span className="text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 rounded shrink-0">
                               Floor #{flrIdx + 1}
                             </span>
-                            <div className="w-full">
+                            <div className="flex-1 min-w-0 max-w-md">
                               <SelectWithAdd
                                 value={flr.floorId}
                                 onChange={(opt) =>
@@ -2255,7 +2255,7 @@ const ProjectFormPage = () => {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 self-end md:self-auto">
+                          <div className="flex items-center gap-2 justify-end shrink-0">
                             <Button
                               type="button"
                               variant="outline"
@@ -2284,17 +2284,17 @@ const ProjectFormPage = () => {
                           {flr.areas.map((area, areaIdx) => (
                             <div
                               key={areaIdx}
-                              className="border rounded-md p-3 bg-slate-50/70 dark:bg-slate-900/60 dark:border-slate-800/80"
+                              className="border rounded-md p-2 sm:p-3 bg-slate-50/70 dark:bg-slate-900/60 dark:border-slate-800/80"
                             >
-                              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 pb-2 border-b dark:border-slate-800">
+                              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pb-2 border-b dark:border-slate-800">
                                 <div
-                                  className="flex items-center gap-3 w-full md:w-1/3"
+                                  className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3"
                                   data-error-field={`area-${srvIdx}-${flrIdx}-${areaIdx}`}
                                 >
                                   <span className="text-[11px] font-semibold bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300 px-1.5 py-0.5 rounded shrink-0">
                                     Area #{areaIdx + 1}
                                   </span>
-                                  <div className="w-full">
+                                  <div className="flex-1 min-w-0 max-w-md">
                                     <SelectWithAdd
                                       value={area.areaId}
                                       onChange={(opt) =>
@@ -2336,7 +2336,7 @@ const ProjectFormPage = () => {
                                   </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 self-end md:self-auto">
+                                <div className="flex items-center gap-2 justify-end shrink-0">
                                   <Button
                                     type="button"
                                     variant="outline"
@@ -2372,119 +2372,126 @@ const ProjectFormPage = () => {
                                       className="p-2 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-800 space-y-2"
                                     >
                                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                      <div
-                                        className="flex-1 min-w-[200px]"
-                                        data-error-field={`product-${srvIdx}-${flrIdx}-${areaIdx}-${prodIdx}`}
-                                      >
-                                        <SelectWithAdd
-                                          value={prod.productId}
-                                          onChange={(opt) =>
-                                            handleProductSelect(
-                                              srvIdx,
-                                              flrIdx,
-                                              areaIdx,
-                                              prodIdx,
-                                              opt,
-                                              srv
-                                            )
-                                          }
-                                          options={getProductOptions(prod, srv.serviceId)}
-                                          placeholder={
-                                            srv.serviceId
-                                              ? "Select Product"
-                                              : "Select Service above first"
-                                          }
-                                          noOptionsMessage={() => emptyHint}
-                                          addLabel={isRestrictedUser ? undefined : "+ Add Product"}
-                                          renderAddLabel={
-                                            isRestrictedUser
-                                              ? undefined
-                                              : (typed) =>
-                                                  typed?.trim()
-                                                    ? `+ Add "${typed.trim()}" as Product`
-                                                    : "+ Add Product"
-                                          }
-                                          onAdd={
-                                            isRestrictedUser
-                                              ? undefined
-                                              : (typed) =>
-                                                  openProductQA(
-                                                    {
-                                                      serviceIndex: srvIdx,
-                                                      floorIndex: flrIdx,
-                                                      areaIndex,
-                                                      prodIndex,
-                                                    },
-                                                    typed,
-                                                    srv.serviceId
-                                                  )
-                                          }
-                                        />
-                                      </div>
-
-                                      <div className="w-full sm:w-28">
-                                        <Input
-                                          type="number"
-                                          placeholder="Price"
-                                          value={prod.price}
-                                          onChange={(e) =>
-                                            handleNestedFieldChange(
-                                              srvIdx,
-                                              flrIdx,
-                                              areaIdx,
-                                              prodIdx,
-                                              "price",
-                                              e.target.value
-                                            )
-                                          }
-                                          className="h-9 text-right"
-                                          min="0"
-                                        />
-                                      </div>
-
-                                      <div className="w-full sm:w-20">
-                                        <Input
-                                          type="number"
-                                          placeholder="Qty"
-                                          value={prod.quantity}
-                                          onChange={(e) =>
-                                            handleNestedFieldChange(
-                                              srvIdx,
-                                              flrIdx,
-                                              areaIdx,
-                                              prodIdx,
-                                              "quantity",
-                                              e.target.value
-                                            )
-                                          }
-                                          className="h-9 text-center"
-                                          min="1"
-                                        />
-                                      </div>
-
-                                      <div className="w-full sm:w-28 text-right font-semibold text-sm px-2 text-slate-700 dark:text-slate-300">
-                                        ₹
-                                        {(
-                                          (Number(prod.price) || 0) *
-                                          (Number(prod.quantity) || 0)
-                                        ).toLocaleString("en-IN")}
-                                      </div>
-
-                                      <div className="self-end sm:self-center">
-                                        {area.products.length > 1 && (
-                                          <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50"
-                                            onClick={() =>
-                                              removeProduct(srvIdx, flrIdx, areaIdx, prodIdx)
+                                        <div
+                                          className="w-full sm:flex-1 sm:min-w-0"
+                                          data-error-field={`product-${srvIdx}-${flrIdx}-${areaIdx}-${prodIdx}`}
+                                        >
+                                          <SelectWithAdd
+                                            value={prod.productId}
+                                            onChange={(opt) =>
+                                              handleProductSelect(
+                                                srvIdx,
+                                                flrIdx,
+                                                areaIdx,
+                                                prodIdx,
+                                                opt,
+                                                srv
+                                              )
                                             }
-                                          >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                          </Button>
-                                        )}
-                                      </div>
+                                            options={getProductOptions(prod, srv.serviceId)}
+                                            placeholder={
+                                              srv.serviceId
+                                                ? "Select Product"
+                                                : "Select Service above first"
+                                            }
+                                            noOptionsMessage={() => emptyHint}
+                                            addLabel={isRestrictedUser ? undefined : "+ Add Product"}
+                                            renderAddLabel={
+                                              isRestrictedUser
+                                                ? undefined
+                                                : (typed) =>
+                                                    typed?.trim()
+                                                      ? `+ Add "${typed.trim()}" as Product`
+                                                      : "+ Add Product"
+                                            }
+                                            onAdd={
+                                              isRestrictedUser
+                                                ? undefined
+                                                : (typed) =>
+                                                    openProductQA(
+                                                      {
+                                                        serviceIndex: srvIdx,
+                                                        floorIndex: flrIdx,
+                                                        areaIndex,
+                                                        prodIndex,
+                                                      },
+                                                      typed,
+                                                      srv.serviceId
+                                                    )
+                                            }
+                                          />
+                                        </div>
+
+                                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                                          <div className="flex-1 sm:w-28 flex items-center gap-1">
+                                            <span className="text-[10px] text-slate-500 font-medium sm:hidden shrink-0">
+                                              Rate:
+                                            </span>
+                                            <Input
+                                              type="number"
+                                              placeholder="Price"
+                                              value={prod.price}
+                                              onChange={(e) =>
+                                                handleNestedFieldChange(
+                                                  srvIdx,
+                                                  flrIdx,
+                                                  areaIdx,
+                                                  prodIdx,
+                                                  "price",
+                                                  e.target.value
+                                                )
+                                              }
+                                              className="h-9 text-right"
+                                              min="0"
+                                            />
+                                          </div>
+
+                                          <div className="w-20 sm:w-20 flex items-center gap-1">
+                                            <span className="text-[10px] text-slate-500 font-medium sm:hidden shrink-0">
+                                              Qty:
+                                            </span>
+                                            <Input
+                                              type="number"
+                                              placeholder="Qty"
+                                              value={prod.quantity}
+                                              onChange={(e) =>
+                                                handleNestedFieldChange(
+                                                  srvIdx,
+                                                  flrIdx,
+                                                  areaIdx,
+                                                  prodIdx,
+                                                  "quantity",
+                                                  e.target.value
+                                                )
+                                              }
+                                              className="h-9 text-center"
+                                              min="1"
+                                            />
+                                          </div>
+
+                                          <div className="shrink-0 sm:w-28 text-right font-semibold text-xs sm:text-sm px-1 sm:px-2 text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                            ₹{(
+                                              (Number(prod.price) || 0) *
+                                              (Number(prod.quantity) || 0)
+                                            ).toLocaleString("en-IN")}
+                                          </div>
+
+                                          <div className="shrink-0">
+                                            {area.products.length > 1 && (
+                                              <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50"
+                                                onClick={() =>
+                                                  removeProduct(srvIdx, flrIdx, areaIdx, prodIdx)
+                                                }
+                                              >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                              </Button>
+                                            )}
+                                          </div>
+                                        </div>
                                       </div>
 
                                       <Input
@@ -2911,7 +2918,7 @@ const ProjectFormPage = () => {
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex justify-end gap-2 mt-4 pt-4 border-t dark:border-slate-800">
+        <div className="flex flex-wrap justify-end gap-2 mt-4 pt-4 border-t dark:border-slate-800">
           <Button
             type="button"
             variant="outline"

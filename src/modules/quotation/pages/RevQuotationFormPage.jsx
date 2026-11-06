@@ -2136,7 +2136,7 @@ const RevQuotationFormPage = () => {
 
         {/* Nested Timeline Tree Line Items Section */}
         <Card>
-          <CardContent className="p-6">
+          <CardContent className="p-3 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b dark:border-slate-800 pb-3 mb-6">
               <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">
                 Quotation Items (Hierarchical Setup)
@@ -2188,58 +2188,60 @@ const RevQuotationFormPage = () => {
                             ref={dragProvided.innerRef}
                             {...dragProvided.draggableProps}
                             style={dragProvided.draggableProps.style}
-                            className={`p-5 border dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/20 shadow-sm space-y-4 transition-all duration-150 ${
+                            className={`p-3 sm:p-5 border dark:border-slate-800 rounded-xl bg-slate-50/50 dark:bg-slate-950/20 shadow-sm space-y-4 transition-all duration-150 ${
                               dragSnapshot.isDragging
                                 ? "shadow-2xl ring-2 ring-primary/50 bg-white dark:bg-slate-900 z-50 opacity-95"
                                 : ""
                             }`}
                           >
                             {/* Service Header */}
-                            <div className="flex items-center justify-between gap-4 border-b dark:border-slate-800 pb-3">
+                            <div className="flex items-center justify-between gap-2 sm:gap-4 border-b dark:border-slate-800 pb-3">
                               <div
-                                className="flex items-center gap-3 w-full md:w-1/3"
+                                className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3"
                                 data-error-field={`service-${serviceIndex}`}
                               >
                                 <Label className="text-sm font-bold text-slate-900 dark:text-slate-100 shrink-0">
                                   Service
                                 </Label>
-                                <SelectWithAdd
-                                  options={activeServicesForRows.map((s) => ({
-                                    value: s.id?.toString(),
-                                    label: s.service_name,
-                                  }))}
-                                  value={srv.serviceId}
-                                  onChange={(option) =>
-                                    handleNestedFieldChange(
-                                      serviceIndex,
-                                      null,
-                                      null,
-                                      null,
-                                      "serviceId",
-                                      option ? option.value : "",
-                                    )
-                                  }
-                                  placeholder="Select Service"
-                                  isLoading={servicesLoading}
-                                  addLabel={isRestrictedUser ? undefined : "Add New Service"}
-                                  renderAddLabel={
-                                    isRestrictedUser
-                                      ? undefined
-                                      : (typed) =>
-                                          typed?.trim()
-                                            ? `Add "${typed.trim()}" as New Service`
-                                            : "Add New Service"
-                                  }
-                                  onAdd={
-                                    isRestrictedUser
-                                      ? undefined
-                                      : (typed) =>
-                                          openServiceQA({ serviceIndex }, typed)
-                                  }
-                                />
+                                <div className="flex-1 min-w-0 max-w-md">
+                                  <SelectWithAdd
+                                    options={activeServicesForRows.map((s) => ({
+                                      value: s.id?.toString(),
+                                      label: s.service_name,
+                                    }))}
+                                    value={srv.serviceId}
+                                    onChange={(option) =>
+                                      handleNestedFieldChange(
+                                        serviceIndex,
+                                        null,
+                                        null,
+                                        null,
+                                        "serviceId",
+                                        option ? option.value : "",
+                                      )
+                                    }
+                                    placeholder="Select Service"
+                                    isLoading={servicesLoading}
+                                    addLabel={isRestrictedUser ? undefined : "Add New Service"}
+                                    renderAddLabel={
+                                      isRestrictedUser
+                                        ? undefined
+                                        : (typed) =>
+                                            typed?.trim()
+                                              ? `Add "${typed.trim()}" as New Service`
+                                              : "Add New Service"
+                                    }
+                                    onAdd={
+                                      isRestrictedUser
+                                        ? undefined
+                                        : (typed) =>
+                                            openServiceQA({ serviceIndex }, typed)
+                                    }
+                                  />
+                                </div>
                               </div>
 
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1 shrink-0">
                                 <div
                                   {...dragProvided.dragHandleProps}
                                   className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-grab active:cursor-grabbing rounded hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
@@ -2268,7 +2270,7 @@ const RevQuotationFormPage = () => {
                                 <div
                                   ref={floorProvided.innerRef}
                                   {...floorProvided.droppableProps}
-                                  className="relative pl-6 border-l-2 border-slate-200 dark:border-slate-800 ml-4 space-y-6"
+                                  className="relative pl-3.5 sm:pl-6 border-l-2 border-slate-200 dark:border-slate-800 ml-1.5 sm:ml-4 space-y-4 sm:space-y-6"
                                 >
                                   {srv.floors.map((floor, floorIndex) => (
                                     <Draggable
@@ -2288,20 +2290,21 @@ const RevQuotationFormPage = () => {
                                           }`}
                                         >
                                           {/* Bullet for Floor */}
-                                          <div className="absolute -left-[31px] top-1.5 w-4.5 h-4.5 rounded-full border-4 border-white dark:border-slate-900 bg-blue-600 flex items-center justify-center">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+                                          <div className="absolute -left-[22px] sm:-left-[31px] top-1.5 w-4 h-4 sm:w-4.5 sm:h-4.5 rounded-full border-4 border-white dark:border-slate-900 bg-blue-600 flex items-center justify-center">
+                                            <div className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-white"></div>
                                           </div>
 
                                           {/* Floor Header */}
-                                          <div className="flex items-center justify-between gap-4 border-b dark:border-slate-800 pb-2">
+                                          <div className="flex items-center justify-between gap-2 sm:gap-4 border-b dark:border-slate-800 pb-2">
                                             <div
-                                              className="flex items-center gap-3 w-full md:w-1/3"
+                                              className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3"
                                               data-error-field={`floor-${serviceIndex}-${floorIndex}`}
                                             >
                                               <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">
                                                 Floor
                                               </Label>
-                                              <SelectWithAdd
+                                              <div className="flex-1 min-w-0 max-w-md">
+                                                <SelectWithAdd
                                                 options={floors.map((flr) => ({
                                                   value: flr.id?.toString(),
                                                   label: flr.property_floor,
@@ -2339,9 +2342,10 @@ const RevQuotationFormPage = () => {
                                                         )
                                                 }
                                               />
-                                            </div>
+                                </div>
+                              </div>
 
-                                            <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1 shrink-0">
                                               <div
                                                 {...flrDragProvided.dragHandleProps}
                                                 className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-grab active:cursor-grabbing rounded hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
@@ -2372,7 +2376,7 @@ const RevQuotationFormPage = () => {
                                               <div
                                                 ref={areaProvided.innerRef}
                                                 {...areaProvided.droppableProps}
-                                                className="relative pl-6 border-l-2 border-dashed border-slate-200 dark:border-slate-800 ml-4 space-y-6"
+                                                className="relative pl-3.5 sm:pl-6 border-l-2 border-dashed border-slate-200 dark:border-slate-800 ml-1.5 sm:ml-4 space-y-4 sm:space-y-6"
                                               >
                                                 {floor.areas.map((area, areaIndex) => (
                                                   <Draggable
@@ -2392,20 +2396,21 @@ const RevQuotationFormPage = () => {
                                                         }`}
                                                       >
                                                         {/* Bullet for Area */}
-                                                        <div className="absolute -left-[31px] top-3.5 w-4.5 h-4.5 rounded-full border-4 border-white dark:border-slate-900 bg-amber-600 flex items-center justify-center">
-                                                          <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+                                                        <div className="absolute -left-[22px] sm:-left-[31px] top-3 sm:top-3.5 w-4 h-4 sm:w-4.5 sm:h-4.5 rounded-full border-4 border-white dark:border-slate-900 bg-amber-600 flex items-center justify-center">
+                                                          <div className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-white"></div>
                                                         </div>
 
                                                         {/* Area Header */}
-                                                        <div className="flex items-center justify-between gap-4">
+                                                        <div className="flex items-center justify-between gap-2 sm:gap-4">
                                                           <div
-                                                            className="flex items-center gap-3 w-full md:w-1/3"
+                                                            className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3"
                                                             data-error-field={`area-${serviceIndex}-${floorIndex}-${areaIndex}`}
                                                           >
                                                             <Label className="text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">
                                                               Area
                                                             </Label>
-                                                            <SelectWithAdd
+                                                            <div className="flex-1 min-w-0 max-w-md">
+                                                              <SelectWithAdd
                                                               options={areas.map((ar) => ({
                                                                 value: ar.id?.toString(),
                                                                 label: ar.property_area,
@@ -2447,9 +2452,10 @@ const RevQuotationFormPage = () => {
                                                                       )
                                                               }
                                                             />
-                                                          </div>
+                                </div>
+                              </div>
 
-                                                          <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1 shrink-0">
                                                             <div
                                                               {...areaDragProvided.dragHandleProps}
                                                               className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-grab active:cursor-grabbing rounded hover:bg-slate-200/60 dark:hover:bg-slate-800 transition-colors"
@@ -2476,7 +2482,7 @@ const RevQuotationFormPage = () => {
                                                         </div>
 
                                                         {/* Products Block */}
-                                                        <div className="pl-3 bg-white dark:bg-slate-900/40 p-3 rounded-lg border dark:border-slate-800 ml-2 space-y-2">
+                                                        <div className="pl-2 sm:pl-3 bg-white dark:bg-slate-900/40 p-2 sm:p-3 rounded-lg border dark:border-slate-800 ml-0 sm:ml-2 space-y-2">
                                                           <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 mb-1">
                                                             Products
                                                           </div>
@@ -2515,7 +2521,7 @@ const RevQuotationFormPage = () => {
                                                                           ref={prodDragProvided.innerRef}
                                                                           {...prodDragProvided.draggableProps}
                                                                           style={prodDragProvided.draggableProps.style}
-                                                                          className={`grid grid-cols-1 md:grid-cols-6 gap-3 items-center border-b dark:border-slate-800/60 pb-2 mb-2 last:border-0 last:pb-0 last:mb-0 rounded p-1 transition-all duration-150 ${
+                                                                          className={`grid grid-cols-1 md:grid-cols-6 gap-2 md:gap-3 items-center border-b dark:border-slate-800/60 pb-2 mb-2 last:border-0 last:pb-0 last:mb-0 rounded p-1 transition-all duration-150 ${
                                                                             prodDragSnapshot.isDragging
                                                                               ? "bg-white dark:bg-slate-900 shadow-xl ring-2 ring-primary/50 z-20 opacity-95"
                                                                               : "bg-transparent"
@@ -2523,7 +2529,7 @@ const RevQuotationFormPage = () => {
                                                                         >
                                                                           {/* Product select */}
                                                                           <div
-                                                                            className="col-span-3"
+                                                                            className="w-full md:col-span-3 min-w-0"
                                                                             data-error-field={`product-${serviceIndex}-${floorIndex}-${areaIndex}-${prodIndex}`}
                                                                           >
                                                                             <SelectWithAdd
@@ -2584,93 +2590,96 @@ const RevQuotationFormPage = () => {
                                                                             />
                                                                           </div>
 
-                                                                          {/* Price input */}
-                                                                          <div className="col-span-1 flex items-center gap-1">
-                                                                            <Label className="text-[10px] md:hidden shrink-0">
-                                                                              Rate:
-                                                                            </Label>
-                                                                            <Input
-                                                                              type="number"
-                                                                              value={prod.price}
-                                                                              readOnly={isRestrictedUser}
-                                                                              disabled={isRestrictedUser}
-                                                                              onChange={(e) =>
-                                                                                !isRestrictedUser &&
-                                                                                handleNestedFieldChange(
-                                                                                  serviceIndex,
-                                                                                  floorIndex,
-                                                                                  areaIndex,
-                                                                                  prodIndex,
-                                                                                  "price",
-                                                                                  e.target.value,
-                                                                                )
-                                                                              }
-                                                                              className={`h-8 text-xs bg-transparent border-slate-200 dark:border-slate-800 ${
-                                                                                isRestrictedUser ? "opacity-75 cursor-not-allowed bg-slate-50 dark:bg-slate-900" : ""
-                                                                              }`}
-                                                                              placeholder="Price"
-                                                                            />
-                                                                          </div>
-
-                                                                          {/* Quantity input */}
-                                                                          <div className="col-span-1 flex items-center gap-1">
-                                                                            <Label className="text-[10px] md:hidden shrink-0">
-                                                                              Quantity:
-                                                                            </Label>
-                                                                            <Input
-                                                                              type="number"
-                                                                              min="1"
-                                                                              value={prod.quantity}
-                                                                              onChange={(e) =>
-                                                                                handleNestedFieldChange(
-                                                                                  serviceIndex,
-                                                                                  floorIndex,
-                                                                                  areaIndex,
-                                                                                  prodIndex,
-                                                                                  "quantity",
-                                                                                  e.target.value,
-                                                                                )
-                                                                              }
-                                                                              className="h-8 text-xs bg-transparent border-slate-200 dark:border-slate-800"
-                                                                              placeholder="Qty"
-                                                                            />
-                                                                          </div>
-
-                                                                          {/* Amount & Trash */}
-                                                                          <div className="col-span-1 flex items-center justify-between pl-2">
-                                                                            <div className="flex items-center gap-1">
-                                                                              <span className="text-[10px] md:hidden text-slate-500 font-medium">
-                                                                                Amount:
-                                                                              </span>
-                                                                              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
-                                                                                ₹{rowAmount.toLocaleString("en-IN")}
-                                                                              </span>
-                                                                            </div>
-                                                                            <div className="flex items-center gap-0.5">
-                                                                              <div
-                                                                                {...prodDragProvided.dragHandleProps}
-                                                                                className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-grab active:cursor-grabbing rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                                                                                title="Drag to reorder Product"
-                                                                              >
-                                                                                <GripVertical size={16} />
-                                                                              </div>
-                                                                              <Button
-                                                                                type="button"
-                                                                                variant="ghost"
-                                                                                size="icon"
-                                                                                onClick={() =>
-                                                                                  removeProduct(
+                                                                          {/* Row with Price, Quantity, Amount and Actions (stacked on mobile, 3 cols on desktop) */}
+                                                                          <div className="w-full md:col-span-3 flex items-center gap-2 md:grid md:grid-cols-3 md:gap-3">
+                                                                            {/* Price input */}
+                                                                            <div className="flex-1 min-w-[70px] md:w-full md:col-span-1 flex items-center gap-1">
+                                                                              <Label className="text-[10px] md:hidden text-slate-500 font-medium shrink-0">
+                                                                                Rate:
+                                                                              </Label>
+                                                                              <Input
+                                                                                type="number"
+                                                                                value={prod.price}
+                                                                                readOnly={isRestrictedUser}
+                                                                                disabled={isRestrictedUser}
+                                                                                onChange={(e) =>
+                                                                                  !isRestrictedUser &&
+                                                                                  handleNestedFieldChange(
                                                                                     serviceIndex,
                                                                                     floorIndex,
                                                                                     areaIndex,
                                                                                     prodIndex,
-                                                                                    prod.id,
+                                                                                    "price",
+                                                                                    e.target.value,
                                                                                   )
                                                                                 }
-                                                                                className="text-red-500 hover:text-red-700 h-7 w-7"
-                                                                              >
-                                                                                <Trash2 size={14} />
-                                                                              </Button>
+                                                                                className={`h-8 text-xs bg-transparent border-slate-200 dark:border-slate-800 ${
+                                                                                  isRestrictedUser ? "opacity-75 cursor-not-allowed bg-slate-50 dark:bg-slate-900" : ""
+                                                                                }`}
+                                                                                placeholder="Rate"
+                                                                              />
+                                                                            </div>
+
+                                                                            {/* Quantity input */}
+                                                                            <div className="w-20 md:w-full md:col-span-1 flex items-center gap-1">
+                                                                              <Label className="text-[10px] md:hidden text-slate-500 font-medium shrink-0">
+                                                                                Qty:
+                                                                              </Label>
+                                                                              <Input
+                                                                                type="number"
+                                                                                min="1"
+                                                                                value={prod.quantity}
+                                                                                onChange={(e) =>
+                                                                                  handleNestedFieldChange(
+                                                                                    serviceIndex,
+                                                                                    floorIndex,
+                                                                                    areaIndex,
+                                                                                    prodIndex,
+                                                                                    "quantity",
+                                                                                    e.target.value,
+                                                                                  )
+                                                                                }
+                                                                                className="h-8 text-xs bg-transparent border-slate-200 dark:border-slate-800"
+                                                                                placeholder="Qty"
+                                                                              />
+                                                                            </div>
+
+                                                                            {/* Amount & Trash & Drag */}
+                                                                            <div className="shrink-0 md:w-full md:col-span-1 flex items-center justify-between md:pl-2 gap-1">
+                                                                              <div className="flex items-center gap-1">
+                                                                                <span className="text-[10px] md:hidden text-slate-500 font-medium">
+                                                                                  Amt:
+                                                                                </span>
+                                                                                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                                                                                  ₹{rowAmount.toLocaleString("en-IN")}
+                                                                                </span>
+                                                                              </div>
+                                                                              <div className="flex items-center gap-0.5 shrink-0">
+                                                                                <div
+                                                                                  {...prodDragProvided.dragHandleProps}
+                                                                                  className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-grab active:cursor-grabbing rounded hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                                                                                  title="Drag to reorder Product"
+                                                                                >
+                                                                                  <GripVertical size={16} />
+                                                                                </div>
+                                                                                <Button
+                                                                                  type="button"
+                                                                                  variant="ghost"
+                                                                                  size="icon"
+                                                                                  onClick={() =>
+                                                                                    removeProduct(
+                                                                                      serviceIndex,
+                                                                                      floorIndex,
+                                                                                      areaIndex,
+                                                                                      prodIndex,
+                                                                                      prod.id,
+                                                                                    )
+                                                                                  }
+                                                                                  className="text-red-500 hover:text-red-700 h-7 w-7"
+                                                                                >
+                                                                                  <Trash2 size={14} />
+                                                                                </Button>
+                                                                              </div>
                                                                             </div>
                                                                           </div>
 
@@ -3157,9 +3166,9 @@ const RevQuotationFormPage = () => {
 
 
               {/* Summary Row */}
-              <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-900/60 p-4 rounded-xl font-bold border dark:border-slate-800 mt-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 bg-slate-100 dark:bg-slate-900/60 p-3 sm:p-4 rounded-xl font-bold border dark:border-slate-800 mt-6">
                 <div className="text-sm text-slate-700 dark:text-slate-300">Total Items Quantity: <span className="text-slate-900 dark:text-slate-100">{totalQty}</span></div>
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                   <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
                     Hardware ₹{totalAmount.toLocaleString("en-IN")} + Fees ₹
                     {(consultancyDesignAmount + installationAmount).toLocaleString("en-IN")} − Discount ₹
@@ -3175,7 +3184,7 @@ const RevQuotationFormPage = () => {
 
    
         {/* Action Buttons */}
-        <div className="flex justify-end gap-2 mt-4 pt-4 border-t dark:border-slate-800">
+        <div className="flex flex-wrap justify-end gap-2 mt-4 pt-4 border-t dark:border-slate-800">
           <Button
             type="button"
             variant="outline"

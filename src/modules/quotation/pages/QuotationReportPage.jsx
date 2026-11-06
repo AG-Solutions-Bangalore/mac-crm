@@ -814,6 +814,244 @@ export default function QuotationReportPage() {
           .makc-compact-view table {
             width: 100%;
           }
+
+          /* ── On-screen mobile responsiveness (print output untouched) ── */
+          @media screen and (max-width: 767px) {
+            .quotation-report-root {
+              padding: 8px !important;
+            }
+            .makc-print-wrapper {
+              padding: 8px 0 !important;
+              row-gap: 16px !important;
+            }
+
+            /* Toolbar */
+            .makc-report-toolbar {
+              position: static !important;
+              padding: 10px !important;
+            }
+            .makc-report-toolbar-actions {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              width: 100% !important;
+              gap: 6px !important;
+            }
+            .makc-report-view-switcher {
+              grid-column: 1 / -1 !important;
+              width: 100% !important;
+              margin-right: 0 !important;
+            }
+            .makc-report-view-switcher button {
+              flex: 1 1 0 !important;
+              min-width: 0 !important;
+              padding-left: 6px !important;
+              padding-right: 6px !important;
+              font-size: 11px !important;
+            }
+            .makc-report-action-btn {
+              width: 100% !important;
+              min-width: 0 !important;
+              padding-left: 8px !important;
+              padding-right: 8px !important;
+              font-size: 11.5px !important;
+            }
+            .makc-report-print-btn {
+              grid-column: 1 / -1 !important;
+            }
+
+            /* Cover page */
+            .makc-cover-page {
+              height: auto !important;
+              max-height: none !important;
+              min-height: 0 !important;
+            }
+            .makc-cover-header {
+              padding: 12px 16px 4px !important;
+              gap: 10px !important;
+            }
+            .makc-cover-header > img {
+              height: 34px !important;
+            }
+            .makc-iso-plate {
+              width: 58px !important;
+              height: 58px !important;
+            }
+            .makc-cover-hero {
+              padding: 12px 16px 0 !important;
+            }
+            .makc-cover-title {
+              font-size: 26px !important;
+            }
+            .makc-cover-client {
+              font-size: 24px !important;
+            }
+            .makc-cover-badges {
+              flex-wrap: wrap !important;
+              gap: 6px !important;
+            }
+            .makc-caption-card {
+              padding: 12px 14px !important;
+            }
+            .makc-cover-footer {
+              padding: 8px 16px 16px !important;
+            }
+            .makc-cover-services {
+              grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            }
+            .makc-cover-meta {
+              flex-direction: column !important;
+              align-items: stretch !important;
+              gap: 14px !important;
+              padding: 14px !important;
+            }
+            .makc-cover-meta-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 10px 14px !important;
+            }
+            .makc-cover-meta-divider {
+              width: 100% !important;
+              height: 1px !important;
+              margin: 0 !important;
+            }
+            .makc-cover-prepared {
+              text-align: left !important;
+            }
+
+            /* Presentation document */
+            .makc-page-dynamic {
+              min-height: 0 !important;
+            }
+            .makc-doc-header {
+              padding: 14px 16px 10px !important;
+              flex-wrap: wrap !important;
+              align-items: flex-start !important;
+              gap: 10px !important;
+            }
+            .makc-doc-header img {
+              height: 38px !important;
+            }
+            .makc-doc-content {
+              padding: 14px 12px !important;
+              gap: 16px !important;
+            }
+            .makc-doc-table-wrap {
+              width: 100% !important;
+              overflow-x: auto !important;
+              -webkit-overflow-scrolling: touch;
+            }
+            .makc-doc-table-wrap table {
+              min-width: 680px;
+            }
+            .makc-summary-grid {
+              grid-template-columns: 1fr !important;
+            }
+            .makc-milestones-grid {
+              grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
+            }
+            .makc-bank-card {
+              grid-template-columns: 1fr !important;
+              gap: 14px !important;
+              padding: 14px !important;
+            }
+            .makc-bank-grid {
+              grid-template-columns: 1fr 1fr !important;
+              gap: 10px !important;
+            }
+            .makc-bank-upi-pane {
+              padding-left: 0 !important;
+              border-left: none !important;
+              border-top: 1px dashed rgba(148, 163, 184, 0.3) !important;
+              padding-top: 12px !important;
+            }
+            .makc-sign-grid {
+              grid-template-columns: 1fr !important;
+              gap: 24px !important;
+              padding-top: 16px !important;
+            }
+            .makc-sign-client {
+              text-align: left !important;
+            }
+            .makc-sign-client > div {
+              margin-left: 0 !important;
+            }
+
+            /* About page */
+            .makc-about-why-page {
+              height: auto !important;
+              max-height: none !important;
+              min-height: 0 !important;
+            }
+            .makc-about-header {
+              padding: 14px 16px 8px !important;
+              flex-wrap: wrap !important;
+              gap: 10px !important;
+            }
+            .makc-about-header h2 {
+              font-size: 17px !important;
+            }
+            .makc-about-body {
+              padding: 10px 16px !important;
+              gap: 12px !important;
+            }
+            .makc-about-hero {
+              height: 140px !important;
+            }
+            .makc-about-why-grid {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+            .makc-about-awards-grid {
+              grid-template-columns: 1fr !important;
+            }
+            .makc-about-footer,
+            .makc-about-footer2 {
+              padding: 10px 16px !important;
+              flex-wrap: wrap !important;
+              gap: 8px !important;
+            }
+            .makc-about-footer2 > div {
+              flex-wrap: wrap !important;
+              gap: 6px 14px !important;
+            }
+
+            /* Compact data table */
+            .makc-compact-view {
+              padding: 12px !important;
+            }
+            .makc-compact-metrics {
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              gap: 10px !important;
+            }
+            .makc-compact-metrics h3 {
+              font-size: 18px !important;
+            }
+            .makc-compact-table {
+              min-width: 900px;
+            }
+          }
+
+          @media screen and (max-width: 420px) {
+            .makc-cover-title {
+              font-size: 23px !important;
+            }
+            .makc-cover-client {
+              font-size: 21px !important;
+            }
+            .makc-cover-services {
+              grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            }
+            .makc-cover-meta-grid {
+              grid-template-columns: 1fr !important;
+            }
+            .makc-report-view-switcher button {
+              font-size: 10px !important;
+            }
+            .makc-report-action-btn {
+              font-size: 10.5px !important;
+            }
+            .makc-about-why-grid {
+              grid-template-columns: 1fr !important;
+            }
+          }
         `}
       </style>
 

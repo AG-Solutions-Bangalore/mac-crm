@@ -60,8 +60,11 @@ export default function TermsPage({ clientName, contactPhone, contactEmail }) {
           <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-xs text-slate-300">
             <div><span className="text-slate-400">Account Name:</span> <strong className="text-white">MAKc Automation and Solutions LLP</strong></div>
             <div><span className="text-slate-400">Bank Name:</span> <strong className="text-white">ICICI Bank</strong></div>
-            <div><span className="text-slate-400">Account Number:</span> <strong className="text-sky-400 font-mono">777705435168</strong></div>
-            <div><span className="text-slate-400">IFSC Code:</span> <strong className="text-sky-400 font-mono">ICIC0000561</strong></div>
+            <div><span className="text-slate-400">Account Number:</span> <strong className="text-sky-400 font-mono">736505000019</strong></div>
+            <div><span className="text-slate-400">IFSC Code:</span> <strong className="text-sky-400 font-mono">ICIC0007365</strong></div>
+            <div className="col-span-2 pt-1 border-t border-slate-800/80 mt-1">
+              <span className="text-slate-400">UPI ID:</span> <strong className="text-sky-400 font-mono ml-1">makcautomationandsolutionsllp.9324226077.ibz@icici</strong>
+            </div>
           </div>
         </div>
       </div>

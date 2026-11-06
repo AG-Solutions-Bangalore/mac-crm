@@ -1,5 +1,5 @@
 import React from "react";
-import { MapPin, Phone, Mail, Home, Layers } from "lucide-react";
+import { MapPin, Phone, Mail, Home, Layers ,Building2, Smartphone  } from "lucide-react";
 import logoImg from "@/assets/logo.png";
 
 // ─── Shared font — ui-sans-serif on every text in this document ─────────────
@@ -141,42 +141,6 @@ function FloorSectionHeader({ floorName, colSpan = 8 }) {
 }
 
 
-// ─── Mock QR (placeholder until the real UPI QR asset is provided) ─────────
-// Deterministic pseudo-random modules + standard finder squares, inline SVG
-// so it renders offline and prints reliably.
-function MockQR({ size = 104 }) {
-  const N = 25;
-  const inFinder = (x, y) =>
-    (x < 8 && y < 8) || (x >= N - 8 && y < 8) || (x < 8 && y >= N - 8);
-  let seed = 42;
-  const rnd = () => {
-    seed = (seed * 1664525 + 1013904223) >>> 0;
-    return seed / 4294967296;
-  };
-  const cells = [];
-  for (let y = 0; y < N; y++) {
-    for (let x = 0; x < N; x++) {
-      if (!inFinder(x, y) && rnd() > 0.52) cells.push([x, y]);
-    }
-  }
-  const finder = (ox, oy) => (
-    <g key={`${ox}-${oy}`}>
-      <rect x={ox} y={oy} width={7} height={7} fill="#0f172a" />
-      <rect x={ox + 1} y={oy + 1} width={5} height={5} fill="#ffffff" />
-      <rect x={ox + 2} y={oy + 2} width={3} height={3} fill="#0f172a" />
-    </g>
-  );
-  return (
-    <svg width={size} height={size} viewBox={`-1 -1 ${N + 2} ${N + 2}`} style={{ display: "block", background: "#ffffff", borderRadius: "8px" }}>
-      {cells.map(([x, y]) => (
-        <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill="#0f172a" />
-      ))}
-      {finder(0, 0)}
-      {finder(N - 7, 0)}
-      {finder(0, N - 7)}
-    </svg>
-  );
-}
 
 export default function DynamicProposalDocument({
   items,
@@ -291,6 +255,9 @@ export default function DynamicProposalDocument({
     bankLabelText: isLight ? "#64748b" : "#94a3b8",
     bankValText: isLight ? "#0f172a" : "#f8fafc",
     bankMonoText: isLight ? "#0284c7" : "#38bdf8",
+    bankSubCardBg: isLight ? "rgba(255,255,255,0.85)" : "rgba(10,16,28,0.7)",
+    bankSubCardBorder: isLight ? "1px solid #bae6fd" : "1px solid rgba(56,189,248,0.25)",
+    bankDivider: isLight ? "1px solid #bae6fd" : "1px solid rgba(56,189,248,0.25)",
     signLabelText: isLight ? "#64748b" : "#94a3b8",
     signNameText: isLight ? "#0f172a" : "#f8fafc",
     signLineBorder: isLight ? "2px solid #0284c7" : "2px solid rgba(56,189,248,0.4)",
@@ -317,6 +284,7 @@ export default function DynamicProposalDocument({
       <style>{`.makc-page-dynamic, .makc-page-dynamic * { font-family: ${FONT} !important; }`}</style>
       {/* ─── HEADER ─── */}
       <div
+        className="makc-doc-header"
         style={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
           padding: "20px 36px 14px",
@@ -346,7 +314,7 @@ export default function DynamicProposalDocument({
       </div>
 
       {/* ─── MAIN CONTENT ─── */}
-      <div style={{ padding: "20px 36px", display: "flex", flexDirection: "column", gap: "18px" }}>
+      <div className="makc-doc-content" style={{ padding: "20px 36px", display: "flex", flexDirection: "column", gap: "18px" }}>
 
         {/* ── SECTION 1: Itemized Scope Schedule ── */}
         <div>
@@ -392,7 +360,7 @@ export default function DynamicProposalDocument({
 
                   {/* Fluid table — fills the section width with wrapping text,
                     so no per-section scrollbar is needed on any screen size */}
-                  <div>
+                  <div className="makc-doc-table-wrap">
                     <table className="makc-proposal-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
                       <thead style={{ background: "#eaf0f7" }}>
                         <tr>
@@ -533,6 +501,7 @@ export default function DynamicProposalDocument({
               }}
             >
               <div
+                className="makc-summary-grid"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr 1fr",
@@ -627,6 +596,7 @@ export default function DynamicProposalDocument({
           <SectionHeading number="02" title="Payment Milestones" subtitle="Structured payment schedule for seamless project execution" isLight={isLight} />
 
           <div
+            className="makc-milestones-grid"
             style={{
               display: "grid",
               gridTemplateColumns: `repeat(${Math.max(paymentRows.length, 1)}, minmax(0, 1fr))`,
@@ -657,58 +627,158 @@ export default function DynamicProposalDocument({
 
         {/* ── SECTION 3: Bank Details ── */}
         <div>
-          <SectionHeading number="03" title="Bank Transfer Details" subtitle="NEFT / RTGS / IMPS payment information" isLight={isLight} />
+          <SectionHeading number="03" title="Bank Transfer Details" subtitle="NEFT / RTGS / IMPS & UPI payment information" isLight={isLight} />
 
           <div
-            className="break-inside-avoid"
+            className="break-inside-avoid makc-bank-card"
             style={{
               background: t.bankCardBg,
               border: t.bankCardBorder,
-              borderRadius: "12px", padding: "14px 18px",
-              display: "flex", alignItems: "center", gap: "20px",
+              borderRadius: "12px",
+              padding: "16px 20px",
+              display: "grid",
+              gridTemplateColumns: "1.15fr 0.85fr",
+              gap: "24px",
               boxShadow: t.cardShadow,
             }}
           >
-            <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 28px" }}>
-              {[
-                { label: "Account Name", value: "MAKc Automation and Solutions LLP", mono: false },
-                { label: "Bank Name", value: "ICICI Bank", mono: false },
-                { label: "Account Number", value: "777705435168", mono: true },
-                { label: "IFSC Code", value: "ICIC0000561", mono: true },
-              ].map((f, i) => (
-                <div key={i} style={{ display: "flex", flexDirection: "column" }}>
+            {/* Left Column: Direct Bank Transfer */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <Building2 style={{ width: "14px", height: "14px", color: t.bankMonoText }} />
+                <span
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: 800,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.07em",
+                    color: t.bankValText,
+                  }}
+                >
+                  Direct Bank Transfer (NEFT / RTGS / IMPS)
+                </span>
+              </div>
+
+              <div
+                className="makc-bank-grid"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "10px 18px",
+                }}
+              >
+                <div style={{ display: "flex", flexDirection: "column" }}>
                   <span style={{ fontSize: "8px", color: t.bankLabelText, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, marginBottom: "2px" }}>
-                    {f.label}
+                    Account Name
+                  </span>
+                  <span style={{ fontSize: "11px", fontWeight: 800, color: t.bankValText }}>
+                    MAKc Automation and Solutions LLP
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: "8px", color: t.bankLabelText, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, marginBottom: "2px" }}>
+                    Bank Name
+                  </span>
+                  <span style={{ fontSize: "11px", fontWeight: 800, color: t.bankValText }}>
+                    ICICI Bank
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: "8px", color: t.bankLabelText, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, marginBottom: "2px" }}>
+                    Account Number
+                  </span>
+                  <span style={{ fontSize: "13px", fontWeight: 800, fontFamily: FONT, color: t.bankMonoText, letterSpacing: "0.04em" }}>
+                    736505000019
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontSize: "8px", color: t.bankLabelText, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, marginBottom: "2px" }}>
+                    IFSC Code
+                  </span>
+                  <span style={{ fontSize: "13px", fontWeight: 800, fontFamily: FONT, color: t.bankMonoText, letterSpacing: "0.04em" }}>
+                    ICIC0007365
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: UPI & Payment Note */}
+            <div
+              className="makc-bank-upi-pane"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                paddingLeft: "20px",
+                borderLeft: t.bankDivider,
+                gap: "10px",
+              }}
+            >
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+                  <Smartphone style={{ width: "14px", height: "14px", color: t.bankMonoText }} />
+                  <span
+                    style={{
+                      fontSize: "10px",
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.07em",
+                      color: t.bankValText,
+                    }}
+                  >
+                    UPI &amp; Instant Payment
+                  </span>
+                </div>
+
+                {/* Highlighted UPI Box */}
+                <div
+                  style={{
+                    background: t.bankSubCardBg,
+                    border: t.bankSubCardBorder,
+                    borderRadius: "8px",
+                    padding: "8px 12px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "2px",
+                  }}
+                >
+                  <span style={{ fontSize: "7.5px", color: t.bankLabelText, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>
+                    UPI VPA ID
                   </span>
                   <span
                     style={{
-                      fontSize: f.mono ? "12px" : "10.5px",
+                      fontSize: "11px",
                       fontWeight: 800,
                       fontFamily: FONT,
-                      color: f.mono ? t.bankMonoText : t.bankValText,
-                      letterSpacing: f.mono ? "0.06em" : 0,
+                      color: t.bankMonoText,
+                      letterSpacing: "0.02em",
+                      wordBreak: "break-all",
                     }}
                   >
-                    {f.value}
+                    makcautomationandsolutionsllp.9324226077.ibz@icici
                   </span>
                 </div>
-              ))}
-            </div>
-            {/* Mock UPI QR — swap MockQR with the real QR image when provided */}
-            <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
-              <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "6px" }}>
-                <MockQR size={104} />
               </div>
-              <span style={{ fontSize: "8.5px", fontWeight: 800, color: t.bankValText, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                Scan to Pay · UPI
-              </span>
+
+              {/* Supported apps & verification tip */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
+                <span style={{ fontSize: "8px", color: t.bankLabelText, fontWeight: 600, letterSpacing: "0.02em" }}>
+                  Accepted on all UPI apps: <strong style={{ color: t.bankValText }}>GPay · PhonePe · Paytm · BHIM</strong>
+                </span>
+                <span style={{ fontSize: "8px", color: t.notesText, fontStyle: "italic", lineHeight: 1.3 }}>
+                  Please share transaction reference / UTR upon transfer for swift booking confirmation.
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* ── Signature Block ── */}
         <div
-          className="break-inside-avoid"
+          className="break-inside-avoid makc-sign-grid"
           style={{
             paddingTop: "28px",
             paddingBottom: "12px",
@@ -730,7 +800,7 @@ export default function DynamicProposalDocument({
           </div>
 
           {/* Client Acceptance */}
-          <div style={{ textAlign: "right" }}>
+          <div className="makc-sign-client" style={{ textAlign: "right" }}>
             <p style={{ fontSize: "8.5px", color: t.signLabelText, textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 4px", fontWeight: 600 }}>
               Client Acceptance Signature
             </p>

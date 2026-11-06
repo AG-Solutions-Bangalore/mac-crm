@@ -54,6 +54,7 @@ export default function AboutWhyPage({ heroImage, clientName, contactPhone, cont
       <style>{`.makc-page, .makc-page * { font-family: ${FONT} !important; }`}</style>
       {/* ─── HEADER ─── */}
       <div
+        className="makc-about-header"
         style={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
           padding: "16px 32px 10px",
@@ -82,6 +83,7 @@ export default function AboutWhyPage({ heroImage, clientName, contactPhone, cont
 
       {/* ─── BODY (Stretches nicely to fill A4) ─── */}
       <div
+        className="makc-about-body"
         style={{
           flex: 1,
           display: "flex",
@@ -119,6 +121,7 @@ export default function AboutWhyPage({ heroImage, clientName, contactPhone, cont
 
         {/* Hero image showcase */}
         <div
+          className="makc-about-hero"
           style={{
             position: "relative", borderRadius: "12px", overflow: "hidden",
             border: isLight ? "1px solid #cbd5e1" : "1px solid rgba(148,163,184,0.15)", height: "155px",
@@ -146,7 +149,7 @@ export default function AboutWhyPage({ heroImage, clientName, contactPhone, cont
         </div>
 
         {/* Why MAKc grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+        <div className="makc-about-why-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
           {WHY_ITEMS.map((item, i) => {
             const Icon = item.icon;
             return (
@@ -180,7 +183,7 @@ export default function AboutWhyPage({ heroImage, clientName, contactPhone, cont
             </p>
             <div style={{ flex: 1, height: "1px", background: isLight ? "#e2e8f0" : "rgba(148,163,184,0.15)" }} />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+          <div className="makc-about-awards-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
             {AWARDS.map((awd, i) => (
               <div
                 key={i}
@@ -205,6 +208,7 @@ export default function AboutWhyPage({ heroImage, clientName, contactPhone, cont
 
       {/* ─── FOOTER ─── */}
       <div
+        className="makc-about-footer"
         style={{
           padding: "6px 32px",
           display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -217,6 +221,7 @@ export default function AboutWhyPage({ heroImage, clientName, contactPhone, cont
 
       {/* ─── FOOTER 2 ─── */}
       <div
+        className="makc-about-footer2"
         style={{
           padding: "8px 32px",
           borderTop: "1px solid #e2e8f0",

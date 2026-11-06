@@ -128,6 +128,7 @@ export default function CoverPage({
 
       {/* ── HEADER (transparent — full-bleed photo behind logos) ── */}
       <div
+        className="makc-cover-header"
         style={{
           position: "relative", zIndex: 2,
           display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -171,6 +172,7 @@ export default function CoverPage({
 
       {/* ── HERO TEXT (dark text over white veil, photo full-bleed behind) ── */}
       <div
+        className="makc-cover-hero"
         style={{
           position: "relative", zIndex: 2,
           paddingTop: "14px", paddingLeft: PAGE_PX, paddingRight: PAGE_PX, paddingBottom: 0,
@@ -179,6 +181,7 @@ export default function CoverPage({
         }}
       >
         <div
+          className="makc-cover-badges"
           style={{
             display: "inline-flex", alignItems: "center", gap: "8px",
             width: "fit-content", marginBottom: "10px",
@@ -213,6 +216,7 @@ export default function CoverPage({
         </div>
 
         <h1
+          className="makc-cover-title"
           style={{
             fontSize: "34px", fontWeight: 900, lineHeight: 1.08,
             letterSpacing: "-0.02em", margin: "0 0 8px",
@@ -255,7 +259,7 @@ export default function CoverPage({
           >
             Exclusively Prepared For
           </p>
-          <p style={{ fontSize: "32px", fontWeight: 900, color: "#0b1526", margin: 0, letterSpacing: "-0.01em", lineHeight: 1.15 }}>
+          <p className="makc-cover-client" style={{ fontSize: "32px", fontWeight: 900, color: "#0b1526", margin: 0, letterSpacing: "-0.01em", lineHeight: 1.15 }}>
             {clientName}
           </p>
         </div>
@@ -321,8 +325,8 @@ export default function CoverPage({
       </div>
 
       {/* ── FOOTER WRAPPER: SERVICE PILLS + METADATA CARD (solid white, below hero) ── */}
-      <div style={{ position: "relative", zIndex: 2, paddingTop: "6px", paddingLeft: PAGE_PX, paddingRight: PAGE_PX, paddingBottom: "16px", boxSizing: "border-box", width: "100%", background: "#ffffff", marginTop: "auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "6px", marginBottom: "10px" }}>
+      <div className="makc-cover-footer" style={{ position: "relative", zIndex: 2, paddingTop: "6px", paddingLeft: PAGE_PX, paddingRight: PAGE_PX, paddingBottom: "16px", boxSizing: "border-box", width: "100%", background: "#ffffff", marginTop: "auto" }}>
+        <div className="makc-cover-services" style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "6px", marginBottom: "10px" }}>
           {SERVICES.map((srv, i) => {
             const Icon = srv.icon;
             return (
@@ -356,6 +360,7 @@ export default function CoverPage({
 
         {/* Metadata Card — Client / Client Contact / Property Type / Ref / Date / Prepared By */}
         <div
+          className="makc-cover-meta"
           style={{
             background: "#f8fafc",
             border: "1px solid #cbd5e1",
@@ -365,7 +370,7 @@ export default function CoverPage({
             boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
           }}
         >
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px 18px", flex: 1 }}>
+          <div className="makc-cover-meta-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px 18px", flex: 1 }}>
             {[
               { label: "Client", value: clientName },
               { label: "Client Contact", value: clientPhone || "-" },
@@ -389,9 +394,9 @@ export default function CoverPage({
             ))}
           </div>
 
-          <div style={{ width: "1px", height: "54px", background: "#cbd5e1", margin: "0 18px" }} />
+          <div className="makc-cover-meta-divider" style={{ width: "1px", height: "54px", background: "#cbd5e1", margin: "0 18px" }} />
 
-          <div style={{ textAlign: "right", flexShrink: 0 }}>
+          <div className="makc-cover-prepared" style={{ textAlign: "right", flexShrink: 0 }}>
             <span style={{ fontSize: "10.5px", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.07em", display: "block", fontWeight: 700 }}>
               Prepared By
             </span>
