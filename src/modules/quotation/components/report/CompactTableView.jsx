@@ -77,7 +77,7 @@ export default function CompactTableView({
       {/* Enforce ui-sans-serif on every text in this view */}
       <style>{`.makc-compact-view, .makc-compact-view * { font-family: ${FONT} !important; }`}</style>
       {/* Metric Cards (screen only — hidden in print) */}
-      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-6 quotation-no-print">
+      <div className="makc-compact-metrics grid gap-4 md:grid-cols-3 xl:grid-cols-6 quotation-no-print">
         <Card
           className="border shadow-sm"
           style={{ background: LIGHT.cardBg, borderColor: LIGHT.cardBorder, color: LIGHT.pageText }}

@@ -317,6 +317,7 @@ export default function DynamicProposalDocument({
       <style>{`.makc-page-dynamic, .makc-page-dynamic * { font-family: ${FONT} !important; }`}</style>
       {/* ─── HEADER ─── */}
       <div
+        className="makc-doc-header"
         style={{
           display: "flex", justifyContent: "space-between", alignItems: "center",
           padding: "20px 36px 14px",
@@ -346,7 +347,7 @@ export default function DynamicProposalDocument({
       </div>
 
       {/* ─── MAIN CONTENT ─── */}
-      <div style={{ padding: "20px 36px", display: "flex", flexDirection: "column", gap: "18px" }}>
+      <div className="makc-doc-content" style={{ padding: "20px 36px", display: "flex", flexDirection: "column", gap: "18px" }}>
 
         {/* ── SECTION 1: Itemized Scope Schedule ── */}
         <div>
@@ -392,7 +393,7 @@ export default function DynamicProposalDocument({
 
                   {/* Fluid table — fills the section width with wrapping text,
                     so no per-section scrollbar is needed on any screen size */}
-                  <div>
+                  <div className="makc-doc-table-wrap">
                     <table className="makc-proposal-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
                       <thead style={{ background: "#eaf0f7" }}>
                         <tr>
@@ -533,6 +534,7 @@ export default function DynamicProposalDocument({
               }}
             >
               <div
+                className="makc-summary-grid"
                 style={{
                   display: "grid",
                   gridTemplateColumns: "1fr 1fr 1fr",
@@ -627,6 +629,7 @@ export default function DynamicProposalDocument({
           <SectionHeading number="02" title="Payment Milestones" subtitle="Structured payment schedule for seamless project execution" isLight={isLight} />
 
           <div
+            className="makc-milestones-grid"
             style={{
               display: "grid",
               gridTemplateColumns: `repeat(${Math.max(paymentRows.length, 1)}, minmax(0, 1fr))`,
@@ -660,7 +663,7 @@ export default function DynamicProposalDocument({
           <SectionHeading number="03" title="Bank Transfer Details" subtitle="NEFT / RTGS / IMPS payment information" isLight={isLight} />
 
           <div
-            className="break-inside-avoid"
+            className="break-inside-avoid makc-bank-card"
             style={{
               background: t.bankCardBg,
               border: t.bankCardBorder,
@@ -669,24 +672,26 @@ export default function DynamicProposalDocument({
               boxShadow: t.cardShadow,
             }}
           >
-            <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 28px" }}>
+            <div className="makc-bank-grid" style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 28px" }}>
               {[
                 { label: "Account Name", value: "MAKc Automation and Solutions LLP", mono: false },
                 { label: "Bank Name", value: "ICICI Bank", mono: false },
-                { label: "Account Number", value: "777705435168", mono: true },
-                { label: "IFSC Code", value: "ICIC0000561", mono: true },
+                { label: "Account Number", value: "736505000019", mono: true },
+                { label: "IFSC Code", value: "ICIC0007365", mono: true },
+                { label: "UPI ID", value: "makcautomationandsolutionsllp.9324226077.ibz@icici", mono: true, span2: true },
               ].map((f, i) => (
-                <div key={i} style={{ display: "flex", flexDirection: "column" }}>
+                <div key={i} style={{ display: "flex", flexDirection: "column", gridColumn: f.span2 ? "span 2" : "span 1" }}>
                   <span style={{ fontSize: "8px", color: t.bankLabelText, textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 600, marginBottom: "2px" }}>
                     {f.label}
                   </span>
                   <span
                     style={{
-                      fontSize: f.mono ? "12px" : "10.5px",
+                      fontSize: f.mono ? (f.span2 ? "10.5px" : "12px") : "10.5px",
                       fontWeight: 800,
                       fontFamily: FONT,
                       color: f.mono ? t.bankMonoText : t.bankValText,
-                      letterSpacing: f.mono ? "0.06em" : 0,
+                      letterSpacing: f.mono ? "0.04em" : 0,
+                      wordBreak: f.span2 ? "break-all" : "normal",
                     }}
                   >
                     {f.value}
@@ -695,12 +700,15 @@ export default function DynamicProposalDocument({
               ))}
             </div>
             {/* Mock UPI QR — swap MockQR with the real QR image when provided */}
-            <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+            <div className="makc-bank-qr" style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
               <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "6px" }}>
                 <MockQR size={104} />
               </div>
               <span style={{ fontSize: "8.5px", fontWeight: 800, color: t.bankValText, letterSpacing: "0.06em", textTransform: "uppercase" }}>
                 Scan to Pay · UPI
+              </span>
+              <span style={{ fontSize: "7.5px", fontWeight: 600, color: t.bankLabelText, maxWidth: "120px", textAlign: "center", wordBreak: "break-all" }}>
+                makcautomationandsolutionsllp.9324226077.ibz@icici
               </span>
             </div>
           </div>
@@ -708,7 +716,7 @@ export default function DynamicProposalDocument({
 
         {/* ── Signature Block ── */}
         <div
-          className="break-inside-avoid"
+          className="break-inside-avoid makc-sign-grid"
           style={{
             paddingTop: "28px",
             paddingBottom: "12px",
@@ -730,7 +738,7 @@ export default function DynamicProposalDocument({
           </div>
 
           {/* Client Acceptance */}
-          <div style={{ textAlign: "right" }}>
+          <div className="makc-sign-client" style={{ textAlign: "right" }}>
             <p style={{ fontSize: "8.5px", color: t.signLabelText, textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 4px", fontWeight: 600 }}>
               Client Acceptance Signature
             </p>

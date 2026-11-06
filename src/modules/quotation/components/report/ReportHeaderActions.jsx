@@ -22,7 +22,7 @@ export default function ReportHeaderActions({
   onPrintNoPrice,
 }) {
   return (
-    <div className="quotation-no-print flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-card text-card-foreground border border-border p-3 md:p-4 rounded-xl shadow-md sticky top-0 z-auto">
+    <div className="makc-report-toolbar quotation-no-print flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-card text-card-foreground border border-border p-3 md:p-4 rounded-xl shadow-md sticky top-0 z-auto">
       {/* Title & Back Button */}
       <div className="flex items-center gap-3">
         <Button
@@ -41,9 +41,9 @@ export default function ReportHeaderActions({
       </div>
 
       {/* View switcher + Export Excel / Print-Save PDF actions */}
-      <div className="flex flex-wrap items-center gap-1.5 md:flex-nowrap">
+      <div className="makc-report-toolbar-actions flex flex-wrap items-center gap-1.5 md:flex-nowrap">
         {/* Tab View Switcher */}
-        <div className="bg-muted p-1 rounded-lg border border-border flex items-center mr-1">
+        <div className="makc-report-view-switcher bg-muted p-1 rounded-lg border border-border flex items-center mr-1">
           <Button
             variant="ghost"
             size="sm"
@@ -73,7 +73,7 @@ export default function ReportHeaderActions({
           variant="outline"
           size="sm"
           onClick={onExportExcel}
-          className="h-[46px] font-medium bg-background text-foreground border-border hover:bg-muted"
+          className="makc-report-action-btn h-[46px] font-medium bg-background text-foreground border-border hover:bg-muted"
         >
           <Download className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           Export Excel
@@ -84,7 +84,7 @@ export default function ReportHeaderActions({
           size="sm"
           onClick={onPrintNoPrice}
           title="Print / save a PDF without any prices or the net project cost"
-          className="h-[46px] font-medium bg-background text-foreground border-border hover:bg-muted"
+          className="makc-report-action-btn h-[46px] font-medium bg-background text-foreground border-border hover:bg-muted"
         >
           <FileText className="mr-2 h-4 w-4 text-sky-500" />
           PDF (No Price)
@@ -94,7 +94,7 @@ export default function ReportHeaderActions({
           variant="default"
           size="sm"
           onClick={onPrint}
-          className="h-[46px] bg-sky-600 hover:bg-sky-500 text-white font-semibold shadow-sm border-none"
+          className="makc-report-action-btn makc-report-print-btn h-[46px] bg-sky-600 hover:bg-sky-500 text-white font-semibold shadow-sm border-none"
         >
           <Printer className="mr-2 h-4 w-4" />
           Print / Save PDF
