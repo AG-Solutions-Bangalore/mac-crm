@@ -2222,6 +2222,7 @@ const RevQuotationFormPage = () => {
                                     }
                                     placeholder="Select Service"
                                     isLoading={servicesLoading}
+                                    showAddButton={!isRestrictedUser}
                                     addLabel={isRestrictedUser ? undefined : "Add New Service"}
                                     renderAddLabel={
                                       isRestrictedUser
@@ -2322,6 +2323,7 @@ const RevQuotationFormPage = () => {
                                                 }
                                                 placeholder="Select Floor"
                                                 isLoading={floorsLoading}
+                                                showAddButton={!isRestrictedUser}
                                                 addLabel={isRestrictedUser ? undefined : "Add New Floor"}
                                                 renderAddLabel={
                                                   isRestrictedUser
@@ -2428,6 +2430,7 @@ const RevQuotationFormPage = () => {
                                                               }
                                                               placeholder="Select Area"
                                                               isLoading={areasLoading}
+                                                              showAddButton={!isRestrictedUser}
                                                               addLabel={isRestrictedUser ? undefined : "Add New Area"}
                                                               renderAddLabel={
                                                                 isRestrictedUser
@@ -2563,6 +2566,7 @@ const RevQuotationFormPage = () => {
                                                                               isDisabled={
                                                                                 !srv.serviceId || productsLoading
                                                                               }
+                                                                              showAddButton={!isRestrictedUser}
                                                                               addLabel={isRestrictedUser ? undefined : "Add New Product"}
                                                                               renderAddLabel={
                                                                                 isRestrictedUser

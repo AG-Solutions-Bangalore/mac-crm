@@ -1942,6 +1942,7 @@ const ProjectFormPage = () => {
                   }
                   placement="bottom-left"
                   menuPosition="absolute"
+                  showAddButton={!isRestrictedUser}
                   addLabel={isRestrictedUser ? undefined : "Add New Lead"}
                   renderAddLabel={
                     isRestrictedUser
@@ -2161,6 +2162,7 @@ const ProjectFormPage = () => {
                           }
                           options={allServiceOptions}
                           placeholder="Select Service"
+                          showAddButton={!isRestrictedUser}
                           addLabel={isRestrictedUser ? undefined : "+ Add Service"}
                           renderAddLabel={
                             isRestrictedUser
@@ -2232,6 +2234,7 @@ const ProjectFormPage = () => {
                                 }
                                 options={getFloorOptions(flr)}
                                 placeholder="Select Floor"
+                                showAddButton={!isRestrictedUser}
                                 addLabel={isRestrictedUser ? undefined : "+ Add Floor"}
                                 renderAddLabel={
                                   isRestrictedUser
@@ -2309,6 +2312,7 @@ const ProjectFormPage = () => {
                                       }
                                       options={getAreaOptions(area)}
                                       placeholder="Select Area"
+                                      showAddButton={!isRestrictedUser}
                                       addLabel={isRestrictedUser ? undefined : "+ Add Area"}
                                       renderAddLabel={
                                         isRestrictedUser
@@ -2395,6 +2399,7 @@ const ProjectFormPage = () => {
                                                 : "Select Service above first"
                                             }
                                             noOptionsMessage={() => emptyHint}
+                                            showAddButton={!isRestrictedUser}
                                             addLabel={isRestrictedUser ? undefined : "+ Add Product"}
                                             renderAddLabel={
                                               isRestrictedUser
