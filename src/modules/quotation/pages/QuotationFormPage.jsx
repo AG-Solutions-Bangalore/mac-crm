@@ -1970,6 +1970,7 @@ const QuotationFormPage = () => {
                   // Bahar chahiye to: menuPosition="fixed" menuPortalTarget={document.body}
                   placement="bottom-left"
                   menuPosition="absolute"
+                  showAddButton={!isRestrictedUser}
                   addLabel={isRestrictedUser ? undefined : "Add New Lead"}
                   renderAddLabel={
                     isRestrictedUser
@@ -2215,6 +2216,7 @@ const QuotationFormPage = () => {
                             }
                             placeholder="Select Service"
                             isLoading={servicesLoading}
+                            showAddButton={!isRestrictedUser}
                             addLabel={isRestrictedUser ? undefined : "Add New Service"}
                             renderAddLabel={isRestrictedUser ? undefined : (typed) =>
                               typed?.trim()
@@ -2279,6 +2281,7 @@ const QuotationFormPage = () => {
                                   }
                                   placeholder="Select Floor"
                                   isLoading={floorsLoading}
+                                  showAddButton={!isRestrictedUser}
                                   addLabel={isRestrictedUser ? undefined : "Add New Floor"}
                                   renderAddLabel={isRestrictedUser ? undefined : (typed) =>
                                     typed?.trim()
@@ -2346,6 +2349,7 @@ const QuotationFormPage = () => {
                                         }
                                         placeholder="Select Area"
                                         isLoading={areasLoading}
+                                        showAddButton={!isRestrictedUser}
                                         addLabel={isRestrictedUser ? undefined : "Add New Area"}
                                         renderAddLabel={isRestrictedUser ? undefined : (typed) =>
                                           typed?.trim()
@@ -2440,6 +2444,7 @@ const QuotationFormPage = () => {
                                             isDisabled={
                                               !srv.serviceId || productsLoading
                                             }
+                                            showAddButton={!isRestrictedUser}
                                             addLabel={isRestrictedUser ? undefined : "Add New Product"}
                                             renderAddLabel={isRestrictedUser ? undefined : (typed) =>
                                               typed?.trim()
