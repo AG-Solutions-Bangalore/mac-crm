@@ -236,7 +236,7 @@ const buildSheetModel = ({ items, totals = {} }) => {
   const adjustments = [
     ["Consultancy & Design", consultancyFee],
     ["Installation", installationFee],
-    ["Discount", -discountAmount],
+    ...(discountAmount > 0 ? [["Discount", -discountAmount]] : []),
   ];
   const hasAdjustments =
     adjustments.some(([, value]) => value !== 0) || netTotal !== grandTotal;
