@@ -130,16 +130,32 @@ const buildStyles = (hasError, align, maxMenuHeight, zIndex) => ({
   }),
 });
 
-// Option row with optional subtitle (label + chhoti second line).
-// getSubtitle diya ho to subtitle dikhega, warna normal option.
+// Option row with optional image + subtitle (label + chhoti second line).
+// getSubtitle ya option.image diya ho to rich row dikhega, warna normal option.
 const SubtitleOption = (props) => {
   const subtitle = props.selectProps?.getSubtitle?.(props.data) || "";
-  if (!subtitle) return <components.Option {...props} />;
+  const image = props.data?.image || "";
+  if (!subtitle && !image) return <components.Option {...props} />;
   return (
     <components.Option {...props}>
-      <div className="flex flex-col">
-        <span className="font-medium text-sm leading-tight">{props.data.label}</span>
-        <span className="text-xs text-slate-500 leading-tight">{subtitle}</span>
+      <div className="flex items-center gap-2">
+        {image && (
+          <img
+            src={image}
+            alt=""
+            className="h-8 w-8 rounded border border-slate-200 object-cover shrink-0 dark:border-slate-700"
+            loading="lazy"
+            onError={(event) => {
+              event.currentTarget.style.display = "none";
+            }}
+          />
+        )}
+        <div className="flex flex-col">
+          <span className="font-medium text-sm leading-tight">{props.data.label}</span>
+          {subtitle && (
+            <span className="text-xs text-slate-500 leading-tight">{subtitle}</span>
+          )}
+        </div>
       </div>
     </components.Option>
   );
@@ -216,12 +232,46 @@ const SelectWithAdd = React.memo(
     ...rest
   }) => {
     const resolved = resolvePlacement(placement, menuPlacement, align);
+    const typedValueRef = React.useRef("");
 
     const selectOptions = options.map((o) =>
       o?.label !== undefined && o?.value !== undefined
         ? o
         : { value: o?.value ?? o, label: o?.label ?? o }
     );
+
+    // Enter inside the search input must not submit the surrounding form.
+    // If nothing matches the typed text, treat Enter as "add this as new";
+    // otherwise let react-select select the focused option as usual.
+    const handleKeyDown = (event) => {
+      if (
+        event.key !== "Enter" ||
+        event.defaultPrevented ||
+        event.isComposing ||
+        event.keyCode === 229
+      ) {
+        return;
+      }
+      const typed = String(typedValueRef.current || "").trim();
+      if (!typed) return;
+
+      const hasMatch = selectOptions.some((option) => {
+        if (typeof filterOption === "function") {
+          return filterOption(
+            { data: option, label: option.label, value: option.value },
+            typed
+          );
+        }
+        return `${option.label ?? ""} ${option.value ?? ""}`
+          .toLowerCase()
+          .includes(typed.toLowerCase());
+      });
+      if (hasMatch) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      if (onAdd) onAdd(typed);
+    };
 
     const selectedOption =
       value && value !== "" && value !== null
@@ -248,6 +298,7 @@ const SelectWithAdd = React.memo(
         isClearable={isClearable}
         isSearchable={isSearchable}
         filterOption={filterOption}
+        onKeyDown={handleKeyDown}
         noOptionsMessage={
           noOptionsMessage
             ? () => noOptionsMessage
@@ -257,7 +308,7 @@ const SelectWithAdd = React.memo(
                   : "No options available"
         }
         styles={{ ...buildStyles(hasError, resolved.align, maxMenuHeight, zIndex), ...stylesOverride }}
-        components={{ Menu: AddMenu, ...(getSubtitle ? { Option: SubtitleOption } : {}), ...componentsOverride }}
+        components={{ Menu: AddMenu, Option: SubtitleOption, ...componentsOverride }}
         // placement wiring
         menuPlacement={resolved.menuPlacement}
         menuPosition={menuPosition}
@@ -274,7 +325,10 @@ const SelectWithAdd = React.memo(
         {...(menuIsOpen !== undefined ? { menuIsOpen } : {})}
         {...(onMenuOpen ? { onMenuOpen } : {})}
         {...(onMenuClose ? { onMenuClose } : {})}
-        {...(onInputChange ? { onInputChange } : {})}
+        onInputChange={(value, meta) => {
+          typedValueRef.current = value || "";
+          if (onInputChange) onInputChange(value, meta);
+        }}
         {...rest}
       />
     );

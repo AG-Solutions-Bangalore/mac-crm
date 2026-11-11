@@ -13,6 +13,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import SelectWithAdd from "@/components/common/select-with-add";
+import ImageUpload from "@/components/image-upload/image-upload";
 
 // Generic 1-field quick-add (Floor / Area / Brand) — name only, auto-select after save.
 export function QuickNameDialog({
@@ -116,6 +117,8 @@ export function ProductQuickAddDialog({
   const [errors, setErrors] = useState({});
   const [newBrand, setNewBrand] = useState("");
   const [showBrandAdd, setShowBrandAdd] = useState(false);
+  const [productImage, setProductImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -131,6 +134,8 @@ export function ProductQuickAddDialog({
       setErrors({});
       setNewBrand("");
       setShowBrandAdd(false);
+      setProductImage(null);
+      setImagePreview("");
     }
   }, [open, initialName, initialServiceId, initialCategoryId]);
 
@@ -166,6 +171,7 @@ export function ProductQuickAddDialog({
       product_price: form.product_price || "",
       product_warranty: form.product_warranty?.trim() || "",
       product_module: form.product_module?.trim() || "",
+      product_image: productImage,
     });
   };
 
@@ -292,6 +298,25 @@ export function ProductQuickAddDialog({
               />
             </div>
           </div>
+
+          <ImageUpload
+            id="product_quick_image"
+            label="Product Image"
+            selectedFile={productImage}
+            previewImage={imagePreview}
+            onFileChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              setProductImage(file);
+              setImagePreview(URL.createObjectURL(file));
+            }}
+            onRemove={() => {
+              setProductImage(null);
+              setImagePreview("");
+            }}
+            format="JPG, PNG, WEBP"
+            maxSize={5}
+          />
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={saving}>

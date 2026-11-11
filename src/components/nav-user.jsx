@@ -5,7 +5,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { default as appLogout, default as useAppLogout } from "@/utils/logout";
+import useAppLogout, { performAppLogout } from "@/utils/logout";
 import { useMutation } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Activity, Download, LogOut } from "lucide-react";
@@ -43,10 +43,9 @@ export function NavUser({ user }) {
   const localVersion = useSelector((state) => state.auth?.version);
   const updateMutation = useMutation({
     mutationFn: async () => Promise.resolve(),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Update completed successfully");
-      appLogout();
-      window.location.reload();
+      await performAppLogout();
     },
     onError: (error) => {
       console.error("Update failed:", error);

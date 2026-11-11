@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import ProductThumbnail from "@/components/common/product-thumbnail";
 import logoImg from "@/assets/logo.png";
 
 const formatWarranty = (val) => {
@@ -77,7 +78,11 @@ export default function CompactTableView({
       {/* Enforce ui-sans-serif on every text in this view */}
       <style>{`.makc-compact-view, .makc-compact-view * { font-family: ${FONT} !important; }`}</style>
       {/* Metric Cards (screen only — hidden in print) */}
-      <div className="makc-compact-metrics grid gap-4 md:grid-cols-3 xl:grid-cols-6 quotation-no-print">
+      <div
+        className={`makc-compact-metrics grid gap-4 md:grid-cols-3 quotation-no-print ${
+          discountAmount > 0 ? "xl:grid-cols-6" : "xl:grid-cols-5"
+        }`}
+      >
         <Card
           className="border shadow-sm"
           style={{ background: LIGHT.cardBg, borderColor: LIGHT.cardBorder, color: LIGHT.pageText }}
@@ -114,19 +119,21 @@ export default function CompactTableView({
             <CardTitle className="text-2xl font-bold" style={{ color: LIGHT.gold }}>{formatMoney(installationFee)}</CardTitle>
           </CardHeader>
         </Card>
-        <Card
-          className="border shadow-sm"
-          style={{ background: LIGHT.cardBg, borderColor: LIGHT.cardBorder, color: LIGHT.pageText }}
-        >
-          <CardHeader className="pb-2">
-            <CardDescription style={{ color: LIGHT.mutedText }}>
-              Discount ({discountPct}%)
-            </CardDescription>
-            <CardTitle className="text-2xl font-bold" style={{ color: LIGHT.green }}>
-              − {formatMoney(discountAmount)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
+        {discountAmount > 0 && (
+          <Card
+            className="border shadow-sm"
+            style={{ background: LIGHT.cardBg, borderColor: LIGHT.cardBorder, color: LIGHT.pageText }}
+          >
+            <CardHeader className="pb-2">
+              <CardDescription style={{ color: LIGHT.mutedText }}>
+                Discount ({discountPct}%)
+              </CardDescription>
+              <CardTitle className="text-2xl font-bold" style={{ color: LIGHT.green }}>
+                − {formatMoney(discountAmount)}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+        )}
         <Card
           className="border shadow-sm"
           style={{ background: LIGHT.cardBg, borderColor: LIGHT.cardBorder, color: LIGHT.pageText }}
@@ -189,7 +196,12 @@ export default function CompactTableView({
                       <TableCell className="font-medium" style={{ color: LIGHT.bodyText }}>{row.application || "-"}</TableCell>
                       <TableCell style={{ color: LIGHT.bodyText }}>{row.floor || "-"}</TableCell>
                       <TableCell style={{ color: LIGHT.bodyText }}>{row.area || "-"}</TableCell>
-                      <TableCell className="font-bold" style={{ color: LIGHT.headingText }}>{row.product}</TableCell>
+                      <TableCell className="font-bold" style={{ color: LIGHT.headingText }}>
+                        <div className="flex items-center gap-2">
+                          <ProductThumbnail src={row.productImage} size={28} />
+                          <span>{row.product}</span>
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium text-center" style={{ color: LIGHT.bodyText }}>{row.module || "-"}</TableCell>
                       <TableCell className="font-bold text-center" style={{ color: LIGHT.accent }}>{row.quantity || "-"}</TableCell>
                       {!hidePricing && (
@@ -234,13 +246,17 @@ export default function CompactTableView({
           {!hidePricing && (
             <>
               <div
-                className="mt-4 grid gap-2 break-inside-avoid md:grid-cols-5"
+                className={`mt-4 grid gap-2 break-inside-avoid ${
+                  discountAmount > 0 ? "md:grid-cols-5" : "md:grid-cols-4"
+                }`}
               >
                 {[
                   { label: "Grand Total", value: formatMoney(grandTotal), color: LIGHT.headingText },
                   { label: "Consultancy & Design", value: formatMoney(consultancyFee), color: LIGHT.bodyText },
                   { label: "Installation", value: formatMoney(installationFee), color: LIGHT.bodyText },
-                  { label: `Discount (${discountPct}%)`, value: `− ${formatMoney(discountAmount)}`, color: LIGHT.green },
+                  ...(discountAmount > 0
+                    ? [{ label: `Discount (${discountPct}%)`, value: `− ${formatMoney(discountAmount)}`, color: LIGHT.green }]
+                    : []),
                   { label: "Net Project Value", value: formatMoney(netTotal), color: LIGHT.accent },
                 ].map((s) => (
                   <div

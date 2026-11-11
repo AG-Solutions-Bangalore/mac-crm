@@ -47,9 +47,16 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import MemoizedSelect from "@/components/common/memoized-select";
 import SelectWithAdd from "@/components/common/select-with-add";
+import ProductThumbnail from "@/components/common/product-thumbnail";
+import { resolveProductImageUrl } from "@/utils/productImageUtils";
 import ConfirmDialog from "@/components/common/confirm-dialog";
 import UnsavedChangesDialog from "@/components/common/unsaved-changes-dialog";
+import AutosaveHint from "@/components/common/autosave-hint";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
+import {
+  formAutosaveKey,
+  useFormAutosaveDraft,
+} from "@/hooks/useFormAutosaveDraft";
 import ImportQuotationDialog from "../../quotation/components/ImportQuotationDialog";
 import {
   QuickNameDialog,
@@ -396,7 +403,11 @@ const ProjectFormPage = () => {
   };
 
   // Active Masters Queries
-  const { data: buyersData, isLoading: buyersLoading } = useActiveBuyersQuery();
+  const {
+    data: buyersData,
+    isLoading: buyersLoading,
+    refetch: refetchBuyers,
+  } = useActiveBuyersQuery();
   const { data: propertiesData, isLoading: propertiesLoading } = useActivePropertiesQuery();
   const { data: servicesData, isLoading: servicesLoading, refetch: refetchServices } = useActiveServicesQuery();
   const { data: categoriesData, isLoading: categoriesLoading } = useActiveCategoriesQuery();
@@ -605,6 +616,25 @@ const ProjectFormPage = () => {
     );
     return hasBasic || hasItems;
   }, [initialSnapshot, snapshotKey, isEdit, formData, servicesState, defaultSelection]);
+
+  const autosaveKey = useMemo(
+    () => formAutosaveKey("project", isEdit ? id : "new", user?.id),
+    [isEdit, id, user?.id]
+  );
+
+  const { lastSavedAt, clearDraft } = useFormAutosaveDraft({
+    storageKey: autosaveKey,
+    formData,
+    servicesState,
+    initialSnapshot,
+    enabled: isEdit ? Boolean(fetchedData) : true,
+    requireMatchingBaseline: isEdit,
+    onRestore: (draft) => {
+      setFormData(draft.formData);
+      setServicesState(draft.servicesState);
+      toast.info("Restored unsaved changes from this browser");
+    },
+  });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -1174,6 +1204,7 @@ const ProjectFormPage = () => {
     try {
       if (isEdit) {
         await updateProjectMutation.mutateAsync({ id, data: payload });
+        clearDraft();
         toast.success("Project updated successfully");
         setInitialSnapshot(snapshotKey);
         refetch?.();
@@ -1186,6 +1217,7 @@ const ProjectFormPage = () => {
           res?.data?.id?.toString() ||
           res?.id?.toString() ||
           "";
+        clearDraft();
         toast.success("Project created successfully");
         setInitialSnapshot(snapshotKey);
         return newId || true;
@@ -1205,7 +1237,11 @@ const ProjectFormPage = () => {
     handleStay,
     handleLeaveWithoutSaving,
     handleSaveAndLeave,
-  } = useUnsavedChangesGuard({ isDirty, onSave: saveWithoutNavigate });
+  } = useUnsavedChangesGuard({
+    isDirty,
+    onSave: saveWithoutNavigate,
+    onDiscard: () => clearDraft(),
+  });
 
   // Save ke baad previous screen (project list) par wapas jao (create aur edit dono me)
   const handleSubmit = async (e) => {
@@ -1315,23 +1351,47 @@ const ProjectFormPage = () => {
     setBuyerFormErrors(errs);
     if (Object.keys(errs).length > 0) return;
     try {
+      const trimmedName = newBuyer.buyer_name.trim();
+      const trimmedMobile = newBuyer.buyer_mobile.trim();
       const res = await createBuyerMutation.mutateAsync({
-        buyer_name: newBuyer.buyer_name.trim(),
-        buyer_mobile: newBuyer.buyer_mobile.trim(),
+        buyer_name: trimmedName,
+        buyer_mobile: trimmedMobile,
         buyer_email: newBuyer.buyer_email?.trim() || "",
         buyer_address: newBuyer.buyer_address?.trim() || "",
       });
+      // Backend shape varies — handle {data:{id}}, {data:{data:{id}}}, {id}
       const created = res?.data?.data || res?.data || res;
-      const newId =
+      let createdBuyer = created?.id ? created : null;
+      let newId =
         created?.id?.toString() ||
         res?.data?.id?.toString() ||
         res?.id?.toString() ||
         "";
-      const newName = created?.buyer_name || newBuyer.buyer_name.trim();
+      if (!newId) {
+        // Create response didn't include the id — pull the fresh list and match
+        // the saved lead so it still gets added and auto-selected.
+        const refreshed = await refetchBuyers();
+        const list = refreshed?.data?.data || [];
+        createdBuyer =
+          list.find(
+            (b) =>
+              trimmedMobile && String(b.buyer_mobile || "") === trimmedMobile
+          ) ||
+          [...list]
+            .reverse()
+            .find(
+              (b) =>
+                String(b.buyer_name || "").trim().toLowerCase() ===
+                trimmedName.toLowerCase()
+            ) ||
+          null;
+        newId = createdBuyer?.id?.toString() || "";
+      }
+      const newName = createdBuyer?.buyer_name || trimmedName;
       if (newId) {
         setExtraBuyers((prev) => [
-          ...prev,
-          { value: newId, label: newName, buyer: created },
+          ...prev.filter((entry) => entry.value !== newId),
+          { value: newId, label: newName, buyer: createdBuyer || created },
         ]);
         setFormData((prev) => ({ ...prev, project_buyer_id: newId }));
         setErrors((prev) => ({ ...prev, project_buyer_id: "" }));
@@ -1441,6 +1501,7 @@ const ProjectFormPage = () => {
       map.set(p.id?.toString(), {
         value: p.id?.toString(),
         label: getProductLabel(p),
+        image: resolveProductImageUrl(p, productsData?.image_url),
       });
     });
     if (prod?.productId && !map.has(prod.productId)) {
@@ -1697,6 +1758,10 @@ const ProjectFormPage = () => {
     setProductQA((p) => ({ ...p, saving: true }));
     try {
       const res = await createProductMutation.mutateAsync(payload);
+      const imagePreview =
+        payload.product_image instanceof File
+          ? URL.createObjectURL(payload.product_image)
+          : "";
       await queryClient.invalidateQueries({ queryKey: ["products-for-quotation"] });
       const r = await refetchProjectProducts();
       const created = res?.data?.data || res?.data || res;
@@ -1712,6 +1777,9 @@ const ProjectFormPage = () => {
           ...found,
           product_price:
             Number(found.product_price ?? payload.product_price) || 0,
+          ...(imagePreview
+            ? { product_image: imagePreview || found.product_image }
+            : {}),
         };
         setExtraProducts((prev) => [
           ...prev.filter((p) => p.id?.toString() !== freshProduct.id?.toString()),
@@ -2377,9 +2445,17 @@ const ProjectFormPage = () => {
                                     >
                                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                                         <div
-                                          className="w-full sm:flex-1 sm:min-w-0"
+                                          className="w-full sm:flex-1 sm:min-w-0 flex items-center gap-2"
                                           data-error-field={`product-${srvIdx}-${flrIdx}-${areaIdx}-${prodIdx}`}
                                         >
+                                          <ProductThumbnail
+                                            src={resolveProductImageUrl(
+                                              findProductById(prod.productId),
+                                              productsData?.image_url
+                                            )}
+                                            size={32}
+                                          />
+                                          <div className="flex-1 min-w-0">
                                           <SelectWithAdd
                                             value={prod.productId}
                                             onChange={(opt) =>
@@ -2425,6 +2501,7 @@ const ProjectFormPage = () => {
                                                     )
                                             }
                                           />
+                                          </div>
                                         </div>
 
                                         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -2924,6 +3001,7 @@ const ProjectFormPage = () => {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap justify-end gap-2 mt-4 pt-4 border-t dark:border-slate-800">
+          <AutosaveHint lastSavedAt={lastSavedAt} className="mr-auto" />
           <Button
             type="button"
             variant="outline"

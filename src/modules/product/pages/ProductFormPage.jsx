@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 
 import PageHeader from "@/components/common/page-header";
 import LoadingBar from "@/components/loader/loading-bar";
+import ImageUpload from "@/components/image-upload/image-upload";
+import { resolveProductImageUrl } from "@/utils/productImageUtils";
 import { toast } from "sonner";
 import { useProductQuery, useCreateProductMutation, useUpdateProductMutation } from "../hooks/useProduct";
 import { useActiveServicesQuery } from "../../service/hooks/useService";
@@ -32,6 +34,9 @@ const ProductFormPage = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const [productImage, setProductImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
+  const [existingImagePreview, setExistingImagePreview] = useState("");
 
   // Active Masters Queries
   const { data: servicesData, isLoading: servicesLoading } = useActiveServicesQuery();
@@ -58,8 +63,24 @@ const ProductFormPage = () => {
         product_price: data.product_price?.toString() || "",
         product_status: data.product_status || "Active",
       });
+      const preview = resolveProductImageUrl(data, fetchedData?.image_url) || "";
+      setProductImage(null);
+      setImagePreview(preview);
+      setExistingImagePreview(preview);
     }
   }, [isEdit, fetchedData]);
+
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setProductImage(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleImageRemove = () => {
+    setProductImage(null);
+    setImagePreview(existingImagePreview || "");
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -82,14 +103,15 @@ const ProductFormPage = () => {
     if (!validateForm()) return;
 
     try {
+      const payload = { ...formData, product_image: productImage };
       if (isEdit) {
         await updateProductMutation.mutateAsync({
           id,
-          data: formData,
+          data: payload,
         });
         toast.success("Product updated successfully");
       } else {
-        await createProductMutation.mutateAsync(formData);
+        await createProductMutation.mutateAsync(payload);
         toast.success("Product created successfully");
       }
       navigate("/product-list");
@@ -296,6 +318,20 @@ const ProductFormPage = () => {
                 {errors.product_price && (
                   <p className="text-red-500 text-xs">{errors.product_price}</p>
                 )}
+              </div>
+
+              {/* Product Image */}
+              <div className="space-y-2 md:col-span-2">
+                <ImageUpload
+                  id="product_image"
+                  label="Product Image"
+                  selectedFile={productImage}
+                  previewImage={imagePreview}
+                  onFileChange={handleImageChange}
+                  onRemove={handleImageRemove}
+                  format="JPG, PNG, WEBP"
+                  maxSize={5}
+                />
               </div>
             </div>
 

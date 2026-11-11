@@ -6,8 +6,9 @@ const tokenize = (term) =>
 
 // Hybrid search:
 // - Text tokens match anywhere, so "fle" finds "Flexible" and "Reflex".
-// - Tokens containing digits match whole tokens only, so "2m" does not find
-//   "12m" while still matching "2m", "2m," and "2M-pipe".
+// - Tokens containing digits must start on a word boundary, so "2m" does not
+//   find "12m", while "120" still finds "120W" (unit suffix) and "120" does
+//   not find "1200".
 export const matchesSearchTokens = (haystack, term) => {
   const tokens = tokenize(term);
   if (tokens.length === 0) return true;
@@ -16,7 +17,7 @@ export const matchesSearchTokens = (haystack, term) => {
   return tokens.every((token) => {
     if (!/\d/.test(token)) return text.includes(token);
     const re = new RegExp(
-      `(^|[^a-z0-9])${escapeRegExp(token)}([^a-z0-9]|$)`
+      `(^|[^a-z0-9])${escapeRegExp(token)}[a-z]*([^a-z0-9]|$)`
     );
     return re.test(text);
   });
