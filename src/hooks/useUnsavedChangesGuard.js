@@ -16,7 +16,7 @@ import { useLocation, useNavigate } from "react-router-dom";
  * @param {() => Promise<boolean>} onSave - bina navigate kiye save kare, success par true
  * @returns guard helpers + dialog state
  */
-export function useUnsavedChangesGuard({ isDirty, onSave }) {
+export function useUnsavedChangesGuard({ isDirty, onSave, onDiscard }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -29,8 +29,10 @@ export function useUnsavedChangesGuard({ isDirty, onSave }) {
   const pendingRef = useRef(null);
   const allowRef = useRef(false);
   const onSaveRef = useRef(onSave);
+  const onDiscardRef = useRef(onDiscard);
 
   isDirtyRef.current = isDirty;
+  onDiscardRef.current = onDiscard;
   dialogOpenRef.current = dialogOpen;
   pendingRef.current = pendingNav;
   onSaveRef.current = onSave;
@@ -154,6 +156,11 @@ export function useUnsavedChangesGuard({ isDirty, onSave }) {
   }, []);
 
   const handleLeaveWithoutSaving = useCallback(() => {
+    try {
+      onDiscardRef.current?.();
+    } catch {
+      /* discard hook should never block navigation */
+    }
     doPendingNavigation();
   }, [doPendingNavigation]);
 

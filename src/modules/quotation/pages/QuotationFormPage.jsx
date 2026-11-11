@@ -35,7 +35,12 @@ import MemoizedSelect from "@/components/common/memoized-select";
 import SelectWithAdd from "@/components/common/select-with-add";
 import ConfirmDialog from "@/components/common/confirm-dialog";
 import UnsavedChangesDialog from "@/components/common/unsaved-changes-dialog";
+import AutosaveHint from "@/components/common/autosave-hint";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
+import {
+  formAutosaveKey,
+  useFormAutosaveDraft,
+} from "@/hooks/useFormAutosaveDraft";
 import ImportQuotationDialog from "../components/ImportQuotationDialog";
 import {
   clearPendingServiceBlocks,
@@ -561,6 +566,25 @@ const QuotationFormPage = () => {
     servicesState,
     snapshotKey,
   ]);
+
+  const autosaveKey = useMemo(
+    () => formAutosaveKey("quotation", isEdit ? id : "new", user?.id),
+    [isEdit, id, user?.id]
+  );
+
+  const { lastSavedAt, clearDraft } = useFormAutosaveDraft({
+    storageKey: autosaveKey,
+    formData,
+    servicesState,
+    initialSnapshot,
+    enabled: isEdit ? Boolean(fetchedData) : true,
+    requireMatchingBaseline: isEdit,
+    onRestore: (draft) => {
+      setFormData(draft.formData);
+      setServicesState(draft.servicesState);
+      toast.info("Restored unsaved changes from this browser");
+    },
+  });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -1184,6 +1208,7 @@ const QuotationFormPage = () => {
             finishWorkDate: formData.quotation_finish_work_date,
           });
         }
+        clearDraft();
         toast.success("Quotation updated successfully");
         notifySkipped();
         persistPendingState(id);
@@ -1198,6 +1223,7 @@ const QuotationFormPage = () => {
           res?.data?.id?.toString() ||
           res?.id?.toString() ||
           "";
+        clearDraft();
         toast.success("Quotation created successfully");
         notifySkipped();
         persistPendingState(newId);
@@ -1222,6 +1248,7 @@ const QuotationFormPage = () => {
   } = useUnsavedChangesGuard({
     isDirty,
     onSave: () => saveWithoutNavigate({ allowPartial: true }),
+    onDiscard: () => clearDraft(),
   });
 
   // Save ke baad hamesha previous screen (quotation list) par wapas jao.
@@ -1254,6 +1281,7 @@ const QuotationFormPage = () => {
         res?.id?.toString() ||
         "";
       toast.success("Saved as new quotation with today's date");
+      clearDraft();
       clearPendingServiceBlocks(quotationPendingKey(id));
       setInitialSnapshot(snapshotKey);
       navigate(newId ? `/quotation-list/edit/${newId}` : "/quotation-list");
@@ -3085,6 +3113,7 @@ const QuotationFormPage = () => {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap justify-end gap-2 mt-4 pt-4 border-t dark:border-slate-800">
+          <AutosaveHint lastSavedAt={lastSavedAt} className="mr-auto" />
           <Button
             type="button"
             variant="outline"

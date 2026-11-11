@@ -51,7 +51,12 @@ import ProductThumbnail from "@/components/common/product-thumbnail";
 import { resolveProductImageUrl } from "@/utils/productImageUtils";
 import ConfirmDialog from "@/components/common/confirm-dialog";
 import UnsavedChangesDialog from "@/components/common/unsaved-changes-dialog";
+import AutosaveHint from "@/components/common/autosave-hint";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
+import {
+  formAutosaveKey,
+  useFormAutosaveDraft,
+} from "@/hooks/useFormAutosaveDraft";
 import ImportQuotationDialog from "../../quotation/components/ImportQuotationDialog";
 import {
   QuickNameDialog,
@@ -611,6 +616,25 @@ const ProjectFormPage = () => {
     );
     return hasBasic || hasItems;
   }, [initialSnapshot, snapshotKey, isEdit, formData, servicesState, defaultSelection]);
+
+  const autosaveKey = useMemo(
+    () => formAutosaveKey("project", isEdit ? id : "new", user?.id),
+    [isEdit, id, user?.id]
+  );
+
+  const { lastSavedAt, clearDraft } = useFormAutosaveDraft({
+    storageKey: autosaveKey,
+    formData,
+    servicesState,
+    initialSnapshot,
+    enabled: isEdit ? Boolean(fetchedData) : true,
+    requireMatchingBaseline: isEdit,
+    onRestore: (draft) => {
+      setFormData(draft.formData);
+      setServicesState(draft.servicesState);
+      toast.info("Restored unsaved changes from this browser");
+    },
+  });
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -1180,6 +1204,7 @@ const ProjectFormPage = () => {
     try {
       if (isEdit) {
         await updateProjectMutation.mutateAsync({ id, data: payload });
+        clearDraft();
         toast.success("Project updated successfully");
         setInitialSnapshot(snapshotKey);
         refetch?.();
@@ -1192,6 +1217,7 @@ const ProjectFormPage = () => {
           res?.data?.id?.toString() ||
           res?.id?.toString() ||
           "";
+        clearDraft();
         toast.success("Project created successfully");
         setInitialSnapshot(snapshotKey);
         return newId || true;
@@ -1211,7 +1237,11 @@ const ProjectFormPage = () => {
     handleStay,
     handleLeaveWithoutSaving,
     handleSaveAndLeave,
-  } = useUnsavedChangesGuard({ isDirty, onSave: saveWithoutNavigate });
+  } = useUnsavedChangesGuard({
+    isDirty,
+    onSave: saveWithoutNavigate,
+    onDiscard: () => clearDraft(),
+  });
 
   // Save ke baad previous screen (project list) par wapas jao (create aur edit dono me)
   const handleSubmit = async (e) => {
@@ -2971,6 +3001,7 @@ const ProjectFormPage = () => {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap justify-end gap-2 mt-4 pt-4 border-t dark:border-slate-800">
+          <AutosaveHint lastSavedAt={lastSavedAt} className="mr-auto" />
           <Button
             type="button"
             variant="outline"

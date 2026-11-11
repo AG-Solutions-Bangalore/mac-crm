@@ -36,7 +36,12 @@ import MemoizedSelect from "@/components/common/memoized-select";
 import SelectWithAdd from "@/components/common/select-with-add";
 import ConfirmDialog from "@/components/common/confirm-dialog";
 import UnsavedChangesDialog from "@/components/common/unsaved-changes-dialog";
+import AutosaveHint from "@/components/common/autosave-hint";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
+import {
+  formAutosaveKey,
+  useFormAutosaveDraft,
+} from "@/hooks/useFormAutosaveDraft";
 import ImportQuotationDialog from "../components/ImportQuotationDialog";
 import { QuickNameDialog, ProductQuickAddDialog, ServiceQuickAddDialog } from "../components/MasterQuickAddDialogs";
 import {
@@ -902,6 +907,34 @@ const RevQuotationFormPage = () => {
     snapshotKey,
   ]);
 
+  const autosaveKey = useMemo(
+    () =>
+      formAutosaveKey(
+        "rev-quotation",
+        isEdit ? revId : `parent-${parentId}`,
+        user?.id
+      ),
+    [isEdit, revId, parentId, user?.id]
+  );
+
+  const { lastSavedAt, clearDraft } = useFormAutosaveDraft({
+    storageKey: autosaveKey,
+    formData,
+    servicesState,
+    initialSnapshot,
+    enabled: isEdit
+      ? Boolean(revQuotationData?.data)
+      : Boolean(
+          parentQuotationData?.data && categoriesData?.data && servicesData?.data
+        ),
+    requireMatchingBaseline: isEdit,
+    onRestore: (draft) => {
+      setFormData(draft.formData);
+      setServicesState(draft.servicesState);
+      toast.info("Restored unsaved changes from this browser");
+    },
+  });
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -1589,6 +1622,7 @@ const RevQuotationFormPage = () => {
     try {
       if (isEdit) {
         await updateRevQuotationMutation.mutateAsync({ id: revId, data: payload });
+        clearDraft();
         toast.success("Revised quotation updated successfully");
         notifySkipped();
         persistPendingState(revId);
@@ -1603,6 +1637,7 @@ const RevQuotationFormPage = () => {
           res?.data?.id?.toString() ||
           res?.id?.toString() ||
           "";
+        clearDraft();
         toast.success("Revised quotation created successfully");
         notifySkipped();
         persistPendingState(newRevId);
@@ -1625,6 +1660,7 @@ const RevQuotationFormPage = () => {
   } = useUnsavedChangesGuard({
     isDirty,
     onSave: () => saveRevWithoutNavigate({ allowPartial: true }),
+    onDiscard: () => clearDraft(),
   });
 
   // Save ke baad hamesha previous screen (revisions list) par wapas jao.
@@ -3208,6 +3244,7 @@ const RevQuotationFormPage = () => {
    
         {/* Action Buttons */}
         <div className="flex flex-wrap justify-end gap-2 mt-4 pt-4 border-t dark:border-slate-800">
+          <AutosaveHint lastSavedAt={lastSavedAt} className="mr-auto" />
           <Button
             type="button"
             variant="outline"

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { setCredentials } from "@/store/auth/authSlice";
@@ -51,6 +52,7 @@ export default function LoginPage() {
   
   const loginMutation = useLoginMutation();
   const isLoading = loginMutation.isPending;
+  const queryClient = useQueryClient();
   const dispatch = useDispatch();
   const companyImage = useSelector((state) => state.company?.companyImage);
 
@@ -108,6 +110,8 @@ export default function LoginPage() {
           toast.error("Login Failed: No token received.");
           return;
         }
+        // Fresh account = fresh cache. Prevents stale lists from a previous user.
+        queryClient.clear();
         dispatch(
           setCredentials({
             token: UserInfo.token,
