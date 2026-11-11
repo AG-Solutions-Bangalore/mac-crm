@@ -356,7 +356,11 @@ const QuotationFormPage = () => {
   };
 
   // Active Masters Queries
-  const { data: buyersData, isLoading: buyersLoading } = useActiveBuyersQuery();
+  const {
+    data: buyersData,
+    isLoading: buyersLoading,
+    refetch: refetchBuyers,
+  } = useActiveBuyersQuery();
   const { data: propertiesData, isLoading: propertiesLoading } =
     useActivePropertiesQuery();
   const { data: servicesData, isLoading: servicesLoading, refetch: refetchServices } =
@@ -1353,24 +1357,47 @@ const QuotationFormPage = () => {
     setBuyerFormErrors(errs);
     if (Object.keys(errs).length > 0) return;
     try {
+      const trimmedName = newBuyer.buyer_name.trim();
+      const trimmedMobile = newBuyer.buyer_mobile.trim();
       const res = await createBuyerMutation.mutateAsync({
-        buyer_name: newBuyer.buyer_name.trim(),
-        buyer_mobile: newBuyer.buyer_mobile.trim(),
+        buyer_name: trimmedName,
+        buyer_mobile: trimmedMobile,
         buyer_email: newBuyer.buyer_email?.trim() || "",
         buyer_address: newBuyer.buyer_address?.trim() || "",
       });
       // Backend shape varies — handle {data:{id}}, {data:{data:{id}}}, {id}
       const created = res?.data?.data || res?.data || res;
-      const newId =
+      let createdBuyer = created?.id ? created : null;
+      let newId =
         created?.id?.toString() ||
         res?.data?.id?.toString() ||
         res?.id?.toString() ||
         "";
-      const newName = created?.buyer_name || newBuyer.buyer_name.trim();
+      if (!newId) {
+        // Create response didn't include the id — pull the fresh list and match
+        // the saved lead so it still gets added and auto-selected.
+        const refreshed = await refetchBuyers();
+        const list = refreshed?.data?.data || [];
+        createdBuyer =
+          list.find(
+            (b) =>
+              trimmedMobile && String(b.buyer_mobile || "") === trimmedMobile
+          ) ||
+          [...list]
+            .reverse()
+            .find(
+              (b) =>
+                String(b.buyer_name || "").trim().toLowerCase() ===
+                trimmedName.toLowerCase()
+            ) ||
+          null;
+        newId = createdBuyer?.id?.toString() || "";
+      }
+      const newName = createdBuyer?.buyer_name || trimmedName;
       if (newId) {
         setExtraBuyers((prev) => [
-          ...prev,
-          { value: newId, label: newName, buyer: created },
+          ...prev.filter((entry) => entry.value !== newId),
+          { value: newId, label: newName, buyer: createdBuyer || created },
         ]);
         setFormData((prev) => ({ ...prev, quotation_buyer_id: newId }));
         setErrors((prev) => ({ ...prev, quotation_buyer_id: "" }));
