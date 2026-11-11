@@ -20,6 +20,8 @@ import {
 import { useProductsQuery } from "../hooks/useProduct";
 import { useActiveServicesQuery } from "../../service/hooks/useService";
 import { matchesProductSearch } from "@/utils/productSearch";
+import ProductThumbnail from "@/components/common/product-thumbnail";
+import { resolveProductImageUrl } from "@/utils/productImageUtils";
 
 const ProductListPage = () => {
   const navigate = useNavigate();
@@ -68,6 +70,17 @@ const ProductListPage = () => {
       header: "Sl No",
       id: "sl_no",
       cell: ({ row }) => (page - 1) * 50 + row.index + 1,
+    },
+    {
+      header: "Image",
+      accessorKey: "product_image",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <ProductThumbnail
+          src={resolveProductImageUrl(row.original, responseData?.image_url)}
+          size={40}
+        />
+      ),
     },
     {
       header: "Module",

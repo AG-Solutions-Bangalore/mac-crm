@@ -63,6 +63,8 @@ import {
   normalizeDiscountPct,
 } from "@/utils/discountUtils";
 import { buildProductOptions, filterProductOption } from "@/utils/productSelectUtils";
+import { resolveProductImageUrl } from "@/utils/productImageUtils";
+import ProductThumbnail from "@/components/common/product-thumbnail";
 import { isQuotationOwnedByUser } from "@/utils/permissions";
 
 let uidSeed = 0;
@@ -544,6 +546,10 @@ const RevQuotationFormPage = () => {
     setProductQA((p) => ({ ...p, saving: true }));
     try {
       const res = await createProductMutation.mutateAsync(payload);
+      const imagePreview =
+        payload.product_image instanceof File
+          ? URL.createObjectURL(payload.product_image)
+          : "";
       await queryClient.invalidateQueries({ queryKey: ["products-for-quotation"] });
       const r = await refetchQuotationProducts();
       const created = res?.data?.data || res?.data || res;
@@ -563,6 +569,9 @@ const RevQuotationFormPage = () => {
             }
           : null);
       if (found?.id) {
+        if (imagePreview) {
+          found = { ...found, product_image: imagePreview || found.product_image };
+        }
         setExtraProducts((prev) =>
           prev.some((e) => e.id?.toString() === found.id?.toString())
             ? prev
@@ -1269,7 +1278,7 @@ const RevQuotationFormPage = () => {
   };
 
   const findProductById = (pid) =>
-    [...productsList, ...catProductsList, ...(extraProducts || [])].find(
+    [...(extraProducts || []), ...productsList, ...catProductsList].find(
       (p) => p.id?.toString() === pid?.toString(),
     );
 
@@ -1710,6 +1719,7 @@ const RevQuotationFormPage = () => {
       getCategoryName: (p) =>
         categories.find((c) => c.id?.toString() === p?.category_id?.toString())
           ?.category_name || "",
+      getImage: (p) => resolveProductImageUrl(p, productsData?.image_url),
     });
 
   // API can return the same product row more than once (multiple category /
@@ -2532,9 +2542,17 @@ const RevQuotationFormPage = () => {
                                                                         >
                                                                           {/* Product select */}
                                                                           <div
-                                                                            className="w-full md:col-span-3 min-w-0"
+                                                                            className="w-full md:col-span-3 min-w-0 flex items-center gap-2"
                                                                             data-error-field={`product-${serviceIndex}-${floorIndex}-${areaIndex}-${prodIndex}`}
                                                                           >
+                                                                            <ProductThumbnail
+                                                                              src={resolveProductImageUrl(
+                                                                                findProductById(prod.productId),
+                                                                                productsData?.image_url,
+                                                                              )}
+                                                                              size={32}
+                                                                            />
+                                                                            <div className="flex-1 min-w-0">
                                                                             <SelectWithAdd
                                                                               options={getProductOptions(
                                                                                 getRevRowProductOptions(srv.serviceId),
@@ -2592,6 +2610,7 @@ const RevQuotationFormPage = () => {
                                                                                       )
                                                                               }
                                                                             />
+                                                                            </div>
                                                                           </div>
 
                                                                           {/* Row with Price, Quantity, Amount and Actions (stacked on mobile, 3 cols on desktop) */}

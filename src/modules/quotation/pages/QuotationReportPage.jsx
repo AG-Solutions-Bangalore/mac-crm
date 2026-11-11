@@ -32,6 +32,7 @@ import CompactTableView from "../components/report/CompactTableView";
 import { createStyledQuotationWorkbook, downloadBlob } from "@/app/reports/quotation-xlsx";
 import { calculateMilestoneAmounts } from "@/utils/milestoneUtils";
 import { deriveDiscountPct } from "@/utils/discountUtils";
+import { resolveProductImageUrl } from "@/utils/productImageUtils";
 import { isQuotationOwnedByUser, isSalesUser } from "@/utils/permissions";
 
 
@@ -340,6 +341,10 @@ export default function QuotationReportPage() {
     sub[`project_sub_${base}`] ?? sub[`quotation_sub_${base}`];
   const items = subs.map((sub, idx) => {
     const prodDetails = getProductDetails(subVal(sub, "product_id"));
+    const productImage = resolveProductImageUrl(
+      prodDetails,
+      productsData?.image_url
+    );
     const brandName =
       brands.find((b) => b.id?.toString() === prodDetails?.brand_id?.toString())
         ?.brand_name || "-";
@@ -380,6 +385,7 @@ export default function QuotationReportPage() {
       floor: floorName,
       area: areaName,
       product: productName,
+      productImage,
       module: sub.product_module || subVal(sub, "product_module") || "-",
       quantity: Number(subVal(sub, "quantity")) || 0,
       price: Number(subVal(sub, "price")) || 0,

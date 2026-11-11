@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import ProductThumbnail from "@/components/common/product-thumbnail";
 import logoImg from "@/assets/logo.png";
 
 const formatWarranty = (val) => {
@@ -195,7 +196,12 @@ export default function CompactTableView({
                       <TableCell className="font-medium" style={{ color: LIGHT.bodyText }}>{row.application || "-"}</TableCell>
                       <TableCell style={{ color: LIGHT.bodyText }}>{row.floor || "-"}</TableCell>
                       <TableCell style={{ color: LIGHT.bodyText }}>{row.area || "-"}</TableCell>
-                      <TableCell className="font-bold" style={{ color: LIGHT.headingText }}>{row.product}</TableCell>
+                      <TableCell className="font-bold" style={{ color: LIGHT.headingText }}>
+                        <div className="flex items-center gap-2">
+                          <ProductThumbnail src={row.productImage} size={28} />
+                          <span>{row.product}</span>
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium text-center" style={{ color: LIGHT.bodyText }}>{row.module || "-"}</TableCell>
                       <TableCell className="font-bold text-center" style={{ color: LIGHT.accent }}>{row.quantity || "-"}</TableCell>
                       {!hidePricing && (

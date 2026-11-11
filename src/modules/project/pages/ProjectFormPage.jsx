@@ -47,6 +47,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import MemoizedSelect from "@/components/common/memoized-select";
 import SelectWithAdd from "@/components/common/select-with-add";
+import ProductThumbnail from "@/components/common/product-thumbnail";
+import { resolveProductImageUrl } from "@/utils/productImageUtils";
 import ConfirmDialog from "@/components/common/confirm-dialog";
 import UnsavedChangesDialog from "@/components/common/unsaved-changes-dialog";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
@@ -1469,6 +1471,7 @@ const ProjectFormPage = () => {
       map.set(p.id?.toString(), {
         value: p.id?.toString(),
         label: getProductLabel(p),
+        image: resolveProductImageUrl(p, productsData?.image_url),
       });
     });
     if (prod?.productId && !map.has(prod.productId)) {
@@ -1725,6 +1728,10 @@ const ProjectFormPage = () => {
     setProductQA((p) => ({ ...p, saving: true }));
     try {
       const res = await createProductMutation.mutateAsync(payload);
+      const imagePreview =
+        payload.product_image instanceof File
+          ? URL.createObjectURL(payload.product_image)
+          : "";
       await queryClient.invalidateQueries({ queryKey: ["products-for-quotation"] });
       const r = await refetchProjectProducts();
       const created = res?.data?.data || res?.data || res;
@@ -1740,6 +1747,9 @@ const ProjectFormPage = () => {
           ...found,
           product_price:
             Number(found.product_price ?? payload.product_price) || 0,
+          ...(imagePreview
+            ? { product_image: imagePreview || found.product_image }
+            : {}),
         };
         setExtraProducts((prev) => [
           ...prev.filter((p) => p.id?.toString() !== freshProduct.id?.toString()),
@@ -2405,9 +2415,17 @@ const ProjectFormPage = () => {
                                     >
                                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                                         <div
-                                          className="w-full sm:flex-1 sm:min-w-0"
+                                          className="w-full sm:flex-1 sm:min-w-0 flex items-center gap-2"
                                           data-error-field={`product-${srvIdx}-${flrIdx}-${areaIdx}-${prodIdx}`}
                                         >
+                                          <ProductThumbnail
+                                            src={resolveProductImageUrl(
+                                              findProductById(prod.productId),
+                                              productsData?.image_url
+                                            )}
+                                            size={32}
+                                          />
+                                          <div className="flex-1 min-w-0">
                                           <SelectWithAdd
                                             value={prod.productId}
                                             onChange={(opt) =>
@@ -2453,6 +2471,7 @@ const ProjectFormPage = () => {
                                                     )
                                             }
                                           />
+                                          </div>
                                         </div>
 
                                         <div className="flex items-center gap-2 w-full sm:w-auto">

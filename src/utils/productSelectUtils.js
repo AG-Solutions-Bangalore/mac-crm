@@ -2,7 +2,12 @@ import { matchesSearchTokens } from "./productSearch";
 
 const clean = (value) => (value ?? "").toString().trim();
 
-export const buildProductOption = (product, brandName = "", categoryName = "") => {
+export const buildProductOption = (
+  product,
+  brandName = "",
+  categoryName = "",
+  image = "",
+) => {
   const moduleName = clean(product?.product_module);
   const productName = clean(product?.product_name);
   const brand = clean(product?.brand_name) || clean(brandName);
@@ -24,6 +29,7 @@ export const buildProductOption = (product, brandName = "", categoryName = "") =
       .filter(Boolean)
       .join(" ")
       .toLowerCase(),
+    image: clean(image),
   };
 };
 
@@ -37,7 +43,12 @@ export const buildProductOptions = (products = [], resolveNames = {}) => {
       clean(product?.brand_name) || clean(getBrandName?.(product));
     const categoryName =
       clean(product?.category_name) || clean(getCategoryName?.(product));
-    const option = buildProductOption(product, brandName, categoryName);
+    const option = buildProductOption(
+      product,
+      brandName,
+      categoryName,
+      resolveNames.getImage?.(product),
+    );
     const price = Number(product?.product_price) || 0;
 
     const dedupeKey = [

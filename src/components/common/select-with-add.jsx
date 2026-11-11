@@ -130,16 +130,32 @@ const buildStyles = (hasError, align, maxMenuHeight, zIndex) => ({
   }),
 });
 
-// Option row with optional subtitle (label + chhoti second line).
-// getSubtitle diya ho to subtitle dikhega, warna normal option.
+// Option row with optional image + subtitle (label + chhoti second line).
+// getSubtitle ya option.image diya ho to rich row dikhega, warna normal option.
 const SubtitleOption = (props) => {
   const subtitle = props.selectProps?.getSubtitle?.(props.data) || "";
-  if (!subtitle) return <components.Option {...props} />;
+  const image = props.data?.image || "";
+  if (!subtitle && !image) return <components.Option {...props} />;
   return (
     <components.Option {...props}>
-      <div className="flex flex-col">
-        <span className="font-medium text-sm leading-tight">{props.data.label}</span>
-        <span className="text-xs text-slate-500 leading-tight">{subtitle}</span>
+      <div className="flex items-center gap-2">
+        {image && (
+          <img
+            src={image}
+            alt=""
+            className="h-8 w-8 rounded border border-slate-200 object-cover shrink-0 dark:border-slate-700"
+            loading="lazy"
+            onError={(event) => {
+              event.currentTarget.style.display = "none";
+            }}
+          />
+        )}
+        <div className="flex flex-col">
+          <span className="font-medium text-sm leading-tight">{props.data.label}</span>
+          {subtitle && (
+            <span className="text-xs text-slate-500 leading-tight">{subtitle}</span>
+          )}
+        </div>
       </div>
     </components.Option>
   );
@@ -292,7 +308,7 @@ const SelectWithAdd = React.memo(
                   : "No options available"
         }
         styles={{ ...buildStyles(hasError, resolved.align, maxMenuHeight, zIndex), ...stylesOverride }}
-        components={{ Menu: AddMenu, ...(getSubtitle ? { Option: SubtitleOption } : {}), ...componentsOverride }}
+        components={{ Menu: AddMenu, Option: SubtitleOption, ...componentsOverride }}
         // placement wiring
         menuPlacement={resolved.menuPlacement}
         menuPosition={menuPosition}

@@ -1,5 +1,6 @@
 import React from "react";
 import { MapPin, Phone, Mail, Home, Layers ,Building2, Smartphone  } from "lucide-react";
+import ProductThumbnail from "@/components/common/product-thumbnail";
 import logoImg from "@/assets/logo.png";
 
 // ─── Shared font — ui-sans-serif on every text in this document ─────────────
@@ -423,7 +424,10 @@ export default function DynamicProposalDocument({
                                       </TD>
                                     )}
                                     <TD isLight={isLight} style={{ fontWeight: 500, color: t.productText, fontSize: "11px" }}>
-                                      {item.product}
+                                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                        <ProductThumbnail src={item.productImage} size={26} />
+                                        <span>{item.product}</span>
+                                      </div>
                                     </TD>
                                     <TD isLight={isLight} align="center" style={{ fontWeight: 800, color: t.qtyText, fontSize: "11.5px" }}>
                                       {item.quantity}
