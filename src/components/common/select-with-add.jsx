@@ -216,12 +216,46 @@ const SelectWithAdd = React.memo(
     ...rest
   }) => {
     const resolved = resolvePlacement(placement, menuPlacement, align);
+    const typedValueRef = React.useRef("");
 
     const selectOptions = options.map((o) =>
       o?.label !== undefined && o?.value !== undefined
         ? o
         : { value: o?.value ?? o, label: o?.label ?? o }
     );
+
+    // Enter inside the search input must not submit the surrounding form.
+    // If nothing matches the typed text, treat Enter as "add this as new";
+    // otherwise let react-select select the focused option as usual.
+    const handleKeyDown = (event) => {
+      if (
+        event.key !== "Enter" ||
+        event.defaultPrevented ||
+        event.isComposing ||
+        event.keyCode === 229
+      ) {
+        return;
+      }
+      const typed = String(typedValueRef.current || "").trim();
+      if (!typed) return;
+
+      const hasMatch = selectOptions.some((option) => {
+        if (typeof filterOption === "function") {
+          return filterOption(
+            { data: option, label: option.label, value: option.value },
+            typed
+          );
+        }
+        return `${option.label ?? ""} ${option.value ?? ""}`
+          .toLowerCase()
+          .includes(typed.toLowerCase());
+      });
+      if (hasMatch) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      if (onAdd) onAdd(typed);
+    };
 
     const selectedOption =
       value && value !== "" && value !== null
@@ -248,6 +282,7 @@ const SelectWithAdd = React.memo(
         isClearable={isClearable}
         isSearchable={isSearchable}
         filterOption={filterOption}
+        onKeyDown={handleKeyDown}
         noOptionsMessage={
           noOptionsMessage
             ? () => noOptionsMessage
@@ -274,7 +309,10 @@ const SelectWithAdd = React.memo(
         {...(menuIsOpen !== undefined ? { menuIsOpen } : {})}
         {...(onMenuOpen ? { onMenuOpen } : {})}
         {...(onMenuClose ? { onMenuClose } : {})}
-        {...(onInputChange ? { onInputChange } : {})}
+        onInputChange={(value, meta) => {
+          typedValueRef.current = value || "";
+          if (onInputChange) onInputChange(value, meta);
+        }}
         {...rest}
       />
     );
