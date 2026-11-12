@@ -24,15 +24,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useProjectsQuery, useUpdateProjectStatusMutation } from "../hooks/useProject";
+import {
+  useProjectsQuery,
+  useOngoingProjectsQuery,
+  useCompleteProjectsQuery,
+  useUpdateProjectStatusMutation,
+} from "../hooks/useProject";
 import { useCyearQuery } from "../../quotation/hooks/useQuotation";
 import moment from "moment";
 
 const STATUS_TABS = [
   { value: "Pending", label: "Pending", dotClass: "bg-amber-500" },
-  { value: "Approved", label: "Approved", dotClass: "bg-emerald-500" },
-  { value: "Project", label: "Project", dotClass: "bg-sky-500" },
-  { value: "Cancel", label: "Cancel", dotClass: "bg-rose-500" },
+  { value: "Ongoing", label: "Ongoing", dotClass: "bg-sky-500" },
+  { value: "Completed", label: "Completed", dotClass: "bg-emerald-500" },
 ];
 
 const normalizeProjectStatus = (value) =>
@@ -50,31 +54,110 @@ const matchesStatusFilter = (item, filter) => {
   return current === target;
 };
 
+const normalizeQueryResult = (payload) => {
+  const root = payload?.data ?? payload;
+  if (Array.isArray(root)) {
+    return {
+      list: root,
+      isPaginated: false,
+      currentPage: 1,
+      lastPage: 1,
+      total: root.length,
+    };
+  }
+  const list = Array.isArray(root?.data)
+    ? root.data
+    : Array.isArray(root?.projects)
+      ? root.projects
+      : [];
+  return {
+    list,
+    isPaginated: Boolean(
+      root && (root.current_page !== undefined || root.last_page !== undefined)
+    ),
+    currentPage: root?.current_page || 1,
+    lastPage: root?.last_page || 1,
+    total: root?.total ?? list.length,
+  };
+};
+
+const matchesSearch = (item, term) => {
+  const q = String(term || "").trim().toLowerCase();
+  if (!q) return true;
+  return [
+    item.buyer_name,
+    item.project_name,
+    item.property_name,
+    item.quotation_no,
+    item.project_no,
+    item.id,
+  ].some((value) => String(value ?? "").toLowerCase().includes(q));
+};
+
 const ProjectListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = usePersistedSearch();
-  const [statusFilter, setStatusFilter] = useState("Project");
+  const [statusFilter, setStatusFilter] = useState("Pending");
   const [yearFilter, setYearFilter] = useState("all");
   const { data: cyearData } = useCyearQuery();
   const cyearList = cyearData?.data || [];
 
-  const { data: responseData, isLoading, isFetching, isError, refetch } = useProjectsQuery(
+  const pendingQuery = useProjectsQuery(
     page,
     searchTerm,
-    statusFilter,
-    yearFilter
+    "Pending",
+    yearFilter,
+    statusFilter === "Pending"
   );
+  const ongoingQuery = useOngoingProjectsQuery(
+    page,
+    searchTerm,
+    yearFilter,
+    statusFilter === "Ongoing"
+  );
+  const completedQuery = useCompleteProjectsQuery(
+    page,
+    searchTerm,
+    yearFilter,
+    statusFilter === "Completed"
+  );
+
+  const activeQuery =
+    statusFilter === "Ongoing"
+      ? ongoingQuery
+      : statusFilter === "Completed"
+        ? completedQuery
+        : pendingQuery;
+
+  const {
+    data: responseData,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = activeQuery;
   const updateStatusMutation = useUpdateProjectStatusMutation();
 
-  const paginationData = responseData?.data;
-  const rawProjectList = paginationData?.data || [];
+  const {
+    list: rawProjectList,
+    isPaginated,
+    currentPage,
+    lastPage,
+    total,
+  } = normalizeQueryResult(responseData);
+
   const yearScopedList = yearFilter && yearFilter !== "all"
     ? rawProjectList.filter((item) => String(item.year || "").trim() === String(yearFilter).trim())
     : rawProjectList;
-  const projectList = yearScopedList.filter((item) =>
-    matchesStatusFilter(item, statusFilter)
-  );
+  const searchedList =
+    statusFilter === "Pending"
+      ? yearScopedList
+      : yearScopedList.filter((item) => matchesSearch(item, searchTerm));
+  const projectList =
+    statusFilter === "Pending"
+      ? searchedList.filter((item) => matchesStatusFilter(item, "Pending"))
+      : searchedList;
 
   const columns = [
     {
@@ -176,6 +259,21 @@ const ProjectListPage = () => {
 
         if (normalized === "project") {
           return <span className="pill pill-in_progress">Project</span>;
+        }
+        if (
+          normalized === "ongoing" ||
+          normalized === "in progress" ||
+          normalized === "in_progress" ||
+          normalized === "running"
+        ) {
+          return <span className="pill pill-in_progress">Ongoing</span>;
+        }
+        if (
+          normalized === "completed" ||
+          normalized === "complete" ||
+          normalized === "finished"
+        ) {
+          return <span className="pill pill-approved">Completed</span>;
         }
         if (normalized === "approved") {
           return <span className="pill pill-approved">Approved</span>;
@@ -347,10 +445,10 @@ const ProjectListPage = () => {
           setSearchTerm(val);
           setPage(1);
         }}
-        backendPagination={true}
-        page={paginationData?.current_page || 1}
-        totalPages={paginationData?.last_page || 1}
-        totalRecords={paginationData?.total || 0}
+        backendPagination={statusFilter === "Pending" ? true : isPaginated}
+        page={isPaginated ? currentPage : 1}
+        totalPages={isPaginated ? lastPage : 1}
+        totalRecords={isPaginated ? total : projectList.length}
         onPageChange={setPage}
       />
     </div>

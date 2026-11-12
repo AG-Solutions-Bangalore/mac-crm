@@ -19,6 +19,30 @@ export const projectApi = {
     return response.data;
   },
 
+  getOngoingProjects: async (page = 1, search = "", year = "") => {
+    let url = `/getOngoingProject?page=${page}`;
+    if (search) {
+      url += `&search=${encodeURIComponent(search)}`;
+    }
+    if (year && year !== "all") {
+      url += `&year=${encodeURIComponent(year)}`;
+    }
+    const response = await apiClient.get(url);
+    return response.data;
+  },
+
+  getCompleteProjects: async (page = 1, search = "", year = "") => {
+    let url = `/getCompleteProject?page=${page}`;
+    if (search) {
+      url += `&search=${encodeURIComponent(search)}`;
+    }
+    if (year && year !== "all") {
+      url += `&year=${encodeURIComponent(year)}`;
+    }
+    const response = await apiClient.get(url);
+    return response.data;
+  },
+
   createProject: async (data) => {
     const response = await apiClient.post("/project", data);
     return response.data;
