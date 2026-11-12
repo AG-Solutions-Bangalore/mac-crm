@@ -338,6 +338,12 @@
   cursor: pointer !important;
 }
 
+/* Cursor pointer on all buttons */
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
 /* Per-group styling — theme-aware via CSS variables, NO left border */
 .sidebar-group-dashboard .sidebar-hover-pill,
 .sidebar-group-masters .sidebar-hover-pill,
