@@ -37,6 +37,7 @@ const ProductFormPage = () => {
   const [productImage, setProductImage] = useState(null);
   const [imagePreview, setImagePreview] = useState("");
   const [existingImagePreview, setExistingImagePreview] = useState("");
+  const [removeImage, setRemoveImage] = useState(false);
 
   // Active Masters Queries
   const { data: servicesData, isLoading: servicesLoading } = useActiveServicesQuery();
@@ -67,6 +68,7 @@ const ProductFormPage = () => {
       setProductImage(null);
       setImagePreview(preview);
       setExistingImagePreview(preview);
+      setRemoveImage(false);
     }
   }, [isEdit, fetchedData]);
 
@@ -75,11 +77,13 @@ const ProductFormPage = () => {
     if (!file) return;
     setProductImage(file);
     setImagePreview(URL.createObjectURL(file));
+    setRemoveImage(false);
   };
 
   const handleImageRemove = () => {
     setProductImage(null);
-    setImagePreview(existingImagePreview || "");
+    setImagePreview("");
+    setRemoveImage(true);
   };
 
   const handleInputChange = (e) => {
@@ -103,7 +107,7 @@ const ProductFormPage = () => {
     if (!validateForm()) return;
 
     try {
-      const payload = { ...formData, product_image: productImage };
+      const payload = { ...formData, product_image: productImage, removeImage };
       if (isEdit) {
         await updateProductMutation.mutateAsync({
           id,
