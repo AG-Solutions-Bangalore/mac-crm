@@ -2,20 +2,12 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { usePersistedSearch } from "@/hooks/usePersistedSearch";
-import { Edit, FileText, MoreHorizontal, FolderKanban, CheckCircle, XCircle, RotateCcw } from "lucide-react";
+import { Edit, FileText, FolderKanban } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/common/page-header";
-import { toast } from "sonner";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -28,7 +20,6 @@ import {
   useProjectsQuery,
   useOngoingProjectsQuery,
   useCompleteProjectsQuery,
-  useUpdateProjectStatusMutation,
 } from "../hooks/useProject";
 import { useCyearQuery } from "../../quotation/hooks/useQuotation";
 import moment from "moment";
@@ -137,7 +128,6 @@ const ProjectListPage = () => {
     isError,
     refetch,
   } = activeQuery;
-  const updateStatusMutation = useUpdateProjectStatusMutation();
 
   const {
     list: rawProjectList,
@@ -159,15 +149,176 @@ const ProjectListPage = () => {
       ? searchedList.filter((item) => matchesStatusFilter(item, "Pending"))
       : searchedList;
 
+  const formatDate = (value) =>
+    value ? moment(value).format("DD-MM-YYYY") : "—";
+
+  const truncateCell = (value) => {
+    if (!value) return <span className="text-slate-400">-</span>;
+    return (
+      <span
+        className="line-clamp-2 break-words [overflow-wrap:anywhere]"
+        title={value}
+      >
+        {value}
+      </span>
+    );
+  };
+
+  const renderStatus = (p) => {
+    const status = getProjectStatus(p);
+    const normalized = normalizeProjectStatus(status);
+
+    if (normalized === "project") {
+      return <span className="pill pill-in_progress">Project</span>;
+    }
+    if (
+      normalized === "ongoing" ||
+      normalized === "in progress" ||
+      normalized === "in_progress" ||
+      normalized === "running"
+    ) {
+      return <span className="pill pill-in_progress">Ongoing</span>;
+    }
+    if (
+      normalized === "completed" ||
+      normalized === "complete" ||
+      normalized === "finished"
+    ) {
+      return <span className="pill pill-approved">Completed</span>;
+    }
+    if (normalized === "approved") {
+      return <span className="pill pill-approved">Approved</span>;
+    }
+    if (normalized === "closed") {
+      return <span className="pill pill-rejected">Closed</span>;
+    }
+    if (normalized === "pending") {
+      return <span className="pill pill-pending">Pending</span>;
+    }
+    if (normalized === "cancel" || normalized === "cancelled") {
+      return <span className="pill pill-rejected">Cancel</span>;
+    }
+
+    return <span className="pill pill-draft">{status}</span>;
+  };
+
+  const renderActions = (p) => (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <Button
+        size="icon"
+        variant="outline"
+        className="h-8 w-8"
+        onClick={() => navigate(`/project-list/edit/${p.id}`)}
+        title="Edit Project"
+        aria-label="Edit Project"
+      >
+        <Edit className="h-4 w-4 shrink-0" />
+      </Button>
+      <Button
+        size="icon"
+        variant="outline"
+        className="h-8 w-8 text-slate-600 hover:text-slate-800"
+        onClick={() => navigate(`/quotation-report/${p.id}?type=project`)}
+        title="View Report"
+        aria-label="View Report"
+      >
+        <FileText className="h-4 w-4 shrink-0" />
+      </Button>
+    </div>
+  );
+
+  const renderMobileCard = (p, index) => (
+    <div className="rounded-xl border border-border bg-card p-3 shadow-sm space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">
+            {p.buyer_name || "—"}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            {p.property_name || "—"}
+          </p>
+        </div>
+        <div className="shrink-0">{renderStatus(p)}</div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+        <div>
+          <p className="text-muted-foreground">Date</p>
+          <p className="font-medium">
+            {formatDate(p.project_date || p.quotation_date)}
+          </p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">Price Validity</p>
+          <p className="font-medium">
+            {formatDate(p.price_validity_date || p.quotation_validity_date)}
+          </p>
+        </div>
+        <div>
+          <p className="text-muted-foreground">Amount</p>
+          <p className="font-medium">
+            {p.project_amount || p.quotation_amount
+              ? `₹${Number(p.project_amount || p.quotation_amount).toLocaleString("en-IN")}`
+              : "—"}
+          </p>
+        </div>
+      </div>
+
+      {(p.project_category_name ||
+        p.quotation_category_name ||
+        p.category_name ||
+        p.project_service_name ||
+        p.quotation_service_name ||
+        p.service_name) && (
+        <div className="space-y-1 text-xs">
+          {(p.project_category_name ||
+            p.quotation_category_name ||
+            p.category_name) && (
+            <p className="line-clamp-2 break-words [overflow-wrap:anywhere]">
+              <span className="font-medium text-muted-foreground">
+                Categories:{" "}
+              </span>
+              {p.project_category_name ||
+                p.quotation_category_name ||
+                p.category_name}
+            </p>
+          )}
+          {(p.project_service_name ||
+            p.quotation_service_name ||
+            p.service_name) && (
+            <p className="line-clamp-2 break-words [overflow-wrap:anywhere]">
+              <span className="font-medium text-muted-foreground">
+                Services:{" "}
+              </span>
+              {p.project_service_name ||
+                p.quotation_service_name ||
+                p.service_name}
+            </p>
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2">
+        <span className="text-[11px] text-muted-foreground">
+          #{(page - 1) * 50 + index + 1}
+        </span>
+        {renderActions(p)}
+      </div>
+    </div>
+  );
+
   const columns = [
     {
       header: "Sl No",
       id: "sl_no",
+      size: 48,
+      meta: { className: "hidden 2xl:table-cell" },
       cell: ({ row }) => (page - 1) * 50 + row.index + 1,
     },
     {
       header: "Date",
       accessorKey: "project_date",
+      size: 104,
       cell: ({ row }) => {
         const d = row.original.project_date || row.original.quotation_date;
         return (
@@ -180,6 +331,7 @@ const ProjectListPage = () => {
     {
       header: "Price Validity Date",
       accessorKey: "price_validity_date",
+      size: 120,
       cell: ({ row }) => {
         const val = row.original.price_validity_date || row.original.quotation_validity_date;
         if (!val) {
@@ -215,32 +367,41 @@ const ProjectListPage = () => {
     {
       header: "Lead",
       accessorKey: "buyer_name",
+      size: 120,
+      cell: ({ row }) => truncateCell(row.original.buyer_name),
     },
     {
       header: "Property",
       accessorKey: "property_name",
+      size: 130,
+      cell: ({ row }) => truncateCell(row.original.property_name),
     },
     {
       header: "Categories",
       accessorKey: "category_name",
+      size: 150,
       cell: ({ row }) =>
-        row.original.project_category_name ||
-        row.original.quotation_category_name ||
-        row.original.category_name ||
-        "-",
+        truncateCell(
+          row.original.project_category_name ||
+            row.original.quotation_category_name ||
+            row.original.category_name
+        ),
     },
     {
       header: "Services",
       accessorKey: "service_name",
+      size: 170,
       cell: ({ row }) =>
-        row.original.project_service_name ||
-        row.original.quotation_service_name ||
-        row.original.service_name ||
-        "-",
+        truncateCell(
+          row.original.project_service_name ||
+            row.original.quotation_service_name ||
+            row.original.service_name
+        ),
     },
     {
       header: "Amount (₹)",
       accessorKey: "project_amount",
+      size: 100,
       cell: ({ row }) => {
         const val = row.original.project_amount || row.original.quotation_amount;
         return (
@@ -253,125 +414,15 @@ const ProjectListPage = () => {
     {
       header: "Status",
       accessorKey: "status",
-      cell: ({ row }) => {
-        const status = getProjectStatus(row.original);
-        const normalized = normalizeProjectStatus(status);
-
-        if (normalized === "project") {
-          return <span className="pill pill-in_progress">Project</span>;
-        }
-        if (
-          normalized === "ongoing" ||
-          normalized === "in progress" ||
-          normalized === "in_progress" ||
-          normalized === "running"
-        ) {
-          return <span className="pill pill-in_progress">Ongoing</span>;
-        }
-        if (
-          normalized === "completed" ||
-          normalized === "complete" ||
-          normalized === "finished"
-        ) {
-          return <span className="pill pill-approved">Completed</span>;
-        }
-        if (normalized === "approved") {
-          return <span className="pill pill-approved">Approved</span>;
-        }
-        if (normalized === "closed") {
-          return <span className="pill pill-rejected">Closed</span>;
-        }
-        if (normalized === "pending") {
-          return <span className="pill pill-pending">Pending</span>;
-        }
-        if (normalized === "cancel" || normalized === "cancelled") {
-          return <span className="pill pill-rejected">Cancel</span>;
-        }
-
-        return <span className="pill pill-draft">{status}</span>;
-      },
+      size: 110,
+      cell: ({ row }) => renderStatus(row.original),
     },
     {
       header: "Actions",
       accessorKey: "actions",
+      size: 100,
       enableSorting: false,
-      cell: ({ row }) => {
-        const p = row.original;
-        const status = p.project_status || p.status || p.quotation_status || "Project";
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="outline" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Open actions</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[12rem]">
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => navigate(`/project-list/edit/${p.id}`)}
-              >
-                <Edit className="h-4 w-4 mr-2" /> Edit Project
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => navigate(`/quotation-report/${p.id}?type=project`)}
-              >
-                <FileText className="h-4 w-4 mr-2" /> View Report
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              {status !== "Approved" && (
-                <DropdownMenuItem
-                  className="cursor-pointer text-emerald-600 dark:text-emerald-400 font-medium"
-                  onClick={async () => {
-                    try {
-                      await updateStatusMutation.mutateAsync({ id: p.id, status: "Approved" });
-                      toast.success("Project status changed to Approved");
-                      refetch();
-                    } catch (err) {
-                      toast.error(err?.response?.data?.message || err.message || "Failed to update status");
-                    }
-                  }}
-                >
-                  <CheckCircle className="h-4 w-4 mr-2" /> Mark as Approved
-                </DropdownMenuItem>
-              )}
-              {status !== "Project" && (
-                <DropdownMenuItem
-                  className="cursor-pointer text-blue-600 dark:text-blue-400 font-medium"
-                  onClick={async () => {
-                    try {
-                      await updateStatusMutation.mutateAsync({ id: p.id, status: "Project" });
-                      toast.success("Project status set to Project");
-                      refetch();
-                    } catch (err) {
-                      toast.error(err?.response?.data?.message || err.message || "Failed to update status");
-                    }
-                  }}
-                >
-                  <RotateCcw className="h-4 w-4 mr-2" /> Set as Project
-                </DropdownMenuItem>
-              )}
-              {status !== "Cancel" && (
-                <DropdownMenuItem
-                  className="cursor-pointer text-rose-600 dark:text-rose-400 font-medium"
-                  onClick={async () => {
-                    try {
-                      await updateStatusMutation.mutateAsync({ id: p.id, status: "Cancel" });
-                      toast.success("Project status changed to Cancel");
-                      refetch();
-                    } catch (err) {
-                      toast.error(err?.response?.data?.message || err.message || "Failed to update status");
-                    }
-                  }}
-                >
-                  <XCircle className="h-4 w-4 mr-2" /> Mark as Cancel
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
-      },
+      cell: ({ row }) => renderActions(row.original),
     },
   ];
 
@@ -412,6 +463,8 @@ const ProjectListPage = () => {
 
       <DataTable
         isLoading={isLoading || isFetching}
+        fitWidth
+        mobileCard={renderMobileCard}
         extraButtonFullWidthOnMobile
         extraButton={
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
