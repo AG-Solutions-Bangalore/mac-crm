@@ -86,6 +86,34 @@ export function useUpdateProjectStatusMutation() {
   });
 }
 
+export function useUpdateProjectStartDateMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, startDate }) =>
+      projectApi.updateProjectStartDate(id, startDate),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects-ongoing"] });
+      queryClient.invalidateQueries({ queryKey: ["projects-completed"] });
+      queryClient.invalidateQueries({ queryKey: ["project", variables.id] });
+    },
+  });
+}
+
+export function useUpdateProjectFinishDateMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, finishDate }) =>
+      projectApi.updateProjectFinishWorkDate(id, finishDate),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects-ongoing"] });
+      queryClient.invalidateQueries({ queryKey: ["projects-completed"] });
+      queryClient.invalidateQueries({ queryKey: ["project", variables.id] });
+    },
+  });
+}
+
 export function useDeleteProjectSubMutation() {
   const queryClient = useQueryClient();
   return useMutation({

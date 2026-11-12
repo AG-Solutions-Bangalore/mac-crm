@@ -66,4 +66,21 @@ export const projectApi = {
     });
     return response.data;
   },
+
+  updateProjectStartDate: async (id, startDate) => {
+    const response = await apiClient.put(`/update-project-start-date/${id}`, {
+      project_start_date: startDate,
+    });
+    return response.data;
+  },
+
+  updateProjectFinishWorkDate: async (id, finishWorkDate) => {
+    const response = await apiClient.put(
+      `/update-project-finish-work-date/${id}`,
+      {
+        quotation_finish_work_date: finishWorkDate,
+      }
+    );
+    return response.data;
+  },
 };

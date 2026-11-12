@@ -2,12 +2,22 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { usePersistedSearch } from "@/hooks/usePersistedSearch";
-import { Edit, FileText, FolderKanban } from "lucide-react";
+import { Edit, FileText, CalendarDays, CalendarCheck, FolderKanban } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/common/page-header";
+import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -20,6 +30,8 @@ import {
   useProjectsQuery,
   useOngoingProjectsQuery,
   useCompleteProjectsQuery,
+  useUpdateProjectStartDateMutation,
+  useUpdateProjectFinishDateMutation,
 } from "../hooks/useProject";
 import { useCyearQuery } from "../../quotation/hooks/useQuotation";
 import moment from "moment";
@@ -93,6 +105,13 @@ const ProjectListPage = () => {
   const [yearFilter, setYearFilter] = useState("all");
   const { data: cyearData } = useCyearQuery();
   const cyearList = cyearData?.data || [];
+  const [dateDialogOpen, setDateDialogOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [dateField, setDateField] = useState("start");
+  const [dateValue, setDateValue] = useState("");
+
+  const updateStartDateMutation = useUpdateProjectStartDateMutation();
+  const updateFinishDateMutation = useUpdateProjectFinishDateMutation();
 
   const pendingQuery = useProjectsQuery(
     page,
@@ -149,6 +168,46 @@ const ProjectListPage = () => {
       ? searchedList.filter((item) => matchesStatusFilter(item, "Pending"))
       : searchedList;
 
+  const handleOpenDateDialog = (project, field) => {
+    setSelectedProject(project);
+    setDateField(field);
+    setDateValue(
+      field === "start"
+        ? project.project_start_date || ""
+        : project.quotation_finish_work_date ||
+            project.project_finish_work_date ||
+            ""
+    );
+    setDateDialogOpen(true);
+  };
+
+  const handleSaveDate = async () => {
+    if (!selectedProject) return;
+    try {
+      if (dateField === "start") {
+        await updateStartDateMutation.mutateAsync({
+          id: selectedProject.id,
+          startDate: dateValue,
+        });
+        toast.success("Start date updated successfully");
+      } else {
+        await updateFinishDateMutation.mutateAsync({
+          id: selectedProject.id,
+          finishDate: dateValue,
+        });
+        toast.success("Finish work date updated successfully");
+      }
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message || error.message || "Failed to update date"
+      );
+    } finally {
+      setDateDialogOpen(false);
+      setSelectedProject(null);
+      refetch();
+    }
+  };
+
   const formatDate = (value) =>
     value ? moment(value).format("DD-MM-YYYY") : "—";
 
@@ -202,30 +261,64 @@ const ProjectListPage = () => {
     return <span className="pill pill-draft">{status}</span>;
   };
 
-  const renderActions = (p) => (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <Button
-        size="icon"
-        variant="outline"
-        className="h-8 w-8"
-        onClick={() => navigate(`/project-list/edit/${p.id}`)}
-        title="Edit Project"
-        aria-label="Edit Project"
-      >
-        <Edit className="h-4 w-4 shrink-0" />
-      </Button>
-      <Button
-        size="icon"
-        variant="outline"
-        className="h-8 w-8 text-slate-600 hover:text-slate-800"
-        onClick={() => navigate(`/quotation-report/${p.id}?type=project`)}
-        title="View Report"
-        aria-label="View Report"
-      >
-        <FileText className="h-4 w-4 shrink-0" />
-      </Button>
-    </div>
-  );
+  const renderActions = (p) => {
+    const normalizedTab = normalizeProjectStatus(statusFilter);
+    const isPending = normalizedTab === "pending";
+    const isOngoing =
+      normalizedTab === "ongoing" ||
+      normalizedTab === "in progress" ||
+      normalizedTab === "in_progress" ||
+      normalizedTab === "running";
+
+    return (
+      <div className="flex flex-nowrap items-center gap-1">
+        <Button
+          size="icon"
+          variant="outline"
+          className="h-8 w-8"
+          onClick={() => navigate(`/project-list/edit/${p.id}`)}
+          title="Edit Project"
+          aria-label="Edit Project"
+        >
+          <Edit className="h-4 w-4 shrink-0" />
+        </Button>
+        <Button
+          size="icon"
+          variant="outline"
+          className="h-8 w-8 text-slate-600 hover:text-slate-800"
+          onClick={() => navigate(`/quotation-report/${p.id}?type=project`)}
+          title="View Report"
+          aria-label="View Report"
+        >
+          <FileText className="h-4 w-4 shrink-0" />
+        </Button>
+        {isPending && (
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-8 w-8 text-sky-600 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/30"
+            onClick={() => handleOpenDateDialog(p, "start")}
+            title="Update Start Date"
+            aria-label="Update Start Date"
+          >
+            <CalendarDays className="h-4 w-4 shrink-0" />
+          </Button>
+        )}
+        {isOngoing && (
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+            onClick={() => handleOpenDateDialog(p, "finish")}
+            title="Update Finish Date"
+            aria-label="Update Finish Date"
+          >
+            <CalendarCheck className="h-4 w-4 shrink-0" />
+          </Button>
+        )}
+      </div>
+    );
+  };
 
   const renderMobileCard = (p, index) => (
     <div className="rounded-xl border border-border bg-card p-3 shadow-sm space-y-3">
@@ -420,7 +513,7 @@ const ProjectListPage = () => {
     {
       header: "Actions",
       accessorKey: "actions",
-      size: 100,
+      size: 130,
       enableSorting: false,
       cell: ({ row }) => renderActions(row.original),
     },
@@ -504,6 +597,47 @@ const ProjectListPage = () => {
         totalRecords={isPaginated ? total : projectList.length}
         onPageChange={setPage}
       />
+
+      <Dialog open={dateDialogOpen} onOpenChange={setDateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {dateField === "start"
+                ? "Update Start Date"
+                : "Update Finish Work Date"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>
+                {dateField === "start" ? "Start Date" : "Finish Work Date"}
+              </Label>
+              <Input
+                type="date"
+                value={dateValue}
+                onChange={(e) => setDateValue(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDateDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveDate}
+              disabled={
+                updateStartDateMutation.isPending ||
+                updateFinishDateMutation.isPending
+              }
+            >
+              Save Date
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
