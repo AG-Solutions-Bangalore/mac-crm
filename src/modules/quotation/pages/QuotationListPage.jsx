@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useQuotationsQuery,
   useUpdateQuotationFinishWorkDateMutation,
@@ -39,6 +40,26 @@ import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import moment from "moment";
 import { isQuotationOwnedByUser } from "@/utils/permissions";
+
+const STATUS_TABS = [
+  { value: "all", label: "All", dotClass: "bg-slate-400" },
+  { value: "Pending", label: "Pending", dotClass: "bg-amber-500" },
+  { value: "Approved", label: "Approved", dotClass: "bg-emerald-500" },
+  { value: "Project", label: "Project", dotClass: "bg-sky-500" },
+  { value: "Cancel", label: "Cancel", dotClass: "bg-rose-500" },
+];
+
+const normalizeQuotationStatus = (value) =>
+  String(value ?? "").trim().toLowerCase();
+
+const matchesStatusFilter = (item, filter) => {
+  const current = normalizeQuotationStatus(item.quotation_status);
+  const target = normalizeQuotationStatus(filter);
+  if (target === "cancel") {
+    return current === "cancel" || current === "cancelled";
+  }
+  return current === target;
+};
 
 const QuotationListPage = () => {
   const navigate = useNavigate();
@@ -234,11 +255,14 @@ const QuotationListPage = () => {
     : userScopedList;
 
   const quotationList =
-    statusFilter === "all" && hideConverted
-      ? yearScopedList.filter(
-          (item) => item.quotation_status?.toLowerCase() !== "project"
-        )
-      : yearScopedList;
+    statusFilter === "all"
+      ? hideConverted
+        ? yearScopedList.filter(
+            (item) =>
+              normalizeQuotationStatus(item.quotation_status) !== "project"
+          )
+        : yearScopedList
+      : yearScopedList.filter((item) => matchesStatusFilter(item, statusFilter));
 
   quotationList.sort(
     (a, b) =>
@@ -545,24 +569,52 @@ const QuotationListPage = () => {
         title="Quotations"
         description="Manage customer quotations and revisions"
       />
+
+      <div className="mb-2 overflow-x-auto">
+        <Tabs
+          value={statusFilter}
+          onValueChange={(val) => {
+            setStatusFilter(val);
+            setPage(1);
+          }}
+        >
+          <TabsList className="h-10 w-max min-w-full justify-start gap-1 bg-muted/60 p-1">
+            {STATUS_TABS.map((tab) => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="gap-1.5 px-3 text-xs font-semibold sm:text-sm"
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${tab.dotClass}`}
+                />
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
+
       <DataTable
         isLoading={isLoading || isFetching}
         fitWidth
         mobileCard={renderMobileCard}
         extraButton={
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <label
-              className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 cursor-pointer select-none whitespace-nowrap"
-              title="Hide quotes already converted to projects"
-            >
-              <input
-                type="checkbox"
-                checked={hideConverted}
-                onChange={(e) => setHideConverted(e.target.checked)}
-                className="rounded border-slate-300 dark:border-slate-700 h-3.5 w-3.5"
-              />
-              Estimates only
-            </label>
+            {statusFilter === "all" && (
+              <label
+                className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 cursor-pointer select-none whitespace-nowrap"
+                title="Hide quotes already converted to projects"
+              >
+                <input
+                  type="checkbox"
+                  checked={hideConverted}
+                  onChange={(e) => setHideConverted(e.target.checked)}
+                  className="rounded border-slate-300 dark:border-slate-700 h-3.5 w-3.5"
+                />
+                Estimates only
+              </label>
+            )}
             <Select
               value={yearFilter}
               onValueChange={(val) => {
@@ -580,25 +632,6 @@ const QuotationListPage = () => {
                     {c.cyear}
                   </SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={statusFilter}
-              onValueChange={(val) => {
-                setStatusFilter(val);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-[130px]">
-                <SelectValue placeholder="Select Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Approved">Approved</SelectItem>
-                <SelectItem value="Project">Project</SelectItem>
-                <SelectItem value="Cancel">Cancel</SelectItem>
               </SelectContent>
             </Select>
           </div>

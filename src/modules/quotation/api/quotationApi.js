@@ -58,7 +58,7 @@ export const quotationApi = {
   getQuotations: async (page = 1, search = "", status = "", year = "") => {
     let url = `/quotation?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ""}`;
     if (status && status !== "all") {
-      url += `&filter=${encodeURIComponent(status)}`;
+      url += `&status=${encodeURIComponent(status)}&filter=${encodeURIComponent(status)}`;
     }
     if (year && year !== "all") {
       url += `&year=${encodeURIComponent(year)}`;
