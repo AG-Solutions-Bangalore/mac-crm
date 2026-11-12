@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { usePersistedSearch } from "@/hooks/usePersistedSearch";
-import { Edit, FileText, CalendarDays } from "lucide-react";
+import { Edit, FileText, CalendarDays, FolderKanban } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import ApiErrorPage from "@/components/api-error/api-error";
 import { Button } from "@/components/ui/button";
@@ -27,6 +27,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useQuotationsQuery,
   useUpdateQuotationValidateDateMutation,
+  useUpdateQuotationStatusMutation,
   useCyearQuery,
 } from "../hooks/useQuotation";
 import { useSelector } from "react-redux";
@@ -66,9 +67,12 @@ const QuotationListPage = () => {
   const [validityDialogOpen, setValidityDialogOpen] = useState(false);
   const [selectedQuotation, setSelectedQuotation] = useState(null);
   const [validityDate, setValidityDate] = useState("");
+  const [convertDialogOpen, setConvertDialogOpen] = useState(false);
+  const [convertingQuotation, setConvertingQuotation] = useState(null);
 
   const { data: responseData, isLoading, isFetching, isError, refetch } = useQuotationsQuery(page, searchTerm, statusFilter, yearFilter);
   const updateValidateDateMutation = useUpdateQuotationValidateDateMutation();
+  const updateStatusMutation = useUpdateQuotationStatusMutation();
 
   const handleOpenValidateDateDialog = (quotation) => {
     setSelectedQuotation(quotation);
@@ -90,6 +94,31 @@ const QuotationListPage = () => {
       setValidityDialogOpen(false);
       setSelectedQuotation(null);
       refetch();
+    }
+  };
+
+  const handleOpenConvertDialog = (quotation) => {
+    setConvertingQuotation(quotation);
+    setConvertDialogOpen(true);
+  };
+
+  const handleConfirmConvert = async () => {
+    if (!convertingQuotation) return;
+    try {
+      await updateStatusMutation.mutateAsync({
+        id: convertingQuotation.id,
+        status: "Project",
+      });
+      setConvertDialogOpen(false);
+      setConvertingQuotation(null);
+      toast.success("Quotation converted to Project successfully");
+      refetch();
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to convert quotation to project"
+      );
     }
   };
 
@@ -141,6 +170,8 @@ const QuotationListPage = () => {
 
   const renderActions = (q, labeled = false) => {
     const isPending = normalizeQuotationStatus(q.quotation_status) === "pending";
+    const isApproved =
+      normalizeQuotationStatus(q.quotation_status) === "approved";
     const actions = [
       {
         label: "Edit",
@@ -167,10 +198,22 @@ const QuotationListPage = () => {
         onClick: () => navigate(`/quotation-report/${q.id}`),
         extra: "text-slate-600 hover:text-slate-800",
       },
+      ...(isApproved
+        ? [
+            {
+              label: "Convert",
+              title: "Convert to Project",
+              icon: FolderKanban,
+              onClick: () => handleOpenConvertDialog(q),
+              extra:
+                "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30",
+            },
+          ]
+        : []),
     ];
 
     return (
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-nowrap items-center gap-1">
         {actions.map(({ label, title, icon: Icon, onClick, extra }) => (
           <Button
             key={title}
@@ -372,7 +415,7 @@ const QuotationListPage = () => {
     {
       header: "Actions",
       accessorKey: "actions",
-      size: 110,
+      size: 145,
       enableSorting: false,
       cell: ({ row }) => renderActions(row.original),
     },
@@ -484,6 +527,64 @@ const QuotationListPage = () => {
               disabled={updateValidateDateMutation.isPending}
             >
               Save Date
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={convertDialogOpen} onOpenChange={setConvertDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FolderKanban className="h-5 w-5 text-emerald-600" />
+              Convert to Project
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to convert this quotation into a Project?
+              The quotation status will be updated to Project.
+            </p>
+            {convertingQuotation && (
+              <div className="space-y-2 rounded-lg border border-border p-3 text-sm">
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Customer</span>
+                  <span className="text-right font-medium">
+                    {convertingQuotation.buyer_name || "-"}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Property</span>
+                  <span className="text-right font-medium">
+                    {convertingQuotation.property_name || "-"}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Amount</span>
+                  <span className="text-right font-medium">
+                    ₹
+                    {Number(
+                      convertingQuotation.quotation_amount || 0
+                    ).toLocaleString("en-IN")}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConvertDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmConvert}
+              disabled={updateStatusMutation.isPending}
+            >
+              {updateStatusMutation.isPending
+                ? "Converting..."
+                : "Convert to Project"}
             </Button>
           </DialogFooter>
         </DialogContent>
