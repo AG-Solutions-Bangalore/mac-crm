@@ -172,11 +172,14 @@ export default function CompactTableView({
                   {headers.map((header) => (
                     <TableHead
                       key={header}
-                      className="text-xs font-semibold"
+                      className={`text-xs font-semibold ${header === "Remarks" ? "makc-remarks-th" : ""}`}
                       style={{
                         color: LIGHT.mutedText,
                         ...(header === "Brand"
                           ? { width: "1%", whiteSpace: "nowrap" }
+                          : {}),
+                        ...(header === "Image"
+                          ? { width: "60px", textAlign: "center" }
                           : {}),
                       }}
                     >
@@ -197,10 +200,7 @@ export default function CompactTableView({
                       <TableCell style={{ color: LIGHT.bodyText }}>{row.floor || "-"}</TableCell>
                       <TableCell style={{ color: LIGHT.bodyText }}>{row.area || "-"}</TableCell>
                       <TableCell className="font-bold" style={{ color: LIGHT.headingText }}>
-                        <div className="flex items-center gap-2">
-                          <ProductThumbnail src={row.productImage} size={28} />
-                          <span>{row.product}</span>
-                        </div>
+                        <span>{row.product}</span>
                       </TableCell>
                       <TableCell className="font-medium text-center" style={{ color: LIGHT.bodyText }}>{row.module || "-"}</TableCell>
                       <TableCell className="font-bold text-center" style={{ color: LIGHT.accent }}>{row.quantity || "-"}</TableCell>
@@ -212,7 +212,16 @@ export default function CompactTableView({
                       </TableCell>
                       <TableCell className="font-bold whitespace-nowrap" style={{ color: LIGHT.headingText, width: "1%" }}>{row.brand || "-"}</TableCell>
                       <TableCell className="font-bold" style={{ color: LIGHT.green }}>{formatWarranty(row.warranty)}</TableCell>
-                      <TableCell style={{ color: LIGHT.bodyText }}>{row.remarks || "-"}</TableCell>
+                      <TableCell className="makc-remarks" style={{ color: LIGHT.bodyText }}>{row.remarks || "-"}</TableCell>
+                      <TableCell className="text-center" style={{ width: "60px" }}>
+                        {row.productImage ? (
+                          <div className="flex items-center justify-center">
+                            <ProductThumbnail src={row.productImage} size={32} />
+                          </div>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
                     </TableRow>
                   ) : (
                     <TableRow
@@ -231,7 +240,7 @@ export default function CompactTableView({
                         <>
                           <TableCell style={{ color: LIGHT.accent }}>{formatMoney(row.totalPrice)}</TableCell>
                           <TableCell />
-                          <TableCell colSpan={3} />
+                          <TableCell colSpan={4} />
                         </>
                       )}
                     </TableRow>
