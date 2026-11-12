@@ -2,11 +2,9 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { usePersistedSearch } from "@/hooks/usePersistedSearch";
-import { Edit, FileText, CalendarDays, FolderKanban } from "lucide-react";
+import { Edit, FileText, CalendarDays } from "lucide-react";
 import DataTable from "@/components/common/data-table";
-import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
-import ToggleStatus from "@/components/toogle/status-toogle";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/common/page-header";
 import {
@@ -28,21 +26,15 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useQuotationsQuery,
-  useUpdateQuotationFinishWorkDateMutation,
-  useUpdateQuotationStatusMutation,
   useUpdateQuotationValidateDateMutation,
   useCyearQuery,
 } from "../hooks/useQuotation";
-import { quotationApi } from "../api/quotationApi";
-import { projectApi } from "../../project/api/projectApi";
-import { useQueryClient } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import moment from "moment";
 import { isQuotationOwnedByUser } from "@/utils/permissions";
 
 const STATUS_TABS = [
-  { value: "all", label: "All", dotClass: "bg-slate-400" },
   { value: "Pending", label: "Pending", dotClass: "bg-amber-500" },
   { value: "Approved", label: "Approved", dotClass: "bg-emerald-500" },
   { value: "Project", label: "Project", dotClass: "bg-sky-500" },
@@ -67,178 +59,37 @@ const QuotationListPage = () => {
   const isRestrictedUser = Number(user?.user_type) === 4;
   const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = usePersistedSearch();
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("Pending");
   const [yearFilter, setYearFilter] = useState("all");
   const { data: cyearData } = useCyearQuery();
   const cyearList = cyearData?.data || [];
-  // Estimates-only view: converted (Project) quotes hidden by default (client-side,
-  // backend has no hide-converted filter yet). Specific status selection overrides it.
-  const [hideConverted, setHideConverted] = useState(true);
-  const [finishDateDialogOpen, setFinishDateDialogOpen] = useState(false);
+  const [validityDialogOpen, setValidityDialogOpen] = useState(false);
   const [selectedQuotation, setSelectedQuotation] = useState(null);
-  const [finishDate, setFinishDate] = useState("");
-  const [dialogMode, setDialogMode] = useState("finish");
-  const [convertDialogOpen, setConvertDialogOpen] = useState(false);
-  const [convertingQuotation, setConvertingQuotation] = useState(null);
+  const [validityDate, setValidityDate] = useState("");
 
-  const queryClient = useQueryClient();
   const { data: responseData, isLoading, isFetching, isError, refetch } = useQuotationsQuery(page, searchTerm, statusFilter, yearFilter);
-  const updateFinishWorkDateMutation = useUpdateQuotationFinishWorkDateMutation();
-  const updateStatusMutation = useUpdateQuotationStatusMutation();
   const updateValidateDateMutation = useUpdateQuotationValidateDateMutation();
-
-  const handleOpenFinishDateDialog = (quotation) => {
-    setSelectedQuotation(quotation);
-    setFinishDate(quotation.quotation_finish_work_date || "");
-    setFinishDateDialogOpen(true);
-  };
 
   const handleOpenValidateDateDialog = (quotation) => {
     setSelectedQuotation(quotation);
-    setFinishDate(quotation.quotation_validity_date || "");
-    setFinishDateDialogOpen(true);
-    setDialogMode("validate");
+    setValidityDate(quotation.quotation_validity_date || "");
+    setValidityDialogOpen(true);
   };
 
-  const handleSaveFinishDate = async () => {
+  const handleSaveValidityDate = async () => {
     if (!selectedQuotation) return;
     try {
-      if (dialogMode === "validate") {
-        await updateValidateDateMutation.mutateAsync({
-          id: selectedQuotation.id,
-          validityDate: finishDate,
-        });
-        toast.success("Validity date updated successfully");
-      } else {
-        await updateFinishWorkDateMutation.mutateAsync({
-          id: selectedQuotation.id,
-          finishWorkDate: finishDate,
-        });
-        toast.success("Finish work date updated successfully");
-      }
+      await updateValidateDateMutation.mutateAsync({
+        id: selectedQuotation.id,
+        validityDate,
+      });
+      toast.success("Validity date updated successfully");
     } catch (error) {
       toast.error(error.message || "Failed to update date");
     } finally {
-      setFinishDateDialogOpen(false);
+      setValidityDialogOpen(false);
       setSelectedQuotation(null);
-      setDialogMode("finish");
       refetch();
-    }
-  };
-
-  const handleOpenConvertDialog = (quotation) => {
-    setConvertingQuotation(quotation);
-    setConvertDialogOpen(true);
-  };
-
-  const handleConfirmConvert = async () => {
-    if (!convertingQuotation) return;
-    try {
-      // 1. Fetch full quotation with subs
-      let fullQuote = convertingQuotation;
-      try {
-        const fullQuoteRes = await quotationApi.getQuotationById(convertingQuotation.id);
-        if (fullQuoteRes?.data) fullQuote = fullQuoteRes.data;
-      } catch (err) {
-        console.warn("Could not fetch full quotation details, using row data:", err);
-      }
-
-      // 2. Prepare subs for project payload
-      const subs = (fullQuote.subs || []).map((item, idx) => {
-        const notes = item.quotation_sub_notes || item.project_sub_notes || "";
-        const sort = item.quotation_sub_sort ?? item.project_sub_sort ?? (idx + 1);
-        return {
-          // Sort keys
-          quotation_sub_sort: sort,
-          project_sub_sort: sort,
-          // Project keys
-          project_sub_service_id: item.quotation_sub_service_id ?? item.project_sub_service_id,
-          project_sub_floor_id: item.quotation_sub_floor_id ?? item.project_sub_floor_id,
-          project_sub_area_id: item.quotation_sub_area_id ?? item.project_sub_area_id,
-          project_sub_product_id: item.quotation_sub_product_id ?? item.project_sub_product_id,
-          project_sub_price: Number(item.quotation_sub_price ?? item.project_sub_price) || 0,
-          project_sub_quantity: Number(item.quotation_sub_quantity ?? item.project_sub_quantity) || 1,
-          project_sub_amount: Number(item.quotation_sub_amount ?? item.project_sub_amount) || 0,
-          project_sub_status: item.quotation_sub_status ?? item.project_sub_status ?? "Pending",
-          project_sub_notes: notes,
-          // Quotation dual keys
-          quotation_sub_service_id: item.quotation_sub_service_id ?? item.project_sub_service_id,
-          quotation_sub_floor_id: item.quotation_sub_floor_id ?? item.project_sub_floor_id,
-          quotation_sub_area_id: item.quotation_sub_area_id ?? item.project_sub_area_id,
-          quotation_sub_product_id: item.quotation_sub_product_id ?? item.project_sub_product_id,
-          quotation_sub_price: Number(item.quotation_sub_price ?? item.project_sub_price) || 0,
-          quotation_sub_quantity: Number(item.quotation_sub_quantity ?? item.project_sub_quantity) || 1,
-          quotation_sub_amount: Number(item.quotation_sub_amount ?? item.project_sub_amount) || 0,
-          quotation_sub_status: item.quotation_sub_status ?? item.project_sub_status ?? "Pending",
-          quotation_sub_notes: notes,
-        };
-      });
-
-      // 3. Create real project in /project table
-      const legacyConsultancyDesign =
-        (Number(fullQuote.quotation_design_amount) || 0) +
-        (Number(fullQuote.quotation_consultation_amount) || 0);
-      const consultancyDesignAmount =
-        Number(fullQuote.quotation_consultancy_design) ||
-        legacyConsultancyDesign;
-      const installationAmount =
-        Number(fullQuote.quotation_installation_amount) || 0;
-      const discountAmount =
-        Number(
-          fullQuote.quotation_discount_amount ??
-            fullQuote.project_discount_amount
-        ) || 0;
-
-      const projectPayload = {
-        project_date: fullQuote.quotation_date || new Date().toISOString().split("T")[0],
-        price_validity_date: fullQuote.quotation_validity_date || "",
-        project_buyer_id: Number(fullQuote.quotation_buyer_id),
-        project_property_id: Number(fullQuote.quotation_property_id),
-        project_category_id: fullQuote.quotation_category_id || "",
-        project_service_id: fullQuote.quotation_service_id || "",
-        project_remarks: fullQuote.quotation_remarks || "",
-        project_status: "Project",
-        quotation_date: fullQuote.quotation_date || new Date().toISOString().split("T")[0],
-        quotation_validity_date: fullQuote.quotation_validity_date || "",
-        quotation_buyer_id: Number(fullQuote.quotation_buyer_id),
-        quotation_property_id: Number(fullQuote.quotation_property_id),
-        quotation_category_id: fullQuote.quotation_category_id || "",
-        quotation_service_id: fullQuote.quotation_service_id || "",
-        quotation_remarks: fullQuote.quotation_remarks || "",
-        quotation_status: "Project",
-        quotation_consultancy_design: consultancyDesignAmount,
-        quotation_installation_amount: installationAmount,
-        quotation_discount_amount: discountAmount,
-        project_consultancy_design: consultancyDesignAmount,
-        project_installation_amount: installationAmount,
-        project_discount_amount: discountAmount,
-        buyer_id: Number(fullQuote.quotation_buyer_id),
-        property_id: Number(fullQuote.quotation_property_id),
-        category_id: fullQuote.quotation_category_id || "",
-        service_id: fullQuote.quotation_service_id || "",
-        status: "Project",
-        subs,
-      };
-
-      await projectApi.createProject(projectPayload);
-
-      // 4. Update quotation status
-      await updateStatusMutation.mutateAsync({
-        id: convertingQuotation.id,
-        status: "Project",
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
-      queryClient.invalidateQueries({ queryKey: ["quotations"] });
-
-      setConvertDialogOpen(false);
-      setConvertingQuotation(null);
-      toast.success("Quotation successfully converted and created in Projects!");
-      refetch();
-    } catch (error) {
-      toast.error(
-        error.response?.data?.message || error.message || "Failed to convert quotation to project"
-      );
     }
   };
 
@@ -254,15 +105,9 @@ const QuotationListPage = () => {
     ? userScopedList.filter((item) => String(item.year || "").trim() === String(yearFilter).trim())
     : userScopedList;
 
-  const quotationList =
-    statusFilter === "all"
-      ? hideConverted
-        ? yearScopedList.filter(
-            (item) =>
-              normalizeQuotationStatus(item.quotation_status) !== "project"
-          )
-        : yearScopedList
-      : yearScopedList.filter((item) => matchesStatusFilter(item, statusFilter));
+  const quotationList = yearScopedList.filter((item) =>
+    matchesStatusFilter(item, statusFilter)
+  );
 
   quotationList.sort(
     (a, b) =>
@@ -278,31 +123,24 @@ const QuotationListPage = () => {
 
   const renderStatus = (q) => {
     const status = q.quotation_status;
-    if (status === "Approved") {
+    const normalized = normalizeQuotationStatus(status);
+    if (normalized === "approved") {
       return <span className="pill pill-approved">Approved</span>;
     }
-    if (status === "Project") {
+    if (normalized === "project") {
       return <span className="pill pill-in_progress">Project</span>;
     }
-    return (
-      <span title="Toggle Pending / Cancel">
-        <ToggleStatus
-          initialStatus={status}
-          apiUrl={`/quotations/${q.id}/status`}
-          payloadKey="quotation_status"
-          activeValue="Pending"
-          inactiveValue="Cancel"
-          onSuccess={refetch}
-          method="patch"
-        />
-      </span>
-    );
+    if (normalized === "cancel" || normalized === "cancelled") {
+      return <span className="pill pill-rejected">Cancel</span>;
+    }
+    if (normalized === "pending") {
+      return <span className="pill pill-pending">Pending</span>;
+    }
+    return <span className="pill pill-draft">{status || "-"}</span>;
   };
 
   const renderActions = (q, labeled = false) => {
-    const canFinishDate =
-      q.quotation_status === "Approved" && !q.quotation_finish_work_date;
-    const showConvertButton = q.quotation_status === "Approved";
+    const isPending = normalizeQuotationStatus(q.quotation_status) === "pending";
     const actions = [
       {
         label: "Edit",
@@ -310,45 +148,25 @@ const QuotationListPage = () => {
         icon: Edit,
         onClick: () => navigate(`/quotation-list/revised/${q.id}`),
       },
+      ...(isPending
+        ? [
+            {
+              label: "Validity",
+              title: "Update Validity Date",
+              icon: CalendarDays,
+              onClick: () => handleOpenValidateDateDialog(q),
+              extra:
+                "text-sky-600 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/30",
+            },
+          ]
+        : []),
       {
-        label: "Report",
+        label: "View",
         title: "View Report",
         icon: FileText,
         onClick: () => navigate(`/quotation-report/${q.id}`),
         extra: "text-slate-600 hover:text-slate-800",
       },
-      ...(canFinishDate
-        ? [
-            {
-              label: "Finish Date",
-              title: "Add Finish Work Date",
-              icon: CalendarDays,
-              onClick: () => handleOpenFinishDateDialog(q),
-              extra:
-                "text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30",
-            },
-          ]
-        : []),
-      {
-        label: "Validity Date",
-        title: "Update Validity Date",
-        icon: CalendarDays,
-        onClick: () => handleOpenValidateDateDialog(q),
-        extra:
-          "text-sky-600 hover:text-sky-700 hover:bg-sky-50 dark:hover:bg-sky-950/30",
-      },
-      ...(showConvertButton
-        ? [
-            {
-              label: "Convert",
-              title: "Convert to Project",
-              icon: FolderKanban,
-              onClick: () => handleOpenConvertDialog(q),
-              extra:
-                "text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30",
-            },
-          ]
-        : []),
     ];
 
     return (
@@ -529,7 +347,7 @@ const QuotationListPage = () => {
     {
       header: "Services",
       accessorKey: "quotation_service_name",
-      size: 210,
+      size: 200,
       cell: ({ row }) => truncateCell(row.original.quotation_service_name, true),
     },
     {
@@ -554,7 +372,7 @@ const QuotationListPage = () => {
     {
       header: "Actions",
       accessorKey: "actions",
-      size: 90,
+      size: 110,
       enableSorting: false,
       cell: ({ row }) => renderActions(row.original),
     },
@@ -601,20 +419,6 @@ const QuotationListPage = () => {
         mobileCard={renderMobileCard}
         extraButton={
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            {statusFilter === "all" && (
-              <label
-                className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 cursor-pointer select-none whitespace-nowrap"
-                title="Hide quotes already converted to projects"
-              >
-                <input
-                  type="checkbox"
-                  checked={hideConverted}
-                  onChange={(e) => setHideConverted(e.target.checked)}
-                  className="rounded border-slate-300 dark:border-slate-700 h-3.5 w-3.5"
-                />
-                Estimates only
-              </label>
-            )}
             <Select
               value={yearFilter}
               onValueChange={(val) => {
@@ -656,88 +460,30 @@ const QuotationListPage = () => {
         onPageChange={setPage}
       />
 
-      <Dialog open={finishDateDialogOpen} onOpenChange={setFinishDateDialogOpen}>
+      <Dialog open={validityDialogOpen} onOpenChange={setValidityDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {dialogMode === "validate"
-                ? "Update Validity Date"
-                : "Update Finish Work Date"}
-            </DialogTitle>
+            <DialogTitle>Update Validity Date</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>
-                {dialogMode === "validate"
-                  ? "Validity Date"
-                  : "Finish Work Date"}
-              </Label>
+              <Label>Validity Date</Label>
               <Input
                 type="date"
-                value={finishDate}
-                onChange={(e) => setFinishDate(e.target.value)}
+                value={validityDate}
+                onChange={(e) => setValidityDate(e.target.value)}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setFinishDateDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setValidityDialogOpen(false)}>
               Cancel
             </Button>
             <Button
-              onClick={handleSaveFinishDate}
-              disabled={updateFinishWorkDateMutation.isPending}
+              onClick={handleSaveValidityDate}
+              disabled={updateValidateDateMutation.isPending}
             >
               Save Date
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Convert to Project Dialog */}
-      <Dialog open={convertDialogOpen} onOpenChange={setConvertDialogOpen}>
-        <DialogContent className="sm:max-w-[460px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-slate-100">
-              <FolderKanban className="h-5 w-5 text-blue-600" /> Convert to Project
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              Are you sure you want to convert this quotation into an active Project?
-            </p>
-
-            {convertingQuotation && (
-              <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border dark:border-slate-800 space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
-              
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Lead:</span>
-                  <span className="font-medium">{convertingQuotation.buyer_name || "-"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Property:</span>
-                  <span className="font-medium">{convertingQuotation.property_name || "-"}</span>
-                </div>
-                {convertingQuotation.quotation_amount && (
-                  <div className="flex justify-between border-t pt-1 dark:border-slate-800">
-                    <span className="text-slate-500">Amount:</span>
-                    <span className="font-semibold text-emerald-600">
-                      ₹{Number(convertingQuotation.quotation_amount).toLocaleString("en-IN")}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConvertDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={handleConfirmConvert}
-              disabled={updateStatusMutation.isPending}
-            >
-              {updateStatusMutation.isPending ? "Converting..." : "Convert to Project"}
             </Button>
           </DialogFooter>
         </DialogContent>

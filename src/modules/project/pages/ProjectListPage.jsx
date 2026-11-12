@@ -6,7 +6,6 @@ import { Edit, FileText, MoreHorizontal, FolderKanban, CheckCircle, XCircle, Rot
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
-import ToggleStatus from "@/components/toogle/status-toogle";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/common/page-header";
 import { toast } from "sonner";
@@ -24,15 +23,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useProjectsQuery, useUpdateProjectStatusMutation } from "../hooks/useProject";
 import { useCyearQuery } from "../../quotation/hooks/useQuotation";
 import moment from "moment";
+
+const STATUS_TABS = [
+  { value: "Pending", label: "Pending", dotClass: "bg-amber-500" },
+  { value: "Approved", label: "Approved", dotClass: "bg-emerald-500" },
+  { value: "Project", label: "Project", dotClass: "bg-sky-500" },
+  { value: "Cancel", label: "Cancel", dotClass: "bg-rose-500" },
+];
+
+const normalizeProjectStatus = (value) =>
+  String(value ?? "").trim().toLowerCase();
+
+const getProjectStatus = (item) =>
+  item.project_status || item.status || item.quotation_status || "Project";
+
+const matchesStatusFilter = (item, filter) => {
+  const current = normalizeProjectStatus(getProjectStatus(item));
+  const target = normalizeProjectStatus(filter);
+  if (target === "cancel") {
+    return current === "cancel" || current === "cancelled";
+  }
+  return current === target;
+};
 
 const ProjectListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = usePersistedSearch();
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("Project");
   const [yearFilter, setYearFilter] = useState("all");
   const { data: cyearData } = useCyearQuery();
   const cyearList = cyearData?.data || [];
@@ -47,9 +69,12 @@ const ProjectListPage = () => {
 
   const paginationData = responseData?.data;
   const rawProjectList = paginationData?.data || [];
-  const projectList = yearFilter && yearFilter !== "all"
+  const yearScopedList = yearFilter && yearFilter !== "all"
     ? rawProjectList.filter((item) => String(item.year || "").trim() === String(yearFilter).trim())
     : rawProjectList;
+  const projectList = yearScopedList.filter((item) =>
+    matchesStatusFilter(item, statusFilter)
+  );
 
   const columns = [
     {
@@ -146,35 +171,26 @@ const ProjectListPage = () => {
       header: "Status",
       accessorKey: "status",
       cell: ({ row }) => {
-        const status =
-          row.original.project_status ||
-          row.original.status ||
-          row.original.quotation_status ||
-          "Project";
+        const status = getProjectStatus(row.original);
+        const normalized = normalizeProjectStatus(status);
 
-        if (status === "Project") {
+        if (normalized === "project") {
           return <span className="pill pill-in_progress">Project</span>;
         }
-        if (status === "Approved") {
+        if (normalized === "approved") {
           return <span className="pill pill-approved">Approved</span>;
         }
-        // Closed badge (backend "Closed" status aate hi bina code-change dikhega;
-        // abhi backend me Closed nahi hai to filter khaali dikhega).
-        if (status === "Closed") {
+        if (normalized === "closed") {
           return <span className="pill pill-rejected">Closed</span>;
         }
+        if (normalized === "pending") {
+          return <span className="pill pill-pending">Pending</span>;
+        }
+        if (normalized === "cancel" || normalized === "cancelled") {
+          return <span className="pill pill-rejected">Cancel</span>;
+        }
 
-        return (
-          <ToggleStatus
-            initialStatus={status}
-            apiUrl={`/projects/${row.original.id}/status`}
-            payloadKey="quotation_status"
-            activeValue="Pending"
-            inactiveValue="Cancel"
-            onSuccess={refetch}
-            method="patch"
-          />
-        );
+        return <span className="pill pill-draft">{status}</span>;
       },
     },
     {
@@ -270,6 +286,32 @@ const ProjectListPage = () => {
         title="Projects"
         description="Manage active projects and scope of execution"
       />
+
+      <div className="mb-2 overflow-x-auto">
+        <Tabs
+          value={statusFilter}
+          onValueChange={(val) => {
+            setStatusFilter(val);
+            setPage(1);
+          }}
+        >
+          <TabsList className="h-10 w-max min-w-full justify-start gap-1 bg-muted/60 p-1">
+            {STATUS_TABS.map((tab) => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="gap-1.5 px-3 text-xs font-semibold sm:text-sm"
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${tab.dotClass}`}
+                />
+                {tab.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      </div>
+
       <DataTable
         isLoading={isLoading || isFetching}
         extraButtonFullWidthOnMobile
@@ -294,26 +336,6 @@ const ProjectListPage = () => {
                 ))}
               </SelectContent>
             </Select>
-
-            <Select
-              value={statusFilter}
-              onValueChange={(val) => {
-                setStatusFilter(val);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-[140px]">
-                <SelectValue placeholder="Select Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="Project">Project</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Approved">Approved</SelectItem>
-                <SelectItem value="Cancel">Cancel</SelectItem>
-                <SelectItem value="Closed">Closed</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
         }
         data={projectList}
@@ -324,10 +346,6 @@ const ProjectListPage = () => {
         onSearchChange={(val) => {
           setSearchTerm(val);
           setPage(1);
-        }}
-        addButton={{
-          onClick: () => navigate("/project-list/create"),
-          label: "Add Project",
         }}
         backendPagination={true}
         page={paginationData?.current_page || 1}
