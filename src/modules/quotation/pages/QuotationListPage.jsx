@@ -279,12 +279,6 @@ const QuotationListPage = () => {
             {formatDate(q.quotation_validity_date)}
           </p>
         </div>
-        <div>
-          <p className="text-muted-foreground">Finish work</p>
-          <p className="font-medium">
-            {formatDate(q.quotation_finish_work_date)}
-          </p>
-        </div>
       </div>
 
       {(q.quotation_category_name || q.quotation_service_name) && (
@@ -354,38 +348,31 @@ const QuotationListPage = () => {
         const validMoment = moment(val).startOf("day");
         const todayMoment = moment().startOf("day");
         const diffDays = validMoment.diff(todayMoment, "days");
+        const showValidityBadge =
+          normalizeQuotationStatus(row.original.quotation_status) === "pending";
 
         return (
           <div className="flex flex-col gap-1 items-start whitespace-nowrap">
             <span className="font-medium text-slate-700 dark:text-slate-300">
               {validMoment.format("DD-MM-YYYY")}
             </span>
-            {diffDays < 0 ? (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900">
-                Expired
-              </span>
-            ) : diffDays <= 7 ? (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-900">
-                Expiring {diffDays === 0 ? "today" : `in ${diffDays}d`}
-              </span>
-            ) : (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900">
-                Valid
-              </span>
-            )}
+            {showValidityBadge &&
+              (diffDays < 0 ? (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900">
+                  Expired
+                </span>
+              ) : diffDays <= 7 ? (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-900">
+                  Expiring {diffDays === 0 ? "today" : `in ${diffDays}d`}
+                </span>
+              ) : (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-900">
+                  Valid
+                </span>
+              ))}
           </div>
         );
       },
-    },
-    {
-      header: "Finish Date",
-      accessorKey: "quotation_finish_work_date",
-      size: 104,
-      cell: ({ row }) => (
-        <span className="whitespace-nowrap">
-          {formatDate(row.original.quotation_finish_work_date)}
-        </span>
-      ),
     },
     {
       header: "Services",
