@@ -28,6 +28,7 @@ import { useActiveBrandsQuery, useCreateBrandMutation } from "../../brand/hooks/
 import { useActiveSalesTeamQuery } from "../../sales-team/hooks/useSalesTeam";
 import { getSalesTeamMemberId } from "../../sales-team/api/salesTeamApi";
 import PreparedByPicker from "../components/report/PreparedByPicker";
+import TimelineLineNavigator from "../components/TimelineLineNavigator";
 import { useCreateProductMutation } from "../../product/hooks/useProduct";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
@@ -2310,9 +2311,24 @@ const QuotationFormPage = () => {
                     </div>
 
                     {/* Timeline Floors List */}
-                    <div className="relative pl-3.5 sm:pl-6 border-l-2 border-slate-200 dark:border-slate-800 ml-1.5 sm:ml-4 space-y-4 sm:space-y-6">
-                      {srv.floors.map((floor, floorIndex) => (
-                        <div key={floorIndex} className="relative space-y-4">
+                    <div className="relative ml-1.5 sm:ml-4">
+                      <TimelineLineNavigator
+                        type="floor"
+                        serviceIndex={serviceIndex}
+                        serviceName={
+                          services.find((s) => s.id?.toString() === srv.serviceId)?.service_name
+                        }
+                        floors={srv.floors}
+                        floorOptions={floors}
+                        areaOptions={areas}
+                      />
+                      <div className="relative pl-3.5 sm:pl-6 border-l-2 border-slate-200 dark:border-slate-800 space-y-4 sm:space-y-6">
+                        {srv.floors.map((floor, floorIndex) => (
+                          <div
+                            key={floorIndex}
+                            id={`quotation-floor-${serviceIndex}-${floorIndex}`}
+                            className="relative space-y-4 scroll-mt-20 transition-all duration-300"
+                          >
                           {/* Bullet for Floor */}
                           <div className="absolute -left-[22px] sm:-left-[31px] top-1.5 w-4 h-4 sm:w-4.5 sm:h-4.5 rounded-full border-4 border-white dark:border-slate-900 bg-blue-600 flex items-center justify-center">
                             <div className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-white"></div>
@@ -2378,9 +2394,29 @@ const QuotationFormPage = () => {
                           </div>
 
                           {/* Timeline Areas List */}
-                          <div className="relative pl-3.5 sm:pl-6 border-l-2 border-dashed border-slate-200 dark:border-slate-800 ml-1.5 sm:ml-4 space-y-4 sm:space-y-6">
-                            {floor.areas.map((area, areaIndex) => (
-                              <div key={areaIndex} className="relative space-y-3 pt-1">
+                          <div className="relative ml-1.5 sm:ml-4">
+                            <TimelineLineNavigator
+                              type="area"
+                              serviceIndex={serviceIndex}
+                              serviceName={
+                                services.find((s) => s.id?.toString() === srv.serviceId)?.service_name
+                              }
+                              floorIndex={floorIndex}
+                              floorName={
+                                floors.find((f) => f.id?.toString() === floor.floorId)?.property_floor
+                              }
+                              areas={floor.areas}
+                              areaOptions={areas}
+                              allFloors={srv.floors}
+                              floorOptions={floors}
+                            />
+                            <div className="relative pl-3.5 sm:pl-6 border-l-2 border-dashed border-slate-200 dark:border-slate-800 space-y-4 sm:space-y-6">
+                              {floor.areas.map((area, areaIndex) => (
+                                <div
+                                  key={areaIndex}
+                                  id={`quotation-area-${serviceIndex}-${floorIndex}-${areaIndex}`}
+                                  className="relative space-y-3 pt-1 scroll-mt-20 transition-all duration-300"
+                                >
                                 {/* Bullet for Area */}
                                 <div className="absolute -left-[22px] sm:-left-[31px] top-3 sm:top-3.5 w-4 h-4 sm:w-4.5 sm:h-4.5 rounded-full border-4 border-white dark:border-slate-900 bg-amber-600 flex items-center justify-center">
                                   <div className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-white"></div>
@@ -2674,6 +2710,7 @@ const QuotationFormPage = () => {
                             </button>
                           </div>
                         </div>
+                        </div>
                       ))}
 
                       {/* Add Floor Button */}
@@ -2695,6 +2732,7 @@ const QuotationFormPage = () => {
                         </div>
                       </div>
                     </div>
+                  </div>
                   </div>
                 ))}
 
