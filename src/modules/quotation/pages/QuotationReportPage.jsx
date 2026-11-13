@@ -820,8 +820,6 @@ export default function QuotationReportPage() {
             }
             .makc-compact-view th.makc-remarks-th,
             .makc-compact-view td.makc-remarks,
-            .makc-proposal-table th:last-child,
-            .makc-proposal-table td:last-child,
             .makc-proposal-table td.makc-remarks {
               width: auto !important;
               max-width: none !important;
@@ -829,7 +827,9 @@ export default function QuotationReportPage() {
               overflow: visible !important;
             }
             .makc-compact-view th:last-child,
-            .makc-compact-view td:last-child {
+            .makc-compact-view td:last-child,
+            .makc-proposal-table th:last-child,
+            .makc-proposal-table td:last-child {
               width: 50px !important;
               max-width: 60px !important;
               text-align: center !important;

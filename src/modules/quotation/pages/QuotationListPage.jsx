@@ -7,6 +7,7 @@ import DataTable from "@/components/common/data-table";
 import ApiErrorPage from "@/components/api-error/api-error";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/common/page-header";
+import ToggleStatus from "@/components/toogle/status-toogle";
 import {
   Dialog,
   DialogContent,
@@ -160,10 +161,34 @@ const QuotationListPage = () => {
       return <span className="pill pill-in_progress">Project</span>;
     }
     if (normalized === "cancel" || normalized === "cancelled") {
-      return <span className="pill pill-rejected">Cancel</span>;
+      return (
+        <span title="Toggle Cancel / Pending">
+          <ToggleStatus
+            initialStatus="Cancel"
+            apiUrl={`/quotations/${q.id}/status`}
+            payloadKey="quotation_status"
+            activeValue="Pending"
+            inactiveValue="Cancel"
+            onSuccess={refetch}
+            method="patch"
+          />
+        </span>
+      );
     }
     if (normalized === "pending") {
-      return <span className="pill pill-pending">Pending</span>;
+      return (
+        <span title="Toggle Pending / Cancel">
+          <ToggleStatus
+            initialStatus="Pending"
+            apiUrl={`/quotations/${q.id}/status`}
+            payloadKey="quotation_status"
+            activeValue="Pending"
+            inactiveValue="Cancel"
+            onSuccess={refetch}
+            method="patch"
+          />
+        </span>
+      );
     }
     return <span className="pill pill-draft">{status || "-"}</span>;
   };

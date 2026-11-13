@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { usePersistedSearch } from "@/hooks/usePersistedSearch";
@@ -103,6 +103,21 @@ const ProjectListPage = () => {
   const [searchTerm, setSearchTerm] = usePersistedSearch();
   const [statusFilter, setStatusFilter] = useState("Pending");
   const [yearFilter, setYearFilter] = useState("all");
+  const [completedStatusFilter, setCompletedStatusFilterState] = useState(() => {
+    try {
+      return sessionStorage.getItem("project-completed-status-filter") || "complete";
+    } catch {
+      return "complete";
+    }
+  });
+  const setCompletedStatusFilter = useCallback((value) => {
+    setCompletedStatusFilterState(value);
+    try {
+      sessionStorage.setItem("project-completed-status-filter", value);
+    } catch {
+      // Ignore unavailable storage
+    }
+  }, []);
   const { data: cyearData } = useCyearQuery();
   const cyearList = cyearData?.data || [];
   const [dateDialogOpen, setDateDialogOpen] = useState(false);
@@ -166,7 +181,22 @@ const ProjectListPage = () => {
   const projectList =
     statusFilter === "Pending"
       ? searchedList.filter((item) => matchesStatusFilter(item, "Pending"))
-      : searchedList;
+      : statusFilter === "Completed"
+        ? searchedList.filter((item) => {
+            const normalized = normalizeProjectStatus(getProjectStatus(item));
+            if (completedStatusFilter === "cancel") {
+              return normalized === "cancel" || normalized === "cancelled";
+            }
+            return (
+              normalized === "completed" ||
+              normalized === "complete" ||
+              normalized === "finished"
+            );
+          })
+        : searchedList;
+
+  const isOngoingTab = normalizeProjectStatus(statusFilter) === "ongoing";
+  const isCompletedTab = normalizeProjectStatus(statusFilter) === "completed";
 
   const handleOpenDateDialog = (project, field) => {
     setSelectedProject(project);
@@ -355,6 +385,28 @@ const ProjectListPage = () => {
               : "—"}
           </p>
         </div>
+        {isOngoingTab && (
+          <div>
+            <p className="text-muted-foreground">Project Start Date</p>
+            <p className="font-medium">{formatDate(p.project_start_date)}</p>
+          </div>
+        )}
+        {isCompletedTab && (
+          <div>
+            <p className="text-muted-foreground">Project Start Date</p>
+            <p className="font-medium">{formatDate(p.project_start_date)}</p>
+          </div>
+        )}
+        {isCompletedTab && (
+          <div>
+            <p className="text-muted-foreground">Finish Date</p>
+            <p className="font-medium">
+              {formatDate(
+                p.project_finish_work_date || p.quotation_finish_work_date
+              )}
+            </p>
+          </div>
+        )}
       </div>
 
       {(p.project_category_name ||
@@ -441,9 +493,11 @@ const ProjectListPage = () => {
               {validMoment.format("DD-MM-YYYY")}
             </span>
             {diffDays < 0 ? (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900">
-                Expired
-              </span>
+              isCompletedTab ? null : (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900">
+                  Expired
+                </span>
+              )
             ) : diffDays <= 7 ? (
               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-900">
                 Expiring {diffDays === 0 ? "today" : `in ${diffDays}d`}
@@ -504,6 +558,38 @@ const ProjectListPage = () => {
         );
       },
     },
+    ...(isOngoingTab || isCompletedTab
+      ? [
+          {
+            header: "Project Start Date",
+            accessorKey: "project_start_date",
+            size: 110,
+            cell: ({ row }) => {
+              const val = row.original.project_start_date;
+              return val
+                ? moment(val).format("DD-MM-YYYY")
+                : <span className="text-slate-400">-</span>;
+            },
+          },
+        ]
+      : []),
+    ...(isCompletedTab
+      ? [
+          {
+            header: "Finish Date",
+            accessorKey: "project_finish_work_date",
+            size: 110,
+            cell: ({ row }) => {
+              const val =
+                row.original.project_finish_work_date ||
+                row.original.quotation_finish_work_date;
+              return val
+                ? moment(val).format("DD-MM-YYYY")
+                : <span className="text-slate-400">-</span>;
+            },
+          },
+        ]
+      : []),
     {
       header: "Status",
       accessorKey: "status",
@@ -556,11 +642,27 @@ const ProjectListPage = () => {
 
       <DataTable
         isLoading={isLoading || isFetching}
-        fitWidth
         mobileCard={renderMobileCard}
         extraButtonFullWidthOnMobile
         extraButton={
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {statusFilter === "Completed" && (
+              <Select
+                value={completedStatusFilter}
+                onValueChange={(val) => {
+                  setCompletedStatusFilter(val);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="w-full sm:w-[125px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="complete">Complete</SelectItem>
+                  <SelectItem value="cancel">Cancel</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
             <Select
               value={yearFilter}
               onValueChange={(val) => {
