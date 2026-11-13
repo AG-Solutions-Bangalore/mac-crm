@@ -79,6 +79,7 @@ const DataTable = ({
   // fitWidth -> table layout fit karta hai (no horizontal scrollbar).
   fitWidth = false,
   mobileCard = null,
+  filtersLeft = false,
 }) => {
   const authUser = useSelector((state) => state.auth?.user);
   const location = useLocation();
@@ -218,7 +219,7 @@ const DataTable = ({
     <div className="space-y-3">
       {/* HEADER */}
       <div className="flex flex-col gap-3 py-1 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="relative w-full sm:w-80 sm:shrink-0">
+        <div className={`relative w-full sm:w-80 sm:shrink-0 ${filtersLeft ? "sm:order-2 sm:ml-auto" : "sm:order-1"}`}>
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 pointer-events-none" />
           <Input
             value={internalSearch ?? ""}
@@ -241,7 +242,7 @@ const DataTable = ({
 
         {/* Controls + Add: mobile -> Columns + filters on one row, Add below
             full width; desktop -> grouped together at the right of search */}
-        <div className="flex flex-col gap-3 sm:ml-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
+        <div className={`flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3 ${filtersLeft ? "sm:order-1 sm:ml-0" : "sm:order-2 sm:ml-auto"}`}>
           <div
             className={`gap-2 sm:contents ${
               extraButtonFullWidthOnMobile
