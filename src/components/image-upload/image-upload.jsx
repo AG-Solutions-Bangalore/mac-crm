@@ -75,7 +75,9 @@ const ImageUpload = ({
 
   const handleRemove = () => {
     setError("");
-    onRemove();
+    if (typeof onRemove === "function") {
+      onRemove();
+    }
   };
 
   const displayDimensions = requiredDimensions
@@ -101,8 +103,14 @@ const ImageUpload = ({
           </div>
           <button
             type="button"
-            onClick={handleRemove}
-            className="absolute top-1.5 right-1.5 p-1.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleRemove();
+            }}
+            title="Remove image"
+            aria-label="Remove image"
+            className="absolute top-1.5 right-1.5 z-10 p-1.5 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-md opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
           >
             <X className="h-3.5 w-3.5" />
           </button>

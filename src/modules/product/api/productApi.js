@@ -48,6 +48,9 @@ export const productApi = {
       formData.append("product_price", data.product_price);
       formData.append("product_status", data.product_status);
       formData.append("product_image", data.product_image);
+      if (data.removeImage) {
+        formData.append("remove_image", "1");
+      }
       const response = await apiClient.post(`/product/${id}?_method=PUT`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -56,7 +59,7 @@ export const productApi = {
       return response.data;
     }
 
-    const response = await apiClient.put(`/product/${id}`, {
+    const body = {
       service_id: Number(data.service_id),
       category_id: Number(data.category_id),
       brand_id: Number(data.brand_id),
@@ -65,7 +68,9 @@ export const productApi = {
       product_warranty: data.product_warranty,
       product_price: data.product_price,
       product_status: data.product_status,
-    });
+      ...(data.removeImage ? { remove_image: 1 } : {}),
+    };
+    const response = await apiClient.put(`/product/${id}`, body);
     return response.data;
   },
   updateProductStatus: async (id, status) => {

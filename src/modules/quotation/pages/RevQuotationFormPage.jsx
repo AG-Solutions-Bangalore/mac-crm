@@ -31,6 +31,7 @@ import { useActiveBrandsQuery, useCreateBrandMutation } from "../../brand/hooks/
 import { useActiveSalesTeamQuery } from "../../sales-team/hooks/useSalesTeam";
 import { getSalesTeamMemberId } from "../../sales-team/api/salesTeamApi";
 import PreparedByPicker from "../components/report/PreparedByPicker";
+import TimelineLineNavigator from "../components/TimelineLineNavigator";
 import { useCreateProductMutation } from "../../product/hooks/useProduct";
 import MemoizedSelect from "@/components/common/memoized-select";
 import SelectWithAdd from "@/components/common/select-with-add";
@@ -2309,33 +2310,45 @@ const RevQuotationFormPage = () => {
                             </div>
 
                             {/* Timeline Floors List */}
-                            <Droppable
-                              droppableId={`floors-${serviceIndex}`}
-                              type="floor"
-                            >
-                              {(floorProvided) => (
-                                <div
-                                  ref={floorProvided.innerRef}
-                                  {...floorProvided.droppableProps}
-                                  className="relative pl-3.5 sm:pl-6 border-l-2 border-slate-200 dark:border-slate-800 ml-1.5 sm:ml-4 space-y-4 sm:space-y-6"
-                                >
-                                  {srv.floors.map((floor, floorIndex) => (
-                                    <Draggable
-                                      key={floor._uid || `flr-${serviceIndex}-${floorIndex}`}
-                                      draggableId={floor._uid || `flr-${serviceIndex}-${floorIndex}`}
-                                      index={floorIndex}
-                                    >
-                                      {(flrDragProvided, flrDragSnapshot) => (
-                                        <div
-                                          ref={flrDragProvided.innerRef}
-                                          {...flrDragProvided.draggableProps}
-                                          style={flrDragProvided.draggableProps.style}
-                                          className={`relative space-y-4 rounded-lg transition-all duration-150 ${
-                                            flrDragSnapshot.isDragging
-                                              ? "p-3 bg-white dark:bg-slate-900 shadow-xl ring-2 ring-blue-500/50 z-40 opacity-95"
-                                              : ""
-                                          }`}
-                                        >
+                            <div className="relative ml-1.5 sm:ml-4">
+                              <TimelineLineNavigator
+                                type="floor"
+                                serviceIndex={serviceIndex}
+                                serviceName={
+                                  services.find((s) => s.id?.toString() === srv.serviceId)?.service_name
+                                }
+                                floors={srv.floors}
+                                floorOptions={floors}
+                                areaOptions={areas}
+                              />
+                              <Droppable
+                                droppableId={`floors-${serviceIndex}`}
+                                type="floor"
+                              >
+                                {(floorProvided) => (
+                                  <div
+                                    ref={floorProvided.innerRef}
+                                    {...floorProvided.droppableProps}
+                                    className="relative pl-3.5 sm:pl-6 border-l-2 border-slate-200 dark:border-slate-800 space-y-4 sm:space-y-6"
+                                  >
+                                    {srv.floors.map((floor, floorIndex) => (
+                                      <Draggable
+                                        key={floor._uid || `flr-${serviceIndex}-${floorIndex}`}
+                                        draggableId={floor._uid || `flr-${serviceIndex}-${floorIndex}`}
+                                        index={floorIndex}
+                                      >
+                                        {(flrDragProvided, flrDragSnapshot) => (
+                                          <div
+                                            ref={flrDragProvided.innerRef}
+                                            {...flrDragProvided.draggableProps}
+                                            style={flrDragProvided.draggableProps.style}
+                                            id={`quotation-floor-${serviceIndex}-${floorIndex}`}
+                                            className={`relative space-y-4 rounded-lg scroll-mt-20 transition-all duration-300 ${
+                                              flrDragSnapshot.isDragging
+                                                ? "p-3 bg-white dark:bg-slate-900 shadow-xl ring-2 ring-blue-500/50 z-40 opacity-95"
+                                                : ""
+                                            }`}
+                                          >
                                           {/* Bullet for Floor */}
                                           <div className="absolute -left-[22px] sm:-left-[31px] top-1.5 w-4 h-4 sm:w-4.5 sm:h-4.5 rounded-full border-4 border-white dark:border-slate-900 bg-blue-600 flex items-center justify-center">
                                             <div className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-white"></div>
@@ -2416,34 +2429,51 @@ const RevQuotationFormPage = () => {
                                           </div>
 
                                           {/* Timeline Areas List */}
-                                          <Droppable
-                                            droppableId={`areas-${serviceIndex}-${floorIndex}`}
-                                            type="area"
-                                          >
-                                            {(areaProvided) => (
-                                              <div
-                                                ref={areaProvided.innerRef}
-                                                {...areaProvided.droppableProps}
-                                                className="relative pl-3.5 sm:pl-6 border-l-2 border-dashed border-slate-200 dark:border-slate-800 ml-1.5 sm:ml-4 space-y-4 sm:space-y-6"
-                                              >
-                                                {floor.areas.map((area, areaIndex) => (
-                                                  <Draggable
-                                                    key={area._uid || `area-${serviceIndex}-${floorIndex}-${areaIndex}`}
-                                                    draggableId={area._uid || `area-${serviceIndex}-${floorIndex}-${areaIndex}`}
-                                                    index={areaIndex}
-                                                  >
-                                                    {(areaDragProvided, areaDragSnapshot) => (
-                                                      <div
-                                                        ref={areaDragProvided.innerRef}
-                                                        {...areaDragProvided.draggableProps}
-                                                        style={areaDragProvided.draggableProps.style}
-                                                        className={`relative space-y-3 pt-1 rounded-lg transition-all duration-150 ${
-                                                          areaDragSnapshot.isDragging
-                                                            ? "p-2 bg-white dark:bg-slate-900 shadow-xl ring-2 ring-amber-500/50 z-30 opacity-95"
-                                                            : ""
-                                                        }`}
-                                                      >
-                                                        {/* Bullet for Area */}
+                                          <div className="relative ml-1.5 sm:ml-4">
+                                            <TimelineLineNavigator
+                                              type="area"
+                                              serviceIndex={serviceIndex}
+                                              serviceName={
+                                                services.find((s) => s.id?.toString() === srv.serviceId)?.service_name
+                                              }
+                                              floorIndex={floorIndex}
+                                              floorName={
+                                                floors.find((f) => f.id?.toString() === floor.floorId)?.property_floor
+                                              }
+                                              areas={floor.areas}
+                                              areaOptions={areas}
+                                              allFloors={srv.floors}
+                                              floorOptions={floors}
+                                            />
+                                            <Droppable
+                                              droppableId={`areas-${serviceIndex}-${floorIndex}`}
+                                              type="area"
+                                            >
+                                              {(areaProvided) => (
+                                                <div
+                                                  ref={areaProvided.innerRef}
+                                                  {...areaProvided.droppableProps}
+                                                  className="relative pl-3.5 sm:pl-6 border-l-2 border-dashed border-slate-200 dark:border-slate-800 space-y-4 sm:space-y-6"
+                                                >
+                                                  {floor.areas.map((area, areaIndex) => (
+                                                    <Draggable
+                                                      key={area._uid || `area-${serviceIndex}-${floorIndex}-${areaIndex}`}
+                                                      draggableId={area._uid || `area-${serviceIndex}-${floorIndex}-${areaIndex}`}
+                                                      index={areaIndex}
+                                                    >
+                                                      {(areaDragProvided, areaDragSnapshot) => (
+                                                        <div
+                                                          ref={areaDragProvided.innerRef}
+                                                          {...areaDragProvided.draggableProps}
+                                                          style={areaDragProvided.draggableProps.style}
+                                                          id={`quotation-area-${serviceIndex}-${floorIndex}-${areaIndex}`}
+                                                          className={`relative space-y-3 pt-1 rounded-lg scroll-mt-20 transition-all duration-300 ${
+                                                            areaDragSnapshot.isDragging
+                                                              ? "p-2 bg-white dark:bg-slate-900 shadow-xl ring-2 ring-amber-500/50 z-30 opacity-95"
+                                                              : ""
+                                                          }`}
+                                                        >
+                                                          {/* Bullet for Area */}
                                                         <div className="absolute -left-[22px] sm:-left-[31px] top-3 sm:top-3.5 w-4 h-4 sm:w-4.5 sm:h-4.5 rounded-full border-4 border-white dark:border-slate-900 bg-amber-600 flex items-center justify-center">
                                                           <div className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-white"></div>
                                                         </div>
@@ -2793,6 +2823,7 @@ const RevQuotationFormPage = () => {
                                               </div>
                                             )}
                                           </Droppable>
+                                          </div>
 
                                           {/* Add Area Button */}
                                           <button
@@ -2810,6 +2841,7 @@ const RevQuotationFormPage = () => {
                                 </div>
                               )}
                             </Droppable>
+                          </div>
 
                             {/* Add Floor Button */}
                             <button

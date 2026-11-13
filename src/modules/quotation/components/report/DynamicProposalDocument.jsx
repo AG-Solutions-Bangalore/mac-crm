@@ -49,9 +49,10 @@ const formatWarranty = (val) => {
 // ─── Table Head Cell (category tables) ─────────────────────────────────────
 // Light header row + dark navy text, matching the reference layout.
 // Solid background set on each cell (not transparent) so it survives print.
-function TH({ children, align = "left", width, isLight, nowrap = false }) {
+function TH({ children, align = "left", width, isLight, nowrap = false, className = "" }) {
   return (
     <th
+      className={className}
       style={{
         textAlign: align, padding: "9px 10px",
         fontSize: "10.5px", fontWeight: 800, letterSpacing: "0.02em",
@@ -71,9 +72,10 @@ function TH({ children, align = "left", width, isLight, nowrap = false }) {
 }
 
 // ─── Table Data Cell ──────────────────────────────────────────────────────
-function TD({ children, align = "left", style: s, isLight, rowSpan }) {
+function TD({ children, align = "left", style: s, isLight, rowSpan, className = "" }) {
   return (
     <td
+      className={className}
       rowSpan={rowSpan}
       style={{
         textAlign: align, padding: "8px 10px",

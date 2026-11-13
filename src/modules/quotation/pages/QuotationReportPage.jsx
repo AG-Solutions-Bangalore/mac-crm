@@ -48,6 +48,7 @@ const headers = [
   "Brand",
   "Warranty",
   "Remarks",
+  "Image",
 ];
 
 const formatMoney = (value) => {
@@ -781,6 +782,58 @@ export default function QuotationReportPage() {
             thead {
               break-after: avoid !important;
               page-break-after: avoid !important;
+            }
+            /* ── Remarks prominence: reduce other text so remarks print clearly ── */
+            .makc-remarks {
+              font-weight: 800 !important;
+              font-size: 11px !important;
+              color: #0f172a !important;
+              white-space: normal !important;
+              word-break: break-word !important;
+              vertical-align: top !important;
+            }
+            /* Reduce supporting column text so remarks dominate */
+            .makc-compact-view .TableCell,
+            .makc-compact-view td,
+            .makc-compact-view th,
+            .makc-proposal-table td,
+            .makc-proposal-table th {
+              font-size: 8.5px !important;
+              color: #64748b !important;
+            }
+            .makc-compact-view .makc-remarks,
+            .makc-proposal-table .makc-remarks {
+              font-size: 11px !important;
+              color: #0f172a !important;
+              font-weight: 800 !important;
+            }
+            /* Narrow non-remarks columns; remarks takes the leftover width */
+            .makc-compact-view th:nth-child(7),
+            .makc-compact-view th:nth-child(8),
+            .makc-compact-view th:nth-child(9),
+            .makc-compact-view th:nth-child(10) {
+              width: 6% !important;
+              max-width: 6% !important;
+              white-space: nowrap !important;
+              overflow: hidden !important;
+              text-overflow: ellipsis !important;
+            }
+            .makc-compact-view th.makc-remarks-th,
+            .makc-compact-view td.makc-remarks,
+            .makc-proposal-table th:last-child,
+            .makc-proposal-table td:last-child,
+            .makc-proposal-table td.makc-remarks {
+              width: auto !important;
+              max-width: none !important;
+              white-space: normal !important;
+              overflow: visible !important;
+            }
+            .makc-compact-view th:last-child,
+            .makc-compact-view td:last-child {
+              width: 50px !important;
+              max-width: 60px !important;
+              text-align: center !important;
+              white-space: nowrap !important;
             }
           }
 

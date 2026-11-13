@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { usePersistedSearch } from "@/hooks/usePersistedSearch";
-import { Edit, ArrowLeft, CheckCircle2, Award, FileText, CalendarDays, Trash2 } from "lucide-react";
+import { Edit, ArrowLeft, CheckCircle2, Award, FileText, CalendarDays, Trash2, FilePlus2 } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
@@ -181,58 +181,71 @@ const RevQuotationListPage = () => {
         const isLatestRevision = Number(row.original.id) === latestRevId;
         return (
           <div className="flex gap-2">
-            {!isLocked && isLatestRevision && (
-              <abbr title="Edit Revised Quotation">
-                <Button
-                  size="icon"
-                  variant="outline"
-                  onClick={() => navigate(`/quotation-list/revised/${parentId}/edit/${row.original.id}`)}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </abbr>
-            )}
-
-            <abbr title="View Report">
+            {!isLocked && (
               <Button
                 size="icon"
                 variant="outline"
-                className="text-slate-600 hover:text-slate-800"
-                onClick={() => navigate(`/quotation-report/${row.original.id}?type=rev`)}
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                onClick={() => navigate(`/quotation-list/revised/${parentId}/create`)}
+                title="Add Revised Quotation"
+                aria-label="Add Revised Quotation"
               >
-                <FileText className="h-4 w-4" />
+                <FilePlus2 className="h-4 w-4" />
               </Button>
-            </abbr>
+            )}
+
+            {!isLocked && isLatestRevision && (
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={() => navigate(`/quotation-list/revised/${parentId}/edit/${row.original.id}`)}
+                title="Edit Revised Quotation"
+                aria-label="Edit Revised Quotation"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+
+            <Button
+              size="icon"
+              variant="outline"
+              className="text-slate-600 hover:text-slate-800"
+              onClick={() => navigate(`/quotation-report/${row.original.id}?type=rev`)}
+              title="View Report"
+              aria-label="View Report"
+            >
+              <FileText className="h-4 w-4" />
+            </Button>
 
             {!isLocked && !isLatestRevision && (
-              <abbr title="Delete Revised Quotation">
-                <Button
-                  size="icon"
-                  variant="outline"
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={() => handleDelete(row.original.id)}
-                  disabled={deleteMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </abbr>
+              <Button
+                size="icon"
+                variant="outline"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={() => handleDelete(row.original.id)}
+                disabled={deleteMutation.isPending}
+                title="Delete Revised Quotation"
+                aria-label="Delete Revised Quotation"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             )}
 
             {!isLocked &&
               isLatestRevision &&
               !revQuotationList.some((q) => q.quotation_status === "Approved") &&
               row.original.quotation_status !== "Approved" && (
-                <abbr title="Approve & Finalize">
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                    onClick={() => handleApprove(row.original.id)}
-                    disabled={approveMutation.isPending}
-                  >
-                    <Award className="h-4 w-4" />
-                  </Button>
-                </abbr>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                  onClick={() => handleApprove(row.original.id)}
+                  disabled={approveMutation.isPending}
+                  title="Approve & Finalize"
+                  aria-label="Approve & Finalize"
+                >
+                  <Award className="h-4 w-4" />
+                </Button>
               )}
           </div>
         );
@@ -313,7 +326,7 @@ const RevQuotationListPage = () => {
           setPage(1);
         }}
         addButton={
-          !isLocked
+          !isLocked && revQuotationList.length === 0
             ? {
                 onClick: () => navigate(`/quotation-list/revised/${parentId}/create`),
                 label: "Add Revised Quotation",
