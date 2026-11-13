@@ -383,6 +383,7 @@ export default function DynamicProposalDocument({
                           <TH align="left" width="1%" isLight={isLight} nowrap>Brand</TH>
                           <TH align="center" width={hasFinish ? "10%" : "11%"} isLight={isLight}>Warranty</TH>
                           <TH align="left" width={hasFinish ? "10%" : "7%"} isLight={isLight}>Remarks</TH>
+                          <TH align="center" width="60px" isLight={isLight} nowrap>Image</TH>
                         </tr>
                       </thead>
                       <tbody>
@@ -393,7 +394,7 @@ export default function DynamicProposalDocument({
                               <tr style={{ background: "#d7e9f7" }} className="break-inside-avoid">
                                 <FloorSectionHeader
                                   floorName={floor.name}
-                                  colSpan={(hasFinish ? 9 : 8) - (hidePricing ? 2 : 0)}
+                                  colSpan={(hasFinish ? 10 : 9) - (hidePricing ? 2 : 0)}
                                 />
                               </tr>
                             )}
@@ -426,10 +427,7 @@ export default function DynamicProposalDocument({
                                       </TD>
                                     )}
                                     <TD isLight={isLight} style={{ fontWeight: 500, color: t.productText, fontSize: "11px" }}>
-                                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                        <ProductThumbnail src={item.productImage} size={26} />
-                                        <span>{item.product}</span>
-                                      </div>
+                                      <span>{item.product}</span>
                                     </TD>
                                     <TD isLight={isLight} align="center" style={{ fontWeight: 800, color: t.qtyText, fontSize: "11.5px" }}>
                                       {item.quantity}
@@ -458,6 +456,15 @@ export default function DynamicProposalDocument({
                                     </TD>
                                     <TD isLight={isLight} align="left" style={{ color: t.notesText, fontSize: "10px", fontWeight: 500 }}>
                                       {item.remarks || "-"}
+                                    </TD>
+                                    <TD isLight={isLight} align="center" style={{ width: "60px" }}>
+                                      {item.productImage ? (
+                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                          <ProductThumbnail src={item.productImage} size={32} />
+                                        </div>
+                                      ) : (
+                                        "-"
+                                      )}
                                     </TD>
                                   </tr>
                                 ))}
