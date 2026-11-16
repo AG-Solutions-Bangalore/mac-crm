@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { FileText, Loader2, Save, ArrowLeft, Plus, Trash2, CalendarDays, FileSpreadsheet, RefreshCw, GripVertical, CreditCard, BadgePercent, CheckCircle2, AlertCircle, RotateCcw } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
@@ -262,6 +262,8 @@ const calculateServicesTotal = (servicesList) =>
 
 const RevQuotationFormPage = () => {
   const { id: parentId, revId } = useParams();
+  const [searchParams] = useSearchParams();
+  const fromRevId = searchParams.get("fromRev");
   const isEdit = Boolean(revId);
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth?.user);
@@ -376,8 +378,10 @@ const RevQuotationFormPage = () => {
   const isParentApprovedLocked = parentStatus === "Approved" || parentStatus === "Project";
   const isLocked = Boolean(parentFinishWorkDate) || isParentApprovedLocked;
 
-  // Fetch revised quotation on EDIT mode
-  const { data: revQuotationData, isLoading: revLoading, isError, refetch } = useRevQuotationQuery(revId, isEdit);
+  // Fetch revised quotation on EDIT mode or when branching from an existing revision
+  const sourceRevId = revId || fromRevId;
+  const isFetchingRevData = Boolean(sourceRevId);
+  const { data: revQuotationData, isLoading: revLoading, isError, refetch } = useRevQuotationQuery(sourceRevId, isFetchingRevData);
   const { data: restrictedRevListData } = useRevQuotationsQuery(
     parentId,
     1,
@@ -636,9 +640,9 @@ const RevQuotationFormPage = () => {
     }
   };
 
-  // 1. Prefill from parent quotation on CREATE mode
+  // 1. Prefill from parent quotation on CREATE mode (when not branching from an existing revision)
   useEffect(() => {
-    if (isEdit || revDefaultsAppliedRef.current) return;
+    if (isEdit || fromRevId || revDefaultsAppliedRef.current) return;
     if (!parentQuotationData?.data) return;
 
     const parent = parentQuotationData.data;
@@ -757,9 +761,9 @@ const RevQuotationFormPage = () => {
     }
   }, [isEdit, parentQuotationData, parentId, categoriesData, servicesData]);
 
-  // 2. Populate from revised quotation on EDIT mode
+  // 2. Populate from revised quotation on EDIT mode or when branching from an existing revision
   useEffect(() => {
-    if (isEdit && revQuotationData?.data) {
+    if ((isEdit || fromRevId) && revQuotationData?.data) {
       const rev = revQuotationData.data;
       const storedConsultancyDesign = rev.quotation_consultancy_design;
       const hasStoredConsultancyDesign =
@@ -779,8 +783,10 @@ const RevQuotationFormPage = () => {
       const discountAmountValue = Number(storedDiscountAmount) || 0;
 
       const nextForm = {
-        quotation_id: rev.quotation_id?.toString() || parentId,
-        quotation_date_rev: rev.quotation_date_rev || "",
+        quotation_id: parentId || rev.quotation_id?.toString() || "",
+        quotation_date_rev: isEdit
+          ? (rev.quotation_date_rev || "")
+          : new Date().toISOString().split("T")[0],
         quotation_buyer_id:
           rev.quotation_buyer_id?.toString() ||
           parentQuotationData?.data?.quotation_buyer_id?.toString() ||
@@ -792,7 +798,7 @@ const RevQuotationFormPage = () => {
         quotation_category_id: rev.quotation_category_id || "",
         quotation_service_id: rev.quotation_service_id || "",
         quotation_remarks: rev.quotation_remarks || "",
-        quotation_status: rev.quotation_status || "Pending",
+        quotation_status: "Pending",
         quotation_booing_confirmation:
           rev.quotation_booing_confirmation ??
           rev.quotation_booking_confirmation ??
@@ -815,10 +821,26 @@ const RevQuotationFormPage = () => {
       let nextServices = null;
       if (rev.subs && Array.isArray(rev.subs) && rev.subs.length > 0) {
         nextServices = groupSubsToServices(rev.subs);
+        // If branching (create mode), reset the sub row IDs so they get created as new items
+        if (!isEdit && nextServices) {
+          nextServices = nextServices.map((srv) => ({
+            ...srv,
+            floors: srv.floors.map((flr) => ({
+              ...flr,
+              areas: flr.areas.map((area) => ({
+                ...area,
+                products: area.products.map((prod) => ({
+                  ...prod,
+                  id: null,
+                })),
+              })),
+            })),
+          }));
+        }
       }
-      const pendingServices = loadPendingServiceBlocks(
-        revQuotationPendingKey(rev.id ?? revId)
-      );
+      const pendingServices = isEdit
+        ? loadPendingServiceBlocks(revQuotationPendingKey(rev.id ?? revId))
+        : null;
       if (pendingServices?.length) {
         nextServices = mergePendingServiceBlocks(
           nextServices || groupSubsToServices([]),
@@ -880,7 +902,7 @@ const RevQuotationFormPage = () => {
         })
       );
     }
-  }, [isEdit, revQuotationData, parentId]);
+  }, [isEdit, fromRevId, revQuotationData, parentId, parentQuotationData]);
 
   const snapshotKey = useMemo(
     () => JSON.stringify({ formData, servicesState }),
@@ -912,10 +934,10 @@ const RevQuotationFormPage = () => {
     () =>
       formAutosaveKey(
         "rev-quotation",
-        isEdit ? revId : `parent-${parentId}`,
+        isEdit ? revId : fromRevId ? `parent-${parentId}-from-${fromRevId}` : `parent-${parentId}`,
         user?.id
       ),
-    [isEdit, revId, parentId, user?.id]
+    [isEdit, revId, fromRevId, parentId, user?.id]
   );
 
   const { lastSavedAt, clearDraft } = useFormAutosaveDraft({
@@ -923,7 +945,7 @@ const RevQuotationFormPage = () => {
     formData,
     servicesState,
     initialSnapshot,
-    enabled: isEdit
+    enabled: isEdit || fromRevId
       ? Boolean(revQuotationData?.data)
       : Boolean(
           parentQuotationData?.data && categoriesData?.data && servicesData?.data
@@ -1841,11 +1863,11 @@ const RevQuotationFormPage = () => {
     brandsLoading ||
     salesTeamLoading ||
     parentLoading ||
-    (isEdit && revLoading);
+    ((isEdit || fromRevId) && revLoading);
 
   if (isFormLoading) return <LoadingBar />;
 
-  if (isEdit && isError) {
+  if ((isEdit || fromRevId) && isError) {
     return (
       <div className="p-5 text-center">
         <p className="text-red-500 font-semibold">Failed to load revised quotation details.</p>

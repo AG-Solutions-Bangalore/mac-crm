@@ -514,8 +514,32 @@ const ProjectListPage = () => {
     {
       header: "Lead",
       accessorKey: "buyer_name",
-      size: 120,
-      cell: ({ row }) => truncateCell(row.original.buyer_name),
+      size: 160,
+      cell: ({ row }) => {
+        const name = row.original.buyer_name;
+        const mobile = row.original.buyer_mobile;
+        if (!name) return <span className="text-slate-400">-</span>;
+        return (
+          <button
+            type="button"
+            className="text-left group flex flex-col hover:opacity-80 transition-opacity"
+            onClick={() => {
+              setSearchTerm(name);
+              setPage(1);
+            }}
+            title={`Filter by ${name}`}
+          >
+            <span className="font-medium text-primary hover:underline line-clamp-1">
+              {name}
+            </span>
+            {mobile && (
+              <span className="text-[11px] text-muted-foreground">
+                {mobile}
+              </span>
+            )}
+          </button>
+        );
+      },
     },
     {
       header: "Property",
@@ -532,17 +556,6 @@ const ProjectListPage = () => {
           row.original.project_category_name ||
             row.original.quotation_category_name ||
             row.original.category_name
-        ),
-    },
-    {
-      header: "Services",
-      accessorKey: "service_name",
-      size: 170,
-      cell: ({ row }) =>
-        truncateCell(
-          row.original.project_service_name ||
-            row.original.quotation_service_name ||
-            row.original.service_name
         ),
     },
     {

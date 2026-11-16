@@ -186,7 +186,7 @@ const RevQuotationListPage = () => {
                 size="icon"
                 variant="outline"
                 className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                onClick={() => navigate(`/quotation-list/revised/${parentId}/create`)}
+                onClick={() => navigate(`/quotation-list/revised/${parentId}/create?fromRev=${row.original.id}`)}
                 title="Add Revised Quotation"
                 aria-label="Add Revised Quotation"
               >
