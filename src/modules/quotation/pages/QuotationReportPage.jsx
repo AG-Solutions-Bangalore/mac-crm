@@ -37,6 +37,7 @@ import { isQuotationOwnedByUser, isSalesUser } from "@/utils/permissions";
 
 
 const headers = [
+  "S.No",
   "Application",
   "Floor",
   "Area",
@@ -381,6 +382,7 @@ export default function QuotationReportPage() {
 
     return {
       __idx: idx,
+      serial: Number(subVal(sub, "sort")) || idx + 1,
       type: "item",
       application: appName,
       floor: floorName,
@@ -808,10 +810,10 @@ export default function QuotationReportPage() {
               font-weight: 800 !important;
             }
             /* Narrow non-remarks columns; remarks takes the leftover width */
-            .makc-compact-view th:nth-child(7),
             .makc-compact-view th:nth-child(8),
             .makc-compact-view th:nth-child(9),
-            .makc-compact-view th:nth-child(10) {
+            .makc-compact-view th:nth-child(10),
+            .makc-compact-view th:nth-child(11) {
               width: 6% !important;
               max-width: 6% !important;
               white-space: nowrap !important;

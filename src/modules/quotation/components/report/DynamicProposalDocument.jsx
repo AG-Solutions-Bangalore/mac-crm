@@ -367,8 +367,9 @@ export default function DynamicProposalDocument({
                     <table className="makc-proposal-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "auto" }}>
                       <thead style={{ background: "#eaf0f7" }}>
                         <tr>
-                          <TH width={hasFinish ? "12%" : "13%"} isLight={isLight}>Area / Room</TH>
-                          <TH width={hasFinish ? "22%" : "25%"} isLight={isLight}>Product / System Specification</TH>
+                          <TH align="center" width="4%" isLight={isLight} nowrap>S.No</TH>
+                          <TH width={hasFinish ? "11%" : "12%"} isLight={isLight}>Area / Room</TH>
+                          <TH width={hasFinish ? "20%" : "23%"} isLight={isLight}>Product / System Specification</TH>
                           <TH align="center" width="6%" isLight={isLight}>Qty</TH>
                           {!hidePricing && (
                             <>
@@ -394,7 +395,7 @@ export default function DynamicProposalDocument({
                               <tr style={{ background: "#d7e9f7" }} className="break-inside-avoid">
                                 <FloorSectionHeader
                                   floorName={floor.name}
-                                  colSpan={(hasFinish ? 10 : 9) - (hidePricing ? 2 : 0)}
+                                  colSpan={(hasFinish ? 11 : 10) - (hidePricing ? 2 : 0)}
                                 />
                               </tr>
                             )}
@@ -408,6 +409,9 @@ export default function DynamicProposalDocument({
                                       background: idx % 2 === 0 ? "transparent" : t.rowZebraBg,
                                     }}
                                   >
+                                    <TD isLight={isLight} align="center" style={{ fontWeight: 700, color: t.notesText, fontSize: "10.5px" }}>
+                                      {item.serial ?? "-"}
+                                    </TD>
                                     {/* AREA/ROOM column — room name rendered once per
                                       area group via rowspan; subsequent product
                                       rows of the same room omit this cell */}

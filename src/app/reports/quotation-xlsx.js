@@ -2,6 +2,7 @@ const BLUE = "3A3EA2";
 const TITLE = "EXPERIENCE THE SMART LIVING";
 
 const HEADERS = [
+  "S.No",
   "Application",
   "Floor",
   "Area",
@@ -13,7 +14,7 @@ const HEADERS = [
   "Warranty",
 ];
 
-const COL_WIDTHS = [7, 12.44, 12.78, 15, 28.11, 9.66, 8.55, 10.66, 11.44, 9.33];
+const COL_WIDTHS = [7, 6, 12.44, 12.78, 15, 28.11, 9.66, 8.55, 10.66, 11.44, 9.33];
 
 const xml = (value) =>
   String(value ?? "")
@@ -78,6 +79,7 @@ const groupItems = (items) => {
     }
 
     floor.areaMap.get(areaName).items.push({
+      serial: normalizeNumber(item.serial ?? (Number(item.__idx) || 0) + 1),
       product: normalizeText(item.product, "-"),
       quantity: normalizeNumber(item.quantity),
       price: normalizeNumber(item.price),
@@ -153,37 +155,38 @@ const buildSheetModel = ({ items, totals = {} }) => {
         const areaStart = currentRow;
 
         area.items.forEach((item, itemIndex) => {
-          addCell(currentRow, 2, {
+          addCell(currentRow, 2, { value: item.serial, style: 3, number: true });
+          addCell(currentRow, 3, {
             value: currentRow === appStart ? application.name : "",
             style: 3,
           });
-          addCell(currentRow, 3, {
+          addCell(currentRow, 4, {
             value: currentRow === floorStart ? floor.name : "",
             style: 3,
           });
-          addCell(currentRow, 4, {
+          addCell(currentRow, 5, {
             value: itemIndex === 0 ? area.name : "",
             style: 3,
           });
-          addCell(currentRow, 5, { value: item.product, style: 4 });
-          addCell(currentRow, 6, { value: item.quantity, style: 5, number: true });
-          addCell(currentRow, 7, { value: item.price, style: 5, number: true });
-          addCell(currentRow, 8, { value: item.totalPrice, style: 5, number: true });
-          addCell(currentRow, 9, { value: item.brand, style: 3 });
-          addCell(currentRow, 10, { value: item.warranty, style: 3 });
+          addCell(currentRow, 6, { value: item.product, style: 4 });
+          addCell(currentRow, 7, { value: item.quantity, style: 5, number: true });
+          addCell(currentRow, 8, { value: item.price, style: 5, number: true });
+          addCell(currentRow, 9, { value: item.totalPrice, style: 5, number: true });
+          addCell(currentRow, 10, { value: item.brand, style: 3 });
+          addCell(currentRow, 11, { value: item.warranty, style: 3 });
           currentRow += 1;
         });
 
         const areaEnd = currentRow - 1;
-        if (areaEnd > areaStart) merges.push(`D${areaStart}:D${areaEnd}`);
+        if (areaEnd > areaStart) merges.push(`E${areaStart}:E${areaEnd}`);
       });
 
       const floorEnd = currentRow - 1;
-      if (floorEnd > floorStart) merges.push(`C${floorStart}:C${floorEnd}`);
+      if (floorEnd > floorStart) merges.push(`D${floorStart}:D${floorEnd}`);
     });
 
     const appEnd = currentRow - 1;
-    if (appEnd > appStart) merges.push(`B${appStart}:B${appEnd}`);
+    if (appEnd > appStart) merges.push(`C${appStart}:C${appEnd}`);
 
     const totalRow = currentRow;
     const appTotal = application.floors
@@ -191,27 +194,27 @@ const buildSheetModel = ({ items, totals = {} }) => {
       .flatMap((area) => area.items)
       .reduce((sum, item) => sum + item.totalPrice, 0);
 
-    merges.push(`B${totalRow}:G${totalRow}`);
-    styleRange(totalRow, 2, 10, 6);
+    merges.push(`B${totalRow}:H${totalRow}`);
+    styleRange(totalRow, 2, 11, 6);
     addCell(totalRow, 2, { value: getTotalLabel(application.name), style: 6 });
-    addCell(totalRow, 8, {
+    addCell(totalRow, 9, {
       value: appTotal,
       style: 7,
-      formula: `SUM(H${appStart}:H${appEnd})`,
+      formula: `SUM(I${appStart}:I${appEnd})`,
     });
     categoryTotalRows.push(totalRow);
     currentRow += 1;
 
     if (appIndex < applications.length - 1) {
-      merges.push(`B${currentRow}:J${currentRow}`);
-      styleRange(currentRow, 2, 10, 11);
+      merges.push(`B${currentRow}:K${currentRow}`);
+      styleRange(currentRow, 2, 11, 11);
       currentRow += 1;
     }
   });
 
   const grandRow = currentRow;
   const grandFormula = categoryTotalRows.length
-    ? `SUM(${categoryTotalRows.map((row) => `H${row}`).join(",")})`
+    ? `SUM(${categoryTotalRows.map((row) => `I${row}`).join(",")})`
     : "0";
   const grandTotal = applications.reduce(
     (sum, application) =>
@@ -223,10 +226,10 @@ const buildSheetModel = ({ items, totals = {} }) => {
     0,
   );
 
-  merges.push(`B${grandRow}:G${grandRow}`);
-  styleRange(grandRow, 2, 10, 8);
+  merges.push(`B${grandRow}:H${grandRow}`);
+  styleRange(grandRow, 2, 11, 8);
   addCell(grandRow, 2, { value: "Total Project", style: 8 });
-  addCell(grandRow, 8, { value: grandTotal, style: 9, formula: grandFormula });
+  addCell(grandRow, 9, { value: grandTotal, style: 9, formula: grandFormula });
   currentRow += 1;
 
   const consultancyFee = normalizeNumber(totals.consultancyFee);
@@ -244,25 +247,25 @@ const buildSheetModel = ({ items, totals = {} }) => {
   let netRow = grandRow;
   if (hasAdjustments) {
     adjustments.forEach(([label, value]) => {
-      merges.push(`B${currentRow}:G${currentRow}`);
-      styleRange(currentRow, 2, 10, 6);
+      merges.push(`B${currentRow}:H${currentRow}`);
+      styleRange(currentRow, 2, 11, 6);
       addCell(currentRow, 2, { value: label, style: 6 });
-      addCell(currentRow, 8, { value, style: 7 });
+      addCell(currentRow, 9, { value, style: 7 });
       currentRow += 1;
     });
 
     netRow = currentRow;
-    merges.push(`B${netRow}:G${netRow}`);
-    styleRange(netRow, 2, 10, 8);
+    merges.push(`B${netRow}:H${netRow}`);
+    styleRange(netRow, 2, 11, 8);
     addCell(netRow, 2, { value: "Net Project Value", style: 8 });
-    addCell(netRow, 8, { value: netTotal, style: 9 });
+    addCell(netRow, 9, { value: netTotal, style: 9 });
     currentRow += 1;
   }
 
   currentRow += 2;
 
   const paymentStart = currentRow;
-  const paymentBaseRef = cellRef(8, netRow);
+  const paymentBaseRef = cellRef(9, netRow);
   merges.push(`D${currentRow}:F${currentRow}`);
   styleRange(currentRow, 4, 6, 10);
   addCell(currentRow, 4, { value: "Payment Cycle", style: 10 });
@@ -306,7 +309,7 @@ const buildSheetModel = ({ items, totals = {} }) => {
     rows,
     merges,
     maxRow: currentRow,
-    maxCol: 10,
+    maxCol: 11,
   };
 };
 

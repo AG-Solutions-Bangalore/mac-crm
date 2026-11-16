@@ -178,6 +178,9 @@ export default function CompactTableView({
                         ...(header === "Brand"
                           ? { width: "1%", whiteSpace: "nowrap" }
                           : {}),
+                        ...(header === "S.No"
+                          ? { width: "1%", whiteSpace: "nowrap", textAlign: "center" }
+                          : {}),
                         ...(header === "Image"
                           ? { width: "60px", textAlign: "center" }
                           : {}),
@@ -196,6 +199,7 @@ export default function CompactTableView({
                       className="break-inside-avoid"
                       style={{ borderColor: LIGHT.rowBorder, background: LIGHT.cardBg }}
                     >
+                      <TableCell className="font-bold text-center" style={{ color: LIGHT.notesText }}>{row.serial || "-"}</TableCell>
                       <TableCell className="font-medium" style={{ color: LIGHT.bodyText }}>{row.application || "-"}</TableCell>
                       <TableCell style={{ color: LIGHT.bodyText }}>{row.floor || "-"}</TableCell>
                       <TableCell style={{ color: LIGHT.bodyText }}>{row.area || "-"}</TableCell>
@@ -230,7 +234,7 @@ export default function CompactTableView({
                       style={{ background: LIGHT.summaryBg, borderColor: LIGHT.headerBorder }}
                     >
                       <TableCell
-                        colSpan={hidePricing ? headers.length : 6}
+                        colSpan={hidePricing ? headers.length : 7}
                         className="uppercase text-xs tracking-wider"
                         style={{ color: LIGHT.accentStrong }}
                       >
