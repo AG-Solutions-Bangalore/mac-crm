@@ -31,6 +31,9 @@ import {
   useUpdateQuotationStatusMutation,
   useCyearQuery,
 } from "../hooks/useQuotation";
+import { quotationApi } from "../api/quotationApi";
+import { projectApi } from "../../project/api/projectApi";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import { toast } from "sonner";
 import moment from "moment";
@@ -71,6 +74,7 @@ const QuotationListPage = () => {
   const [convertDialogOpen, setConvertDialogOpen] = useState(false);
   const [convertingQuotation, setConvertingQuotation] = useState(null);
 
+  const queryClient = useQueryClient();
   const { data: responseData, isLoading, isFetching, isError, refetch } = useQuotationsQuery(page, searchTerm, statusFilter, yearFilter);
   const updateValidateDateMutation = useUpdateQuotationValidateDateMutation();
   const updateStatusMutation = useUpdateQuotationStatusMutation();
@@ -106,10 +110,93 @@ const QuotationListPage = () => {
   const handleConfirmConvert = async () => {
     if (!convertingQuotation) return;
     try {
+      // 1. Fetch full quotation details with subs
+      let fullQuote = convertingQuotation;
+      try {
+        const fullQuoteRes = await quotationApi.getQuotationById(convertingQuotation.id);
+        if (fullQuoteRes?.data) fullQuote = fullQuoteRes.data;
+      } catch (err) {
+        console.warn("Could not fetch full quotation details, using row data:", err);
+      }
+
+      // 2. Prepare subs for project payload
+      const subs = (fullQuote.subs || []).map((item, idx) => ({
+        // Project keys
+        project_sub_sort: item.quotation_sub_sort ?? idx + 1,
+        project_sub_service_id: item.quotation_sub_service_id,
+        project_sub_floor_id: item.quotation_sub_floor_id,
+        project_sub_area_id: item.quotation_sub_area_id,
+        project_sub_product_id: item.quotation_sub_product_id,
+        project_sub_price: Number(item.quotation_sub_price) || 0,
+        project_sub_quantity: Number(item.quotation_sub_quantity) || 1,
+        project_sub_amount: Number(item.quotation_sub_amount) || 0,
+        project_sub_status: item.quotation_sub_status || "Pending",
+        project_sub_notes: item.quotation_sub_notes || "",
+        // Quotation dual keys
+        quotation_sub_sort: item.quotation_sub_sort ?? idx + 1,
+        quotation_sub_service_id: item.quotation_sub_service_id,
+        quotation_sub_floor_id: item.quotation_sub_floor_id,
+        quotation_sub_area_id: item.quotation_sub_area_id,
+        quotation_sub_product_id: item.quotation_sub_product_id,
+        quotation_sub_price: Number(item.quotation_sub_price) || 0,
+        quotation_sub_quantity: Number(item.quotation_sub_quantity) || 1,
+        quotation_sub_amount: Number(item.quotation_sub_amount) || 0,
+        quotation_sub_status: item.quotation_sub_status || "Pending",
+        quotation_sub_notes: item.quotation_sub_notes || "",
+      }));
+
+      // 3. Create project in /project table
+      const projectPayload = {
+        project_date: fullQuote.quotation_date || new Date().toISOString().split("T")[0],
+        price_validity_date: fullQuote.quotation_validity_date || "",
+        project_buyer_id: Number(fullQuote.quotation_buyer_id),
+        project_property_id: Number(fullQuote.quotation_property_id),
+        project_category_id: fullQuote.quotation_category_id || "",
+        project_service_id: fullQuote.quotation_service_id || "",
+        project_remarks: fullQuote.quotation_remarks || "",
+        project_status: "Project",
+        quotation_prepared_id: fullQuote.quotation_prepared_id ? Number(fullQuote.quotation_prepared_id) : null,
+        // Milestones & amounts
+        quotation_booing_confirmation: fullQuote.quotation_booing_confirmation ?? fullQuote.quotation_booking_confirmation ?? 30,
+        quotation_hardware: fullQuote.quotation_hardware ?? 60,
+        quotation_installation: fullQuote.quotation_installation ?? 10,
+        project_booing_confirmation: fullQuote.quotation_booing_confirmation ?? fullQuote.quotation_booking_confirmation ?? 30,
+        project_hardware: fullQuote.quotation_hardware ?? 60,
+        project_installation: fullQuote.quotation_installation ?? 10,
+        quotation_consultancy_design: Number(fullQuote.quotation_consultancy_design) || 0,
+        quotation_installation_amount: Number(fullQuote.quotation_installation_amount) || 0,
+        quotation_discount_amount: Number(fullQuote.quotation_discount_amount) || 0,
+        project_consultancy_design: Number(fullQuote.quotation_consultancy_design) || 0,
+        project_installation_amount: Number(fullQuote.quotation_installation_amount) || 0,
+        project_discount_amount: Number(fullQuote.quotation_discount_amount) || 0,
+        // Dual keys
+        quotation_date: fullQuote.quotation_date || new Date().toISOString().split("T")[0],
+        quotation_validity_date: fullQuote.quotation_validity_date || "",
+        quotation_buyer_id: Number(fullQuote.quotation_buyer_id),
+        quotation_property_id: Number(fullQuote.quotation_property_id),
+        quotation_category_id: fullQuote.quotation_category_id || "",
+        quotation_service_id: fullQuote.quotation_service_id || "",
+        quotation_remarks: fullQuote.quotation_remarks || "",
+        quotation_status: "Project",
+        buyer_id: Number(fullQuote.quotation_buyer_id),
+        property_id: Number(fullQuote.quotation_property_id),
+        category_id: fullQuote.quotation_category_id || "",
+        service_id: fullQuote.quotation_service_id || "",
+        status: "Project",
+        subs,
+      };
+
+      await projectApi.createProject(projectPayload);
+
+      // 4. Update quotation status to "Project"
       await updateStatusMutation.mutateAsync({
         id: convertingQuotation.id,
         status: "Project",
       });
+
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["quotations"] });
+
       setConvertDialogOpen(false);
       setConvertingQuotation(null);
       toast.success("Quotation converted to Project successfully");
