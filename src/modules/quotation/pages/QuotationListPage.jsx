@@ -42,8 +42,8 @@ import { isQuotationOwnedByUser } from "@/utils/permissions";
 const STATUS_TABS = [
   { value: "Pending", label: "Pending", dotClass: "bg-amber-500" },
   { value: "Approved", label: "Approved", dotClass: "bg-emerald-500" },
-  { value: "Project", label: "Project", dotClass: "bg-sky-500" },
-  { value: "Cancel", label: "Cancel", dotClass: "bg-rose-500" },
+  { value: "Others", label: "Others", dotClass: "bg-slate-500" },
+  { value: "all", label: "All", dotClass: "bg-indigo-500" },
 ];
 
 const normalizeQuotationStatus = (value) =>
@@ -52,6 +52,17 @@ const normalizeQuotationStatus = (value) =>
 const matchesStatusFilter = (item, filter) => {
   const current = normalizeQuotationStatus(item.quotation_status);
   const target = normalizeQuotationStatus(filter);
+  if (target === "all") {
+    return true;
+  }
+  if (target === "others") {
+    return (
+      current === "project" ||
+      current === "cancel" ||
+      current === "cancelled" ||
+      (current !== "pending" && current !== "approved")
+    );
+  }
   if (target === "cancel") {
     return current === "cancel" || current === "cancelled";
   }
@@ -75,7 +86,11 @@ const QuotationListPage = () => {
   const [convertingQuotation, setConvertingQuotation] = useState(null);
 
   const queryClient = useQueryClient();
-  const { data: responseData, isLoading, isFetching, isError, refetch } = useQuotationsQuery(page, searchTerm, statusFilter, yearFilter);
+  // Backend only recognizes specific status (Pending, Approved, Project, Cancel).
+  // For "Others" and "All", fetch "all" from API so client-side filter catches them.
+  const apiStatusParam =
+    statusFilter === "Others" || statusFilter === "all" ? "all" : statusFilter;
+  const { data: responseData, isLoading, isFetching, isError, refetch } = useQuotationsQuery(page, searchTerm, apiStatusParam, yearFilter);
   const updateValidateDateMutation = useUpdateQuotationValidateDateMutation();
   const updateStatusMutation = useUpdateQuotationStatusMutation();
 
