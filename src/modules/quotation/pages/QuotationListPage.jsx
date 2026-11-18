@@ -40,10 +40,11 @@ import moment from "moment";
 import { isQuotationOwnedByUser } from "@/utils/permissions";
 
 const STATUS_TABS = [
+  { value: "all", label: "All", dotClass: "bg-indigo-500" },
   { value: "Pending", label: "Pending", dotClass: "bg-amber-500" },
   { value: "Approved", label: "Approved", dotClass: "bg-emerald-500" },
   { value: "Others", label: "Others", dotClass: "bg-slate-500" },
-  { value: "all", label: "All", dotClass: "bg-indigo-500" },
+
 ];
 
 const normalizeQuotationStatus = (value) =>

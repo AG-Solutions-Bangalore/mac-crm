@@ -3,7 +3,16 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { usePersistedSearch } from "@/hooks/usePersistedSearch";
-import { Edit, ArrowLeft, CheckCircle2, Award, FileText, CalendarDays, Trash2, FilePlus2 } from "lucide-react";
+import {
+  Edit,
+  ArrowLeft,
+  CheckCircle2,
+  Award,
+  FileText,
+  CalendarDays,
+  Trash2,
+  FilePlus2,
+} from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
@@ -11,7 +20,13 @@ import ToggleStatus from "@/components/toogle/status-toogle";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/components/common/page-header";
 import ConfirmDialog from "@/components/common/confirm-dialog";
-import { useRevQuotationsQuery, useApproveRevQuotationMutation, useDeleteRevQuotationMutation, useQuotationQuery, useCyearQuery } from "../hooks/useQuotation";
+import {
+  useRevQuotationsQuery,
+  useApproveRevQuotationMutation,
+  useDeleteRevQuotationMutation,
+  useQuotationQuery,
+  useCyearQuery,
+} from "../hooks/useQuotation";
 import {
   Select,
   SelectContent,
@@ -38,17 +53,32 @@ const RevQuotationListPage = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
-  const { data: responseData, isLoading, isFetching, isError, refetch } = useRevQuotationsQuery(parentId, page, searchTerm, yearFilter);
-  const { data: parentQuotationData, isLoading: isParentLoading, isError: isParentError } = useQuotationQuery(parentId);
+  const {
+    data: responseData,
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = useRevQuotationsQuery(parentId, page, searchTerm, yearFilter);
+  const {
+    data: parentQuotationData,
+    isLoading: isParentLoading,
+    isError: isParentError,
+  } = useQuotationQuery(parentId);
   const approveMutation = useApproveRevQuotationMutation();
   const deleteMutation = useDeleteRevQuotationMutation();
 
   const paginationData = responseData?.data;
   const rawRevQuotationList = paginationData?.data || [];
-  const revQuotationList = yearFilter && yearFilter !== "all"
-    ? rawRevQuotationList.filter((item) => String(item.year || "").trim() === String(yearFilter).trim())
-    : rawRevQuotationList;
-  const parentFinishWorkDate = parentQuotationData?.data?.quotation_finish_work_date;
+  const revQuotationList =
+    yearFilter && yearFilter !== "all"
+      ? rawRevQuotationList.filter(
+          (item) =>
+            String(item.year || "").trim() === String(yearFilter).trim(),
+        )
+      : rawRevQuotationList;
+  const parentFinishWorkDate =
+    parentQuotationData?.data?.quotation_finish_work_date;
   const parentStatus = parentQuotationData?.data?.quotation_status;
 
   useEffect(() => {
@@ -60,7 +90,8 @@ const RevQuotationListPage = () => {
   }, [isRestrictedUser, parentQuotationData, user, navigate]);
   // After parent is Approved/Project -> revised list becomes view-only.
   // User can check (view list + reports) but cannot add / edit / approve.
-  const isParentApprovedLocked = parentStatus === "Approved" || parentStatus === "Project";
+  const isParentApprovedLocked =
+    parentStatus === "Approved" || parentStatus === "Project";
   const isLocked = Boolean(parentFinishWorkDate) || isParentApprovedLocked;
   // Only the newest revision (highest id) is editable / approvable. Older
   // revisions stay visible for reference and reports but cannot be changed.
@@ -146,19 +177,27 @@ const RevQuotationListPage = () => {
         }
         if (parentFinishWorkDate) {
           return (
-            <span className={`text-xs font-bold ${status === "Pending" ? "text-amber-500" : "text-red-500"}`}>
+            <span
+              className={`text-xs font-bold ${status === "Pending" ? "text-amber-500" : "text-red-500"}`}
+            >
               {status}
             </span>
           );
         }
         if (isLocked) {
           if (status === "Pending") {
-            return <span className="text-xs font-bold text-amber-500">{status}</span>;
+            return (
+              <span className="text-xs font-bold text-amber-500">{status}</span>
+            );
           }
           if (status === "Cancel" || status === "Cancelled") {
-            return <span className="text-xs font-bold text-red-500">{status}</span>;
+            return (
+              <span className="text-xs font-bold text-red-500">{status}</span>
+            );
           }
-          return <span className="text-xs font-bold text-slate-500">{status}</span>;
+          return (
+            <span className="text-xs font-bold text-slate-500">{status}</span>
+          );
         }
         return (
           <ToggleStatus
@@ -186,7 +225,11 @@ const RevQuotationListPage = () => {
                 size="icon"
                 variant="outline"
                 className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                onClick={() => navigate(`/quotation-list/revised/${parentId}/create?fromRev=${row.original.id}`)}
+                onClick={() =>
+                  navigate(
+                    `/quotation-list/revised/${parentId}/create?fromRev=${row.original.id}`,
+                  )
+                }
                 title="Add Revised Quotation"
                 aria-label="Add Revised Quotation"
               >
@@ -194,11 +237,15 @@ const RevQuotationListPage = () => {
               </Button>
             )}
 
-            {!isLocked && isLatestRevision && (
+            {!isLocked && (
               <Button
                 size="icon"
                 variant="outline"
-                onClick={() => navigate(`/quotation-list/revised/${parentId}/edit/${row.original.id}`)}
+                onClick={() =>
+                  navigate(
+                    `/quotation-list/revised/${parentId}/edit/${row.original.id}`,
+                  )
+                }
                 title="Edit Revised Quotation"
                 aria-label="Edit Revised Quotation"
               >
@@ -210,7 +257,9 @@ const RevQuotationListPage = () => {
               size="icon"
               variant="outline"
               className="text-slate-600 hover:text-slate-800"
-              onClick={() => navigate(`/quotation-report/${row.original.id}?type=rev`)}
+              onClick={() =>
+                navigate(`/quotation-report/${row.original.id}?type=rev`)
+              }
               title="View Report"
               aria-label="View Report"
             >
@@ -233,7 +282,9 @@ const RevQuotationListPage = () => {
 
             {!isLocked &&
               isLatestRevision &&
-              !revQuotationList.some((q) => q.quotation_status === "Approved") &&
+              !revQuotationList.some(
+                (q) => q.quotation_status === "Approved",
+              ) &&
               row.original.quotation_status !== "Approved" && (
                 <Button
                   size="icon"
@@ -253,8 +304,10 @@ const RevQuotationListPage = () => {
     },
   ];
 
-  if ((isLoading && !responseData) || (isParentLoading && !parentQuotationData)) return <LoadingBar />;
-  if ((isError && !responseData) || (isParentError && !parentQuotationData)) return <ApiErrorPage onRetry={refetch} />;
+  if ((isLoading && !responseData) || (isParentLoading && !parentQuotationData))
+    return <LoadingBar />;
+  if ((isError && !responseData) || (isParentError && !parentQuotationData))
+    return <ApiErrorPage onRetry={refetch} />;
 
   return (
     <div className="px-5">
@@ -264,7 +317,10 @@ const RevQuotationListPage = () => {
         description={`Manage revisions for Parent Quotation #${parentId}`}
         rightContent={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate("/quotation-list")}>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/quotation-list")}
+            >
               <ArrowLeft className="w-4 h-4 mr-2" /> Parent Quotations
             </Button>
           </div>
@@ -276,7 +332,10 @@ const RevQuotationListPage = () => {
           <CalendarDays className="h-5 w-5 text-amber-600 dark:text-amber-500" />
           <div>
             <p className="font-semibold text-sm">Parent Quotation Finalized</p>
-            <p className="text-xs opacity-90">The parent quotation has a finish work date. Revisions cannot be added, edited, or approved.</p>
+            <p className="text-xs opacity-90">
+              The parent quotation has a finish work date. Revisions cannot be
+              added, edited, or approved.
+            </p>
           </div>
         </div>
       )}
@@ -285,8 +344,13 @@ const RevQuotationListPage = () => {
         <div className="mb-4 bg-slate-500/10 border border-slate-500/20 text-slate-700 dark:text-slate-300 p-4 rounded-xl flex items-center gap-3">
           <CheckCircle2 className="h-5 w-5 text-slate-500" />
           <div>
-            <p className="font-semibold text-sm">Parent Quotation Approved — View Only</p>
-            <p className="text-xs opacity-90">This quotation is approved. You can check revised quotations and reports, but cannot add, edit, or approve revisions.</p>
+            <p className="font-semibold text-sm">
+              Parent Quotation Approved — View Only
+            </p>
+            <p className="text-xs opacity-90">
+              This quotation is approved. You can check revised quotations and
+              reports, but cannot add, edit, or approve revisions.
+            </p>
           </div>
         </div>
       )}
@@ -328,7 +392,8 @@ const RevQuotationListPage = () => {
         addButton={
           !isLocked && revQuotationList.length === 0
             ? {
-                onClick: () => navigate(`/quotation-list/revised/${parentId}/create`),
+                onClick: () =>
+                  navigate(`/quotation-list/revised/${parentId}/create`),
                 label: "Add Revised Quotation",
               }
             : undefined
