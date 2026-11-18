@@ -1,8 +1,8 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { usePersistedSearch } from "@/hooks/usePersistedSearch";
-import { Edit, FileText, CalendarDays, CalendarCheck, FolderKanban } from "lucide-react";
+import { Edit, FileText, CalendarDays, CalendarCheck, FolderKanban, X } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import LoadingBar from "@/components/loader/loading-bar";
 import ApiErrorPage from "@/components/api-error/api-error";
@@ -34,6 +34,7 @@ import {
   useUpdateProjectFinishDateMutation,
 } from "../hooks/useProject";
 import { useCyearQuery } from "../../quotation/hooks/useQuotation";
+import { useActiveBuyersQuery } from "@/modules/buyer/hooks/useBuyer";
 import moment from "moment";
 
 const STATUS_TABS = [
@@ -120,6 +121,61 @@ const ProjectListPage = () => {
   }, []);
   const { data: cyearData } = useCyearQuery();
   const cyearList = cyearData?.data || [];
+  const [selectedBuyer, setSelectedBuyer] = useState(() => {
+    try {
+      return (
+        localStorage.getItem("SelectedProjectBuyer") ||
+        localStorage.getItem("SeletedBuyer") ||
+        ""
+      );
+    } catch {
+      return "";
+    }
+  });
+
+  const handleSelectBuyer = (buyerName) => {
+    if (!buyerName) {
+      handleClearBuyer();
+      return;
+    }
+    setSelectedBuyer(buyerName);
+    try {
+      localStorage.setItem("SelectedProjectBuyer", buyerName);
+    } catch {}
+    setPage(1);
+  };
+
+  const handleClearBuyer = () => {
+    setSelectedBuyer("");
+    try {
+      localStorage.removeItem("SelectedProjectBuyer");
+      localStorage.removeItem("SeletedBuyer");
+    } catch {}
+    setPage(1);
+  };
+
+  const { data: buyersData, isLoading: buyersLoading } = useActiveBuyersQuery();
+  const buyers = Array.isArray(buyersData?.data)
+    ? buyersData.data
+    : Array.isArray(buyersData)
+      ? buyersData
+      : [];
+
+  const uniqueBuyers = useMemo(() => {
+    const seen = new Set();
+    const list = [];
+    buyers.forEach((b) => {
+      if (!b || !b.buyer_name) return;
+      const trimmed = b.buyer_name.trim();
+      if (!trimmed || seen.has(trimmed)) return;
+      seen.add(trimmed);
+      list.push(b);
+    });
+    if (selectedBuyer && !seen.has(selectedBuyer.trim())) {
+      list.unshift({ id: "saved_buyer", buyer_name: selectedBuyer });
+    }
+    return list;
+  }, [buyers, selectedBuyer]);
   const [dateDialogOpen, setDateDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [dateField, setDateField] = useState("start");
@@ -194,6 +250,15 @@ const ProjectListPage = () => {
             );
           })
         : searchedList;
+
+  const filteredProjectList = useMemo(() => {
+    if (!selectedBuyer) return projectList;
+    const target = selectedBuyer.trim().toLowerCase();
+    return projectList.filter((item) => {
+      const name = String(item.buyer_name || "").trim().toLowerCase();
+      return name === target;
+    });
+  }, [projectList, selectedBuyer]);
 
   const isOngoingTab = normalizeProjectStatus(statusFilter) === "ongoing";
   const isCompletedTab = normalizeProjectStatus(statusFilter) === "completed";
@@ -657,6 +722,41 @@ const ProjectListPage = () => {
         isLoading={isLoading || isFetching}
         mobileCard={renderMobileCard}
         extraButtonFullWidthOnMobile
+        beforeColumns={
+          <div className="relative w-full sm:w-[180px]">
+            <Select
+              key={selectedBuyer || "empty"}
+              value={selectedBuyer || undefined}
+              onValueChange={handleSelectBuyer}
+            >
+              <SelectTrigger className="h-9 w-full sm:w-[180px] pr-8 text-xs sm:text-sm">
+                <SelectValue
+                  placeholder={buyersLoading ? "Loading..." : "Select Buyer"}
+                />
+              </SelectTrigger>
+              <SelectContent className="max-h-60 overflow-y-auto">
+                {uniqueBuyers.map((b) => (
+                  <SelectItem key={b.id || b.buyer_name} value={b.buyer_name}>
+                    {b.buyer_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedBuyer && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClearBuyer();
+                }}
+                className="absolute right-7 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground z-10"
+                title="Clear selection"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        }
         extraButton={
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {statusFilter === "Completed" && (
@@ -697,7 +797,7 @@ const ProjectListPage = () => {
             </Select>
           </div>
         }
-        data={projectList}
+        data={filteredProjectList}
         columns={columns}
         searchPlaceholder="Search Projects..."
         pageSize={50}
@@ -706,10 +806,10 @@ const ProjectListPage = () => {
           setSearchTerm(val);
           setPage(1);
         }}
-        backendPagination={statusFilter === "Pending" ? true : isPaginated}
+        backendPagination={selectedBuyer ? false : (statusFilter === "Pending" ? true : isPaginated)}
         page={isPaginated ? currentPage : 1}
         totalPages={isPaginated ? lastPage : 1}
-        totalRecords={isPaginated ? total : projectList.length}
+        totalRecords={selectedBuyer ? filteredProjectList.length : (isPaginated ? total : projectList.length)}
         onPageChange={setPage}
       />
 
