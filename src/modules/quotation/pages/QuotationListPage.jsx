@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePersistedPage } from "@/hooks/usePersistedPage";
 import { usePersistedSearch } from "@/hooks/usePersistedSearch";
-import { Edit, FileText, CalendarDays, FolderKanban } from "lucide-react";
+import { Edit, FileText, CalendarDays, FolderKanban, X } from "lucide-react";
 import DataTable from "@/components/common/data-table";
 import ApiErrorPage from "@/components/api-error/api-error";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ import {
   useUpdateQuotationStatusMutation,
   useCyearQuery,
 } from "../hooks/useQuotation";
+import { useActiveBuyersQuery } from "@/modules/buyer/hooks/useBuyer";
 import { quotationApi } from "../api/quotationApi";
 import { projectApi } from "../../project/api/projectApi";
 import { useQueryClient } from "@tanstack/react-query";
@@ -80,6 +81,56 @@ const QuotationListPage = () => {
   const [yearFilter, setYearFilter] = useState("all");
   const { data: cyearData } = useCyearQuery();
   const cyearList = cyearData?.data || [];
+  const [selectedBuyer, setSelectedBuyer] = useState(() => {
+    try {
+      return localStorage.getItem("SelectedQuotationsBuyer") || "";
+    } catch {
+      return "";
+    }
+  });
+
+  const handleSelectBuyer = (buyerName) => {
+    if (!buyerName) {
+      handleClearBuyer();
+      return;
+    }
+    setSelectedBuyer(buyerName);
+    try {
+      localStorage.setItem("SelectedQuotationsBuyer", buyerName);
+    } catch {}
+    setPage(1);
+  };
+
+  const handleClearBuyer = () => {
+    setSelectedBuyer("");
+    try {
+      localStorage.removeItem("SelectedQuotationsBuyer");
+    } catch {}
+    setPage(1);
+  };
+
+  const { data: buyersData, isLoading: buyersLoading } = useActiveBuyersQuery();
+  const buyers = Array.isArray(buyersData?.data)
+    ? buyersData.data
+    : Array.isArray(buyersData)
+      ? buyersData
+      : [];
+
+  const uniqueBuyers = useMemo(() => {
+    const seen = new Set();
+    const list = [];
+    buyers.forEach((b) => {
+      if (!b || !b.buyer_name) return;
+      const trimmed = b.buyer_name.trim();
+      if (!trimmed || seen.has(trimmed)) return;
+      seen.add(trimmed);
+      list.push(b);
+    });
+    if (selectedBuyer && !seen.has(selectedBuyer.trim())) {
+      list.unshift({ id: "saved_buyer", buyer_name: selectedBuyer });
+    }
+    return list;
+  }, [buyers, selectedBuyer]);
   const [validityDialogOpen, setValidityDialogOpen] = useState(false);
   const [selectedQuotation, setSelectedQuotation] = useState(null);
   const [validityDate, setValidityDate] = useState("");
@@ -247,6 +298,15 @@ const QuotationListPage = () => {
       new Date(b.created_at || b.created_at_rev || 0).getTime() -
       new Date(a.created_at || a.created_at_rev || 0).getTime()
   );
+
+  const filteredQuotationList = useMemo(() => {
+    if (!selectedBuyer) return quotationList;
+    const target = selectedBuyer.trim().toLowerCase();
+    return quotationList.filter((item) => {
+      const name = String(item.buyer_name || "").trim().toLowerCase();
+      return name === target;
+    });
+  }, [quotationList, selectedBuyer]);
 
   const formatDate = (value) =>
     value ? moment(value).format("DD-MM-YYYY") : "-";
@@ -575,6 +635,42 @@ const QuotationListPage = () => {
         isLoading={isLoading || isFetching}
         fitWidth
         mobileCard={renderMobileCard}
+        extraButtonFullWidthOnMobile
+        beforeColumns={
+          <div className="relative w-full sm:w-[180px]">
+            <Select
+              key={selectedBuyer || "empty"}
+              value={selectedBuyer || undefined}
+              onValueChange={handleSelectBuyer}
+            >
+              <SelectTrigger className="h-9 w-full sm:w-[180px] pr-8 text-xs sm:text-sm">
+                <SelectValue
+                  placeholder={buyersLoading ? "Loading..." : "Select Buyer"}
+                />
+              </SelectTrigger>
+              <SelectContent className="max-h-60 overflow-y-auto">
+                {uniqueBuyers.map((b) => (
+                  <SelectItem key={b.id || b.buyer_name} value={b.buyer_name}>
+                    {b.buyer_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedBuyer && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClearBuyer();
+                }}
+                className="absolute right-7 top-1/2 -translate-y-1/2 p-0.5 text-muted-foreground hover:text-foreground z-10"
+                title="Clear selection"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        }
         extraButton={
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <Select
@@ -598,7 +694,7 @@ const QuotationListPage = () => {
             </Select>
           </div>
         }
-        data={quotationList}
+        data={filteredQuotationList}
         columns={columns}
         searchPlaceholder="Search Quotations..."
         pageSize={50}
@@ -611,10 +707,10 @@ const QuotationListPage = () => {
           onClick: () => navigate("/quotation-list/create"),
           label: "Add Quotation",
         }}
-        backendPagination={true}
+        backendPagination={selectedBuyer ? false : true}
         page={paginationData?.current_page || 1}
         totalPages={paginationData?.last_page || 1}
-        totalRecords={paginationData?.total || 0}
+        totalRecords={selectedBuyer ? filteredQuotationList.length : (paginationData?.total || 0)}
         onPageChange={setPage}
       />
 

@@ -59,6 +59,7 @@ const DataTable = ({
   searchPlaceholder = "Search...",
   addButton,
   extraButton,
+  beforeColumns,
   // When true, filters stack full-width below the Columns button on mobile
   // (useful for lists with multiple filters). Desktop is unaffected.
   extraButtonFullWidthOnMobile = false,
@@ -250,6 +251,16 @@ const DataTable = ({
                 : "flex items-start"
             }`}
           >
+            {beforeColumns && (
+              <div
+                className={`min-w-0 sm:flex-none ${
+                  extraButtonFullWidthOnMobile ? "w-full sm:w-auto" : "flex-1"
+                }`}
+              >
+                {beforeColumns}
+              </div>
+            )}
+
             {/* COLUMN TOGGLE (desktop table only) */}
             <div
               className={`shrink-0 sm:flex-none ${
