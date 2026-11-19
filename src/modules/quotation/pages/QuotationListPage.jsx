@@ -77,7 +77,7 @@ const QuotationListPage = () => {
   const isRestrictedUser = Number(user?.user_type) === 4;
   const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = usePersistedSearch();
-  const [statusFilter, setStatusFilter] = useState("Pending");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [yearFilter, setYearFilter] = useState("all");
   const { data: cyearData } = useCyearQuery();
   const cyearList = cyearData?.data || [];
