@@ -4,23 +4,16 @@ const escapeRegExp = (value) =>
 const tokenize = (term) =>
   (term ?? "").toString().trim().toLowerCase().split(/\s+/).filter(Boolean);
 
-// Hybrid search:
-// - Text tokens match anywhere, so "fle" finds "Flexible" and "Reflex".
-// - Tokens containing digits must start on a word boundary, so "2m" does not
-//   find "12m", while "120" still finds "120W" (unit suffix) and "120" does
-//   not find "1200".
+// Match all search tokens against the haystack:
+// - Each token must be included in the text (substring match).
+// This allows typing partial codes, alphanumeric model numbers (e.g., "alt100" matches "ALT1003"),
+// prefixes, or any keyword naturally without strict word boundaries.
 export const matchesSearchTokens = (haystack, term) => {
   const tokens = tokenize(term);
   if (tokens.length === 0) return true;
 
   const text = (haystack ?? "").toString().toLowerCase();
-  return tokens.every((token) => {
-    if (!/\d/.test(token)) return text.includes(token);
-    const re = new RegExp(
-      `(^|[^a-z0-9])${escapeRegExp(token)}[a-z]*([^a-z0-9]|$)`
-    );
-    return re.test(text);
-  });
+  return tokens.every((token) => text.includes(token));
 };
 
 export const productSearchHaystack = (record) =>
