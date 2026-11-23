@@ -368,7 +368,7 @@ export default function DynamicProposalDocument({
                       <thead style={{ background: "#eaf0f7" }}>
                         <tr>
                           <TH align="center" width="4%" isLight={isLight} nowrap>S.No</TH>
-                          <TH width={hasFinish ? "11%" : "12%"} isLight={isLight}>Area / Room</TH>
+                          <TH align="center" width={hasFinish ? "11%" : "12%"} isLight={isLight}>Area / Room</TH>
                           <TH width={hasFinish ? "20%" : "23%"} isLight={isLight}>Product / System Specification</TH>
                           <TH align="center" width="6%" isLight={isLight}>Qty</TH>
                           {!hidePricing && (
@@ -418,12 +418,14 @@ export default function DynamicProposalDocument({
                                     {idx === 0 && (
                                       <TD
                                         isLight={isLight}
+                                        align="center"
                                         rowSpan={area.items.length > 1 ? area.items.length : undefined}
                                         style={{
                                           fontWeight: 700,
                                           color: t.productText,
                                           fontSize: "11px",
-                                          verticalAlign: "top",
+                                          verticalAlign: "middle",
+                                          textAlign: "center",
                                           background: "#ffffff",
                                         }}
                                       >
