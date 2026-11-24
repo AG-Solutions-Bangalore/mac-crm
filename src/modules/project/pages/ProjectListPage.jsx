@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  useAllProjectsQuery,
   useProjectsQuery,
   useOngoingProjectsQuery,
   useCompleteProjectsQuery,
@@ -38,6 +39,7 @@ import { useActiveBuyersQuery } from "@/modules/buyer/hooks/useBuyer";
 import moment from "moment";
 
 const STATUS_TABS = [
+  { value: "All", label: "All", dotClass: "bg-slate-400" },
   { value: "Pending", label: "Pending", dotClass: "bg-amber-500" },
   { value: "Ongoing", label: "Ongoing", dotClass: "bg-sky-500" },
   { value: "Completed", label: "Completed", dotClass: "bg-emerald-500" },
@@ -102,7 +104,7 @@ const ProjectListPage = () => {
   const navigate = useNavigate();
   const [page, setPage] = usePersistedPage();
   const [searchTerm, setSearchTerm] = usePersistedSearch();
-  const [statusFilter, setStatusFilter] = useState("Pending");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [yearFilter, setYearFilter] = useState("all");
   const [completedStatusFilter, setCompletedStatusFilterState] = useState(() => {
     try {
@@ -191,6 +193,12 @@ const ProjectListPage = () => {
     yearFilter,
     statusFilter === "Pending"
   );
+  const allQuery = useAllProjectsQuery(
+    page,
+    searchTerm,
+    yearFilter,
+    statusFilter === "All"
+  );
   const ongoingQuery = useOngoingProjectsQuery(
     page,
     searchTerm,
@@ -205,11 +213,13 @@ const ProjectListPage = () => {
   );
 
   const activeQuery =
-    statusFilter === "Ongoing"
-      ? ongoingQuery
-      : statusFilter === "Completed"
-        ? completedQuery
-        : pendingQuery;
+    statusFilter === "All"
+      ? allQuery
+      : statusFilter === "Ongoing"
+        ? ongoingQuery
+        : statusFilter === "Completed"
+          ? completedQuery
+          : pendingQuery;
 
   const {
     data: responseData,
@@ -356,14 +366,22 @@ const ProjectListPage = () => {
     return <span className="pill pill-draft">{status}</span>;
   };
 
+  const isOngoingStatus = (normalized) =>
+    normalized === "ongoing" ||
+    normalized === "in progress" ||
+    normalized === "in_progress" ||
+    normalized === "running";
+
   const renderActions = (p) => {
     const normalizedTab = normalizeProjectStatus(statusFilter);
-    const isPending = normalizedTab === "pending";
-    const isOngoing =
-      normalizedTab === "ongoing" ||
-      normalizedTab === "in progress" ||
-      normalizedTab === "in_progress" ||
-      normalizedTab === "running";
+    const isAllTab = normalizedTab === "all";
+    const rowStatus = normalizeProjectStatus(getProjectStatus(p));
+    const isPending = isAllTab
+      ? rowStatus === "pending"
+      : normalizedTab === "pending";
+    const isOngoing = isAllTab
+      ? isOngoingStatus(rowStatus)
+      : isOngoingStatus(normalizedTab);
 
     return (
       <div className="flex flex-nowrap items-center gap-1">

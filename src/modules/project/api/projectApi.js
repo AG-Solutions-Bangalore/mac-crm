@@ -14,6 +14,18 @@ export const projectApi = {
     return response.data;
   },
 
+  getAllProjects: async (page = 1, search = "", year = "") => {
+    let url = `/getAllProject?page=${page}`;
+    if (search) {
+      url += `&search=${encodeURIComponent(search)}`;
+    }
+    if (year && year !== "all") {
+      url += `&year=${encodeURIComponent(year)}`;
+    }
+    const response = await apiClient.get(url);
+    return response.data;
+  },
+
   getProjectById: async (id) => {
     const response = await apiClient.get(`/project/${id}`);
     return response.data;

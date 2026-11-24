@@ -13,6 +13,18 @@ export function useProjectsQuery(page = 1, search = "", status = "all", year = "
   });
 }
 
+export function useAllProjectsQuery(page = 1, search = "", year = "all", enabled = true) {
+  return useQuery({
+    queryKey: ["projects", "all", page, search, year],
+    queryFn: () => projectApi.getAllProjects(page, search, year),
+    enabled,
+    placeholderData: keepPreviousData,
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+}
+
 export function useOngoingProjectsQuery(page = 1, search = "", year = "all", enabled = true) {
   return useQuery({
     queryKey: ["projects-ongoing", page, search, year],
